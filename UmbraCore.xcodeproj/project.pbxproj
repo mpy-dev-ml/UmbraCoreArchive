@@ -1,0 +1,815 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8D9DA1B02D5933C700A91A47 /* UmbraCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8D9DA1A52D5933C700A91A47 /* UmbraCore.framework */; };
+		8D9DA1D02D59543900A91A47 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 8D9DA1C12D59543900A91A47 /* README.md */; };
+		8D9DA1D12D59543900A91A47 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 8D9DA1C12D59543900A91A47 /* README.md */; };
+		8D9DA1D72D59552600A91A47 /* LoggerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1D62D59552600A91A47 /* LoggerProtocol.swift */; };
+		8D9DA1DA2D59553A00A91A47 /* CoreError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1D92D59553A00A91A47 /* CoreError.swift */; };
+		8D9DA1DB2D59553A00A91A47 /* CoreError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1D92D59553A00A91A47 /* CoreError.swift */; };
+		8D9DA1EB2D59666E00A91A47 /* KeychainError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1E72D59666E00A91A47 /* KeychainError.swift */; };
+		8D9DA1EC2D59666E00A91A47 /* BookmarkError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1E62D59666E00A91A47 /* BookmarkError.swift */; };
+		8D9DA1ED2D59666E00A91A47 /* SecurityError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1E92D59666E00A91A47 /* SecurityError.swift */; };
+		8D9DA1EE2D59666E00A91A47 /* RepositoryDiscoveryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1E82D59666E00A91A47 /* RepositoryDiscoveryError.swift */; };
+		8D9DA1EF2D59666E00A91A47 /* ServiceError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1EA2D59666E00A91A47 /* ServiceError.swift */; };
+		8D9DA1F22D59668800A91A47 /* LoggerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F02D59668800A91A47 /* LoggerProtocol.swift */; };
+		8D9DA1F32D59668800A91A47 /* OSLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F12D59668800A91A47 /* OSLogger.swift */; };
+		8D9DA1FD2D59669900A91A47 /* ProcessResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F52D59669900A91A47 /* ProcessResult.swift */; };
+		8D9DA1FE2D59669900A91A47 /* RepositoryCredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F72D59669900A91A47 /* RepositoryCredentials.swift */; };
+		8D9DA1FF2D59669900A91A47 /* RepositoryStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F92D59669900A91A47 /* RepositoryStatus.swift */; };
+		8D9DA2002D59669900A91A47 /* ResticCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1FA2D59669900A91A47 /* ResticCommand.swift */; };
+		8D9DA2012D59669900A91A47 /* ResticSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1FB2D59669900A91A47 /* ResticSnapshot.swift */; };
+		8D9DA2022D59669900A91A47 /* SecurityScopedAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1FC2D59669900A91A47 /* SecurityScopedAccess.swift */; };
+		8D9DA2032D59669900A91A47 /* ProcessError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F42D59669900A91A47 /* ProcessError.swift */; };
+		8D9DA2042D59669900A91A47 /* RepositoryHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F82D59669900A91A47 /* RepositoryHealth.swift */; };
+		8D9DA2052D59669900A91A47 /* Repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA1F62D59669900A91A47 /* Repository.swift */; };
+		8D9DA2122D5966BA00A91A47 /* BookmarkServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2072D5966BA00A91A47 /* BookmarkServiceProtocol.swift */; };
+		8D9DA2132D5966BA00A91A47 /* NotificationCenterProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA20E2D5966BA00A91A47 /* NotificationCenterProtocol.swift */; };
+		8D9DA2142D5966BA00A91A47 /* SecurityServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2102D5966BA00A91A47 /* SecurityServiceProtocol.swift */; };
+		8D9DA2152D5966BA00A91A47 /* FileSearchServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA20A2D5966BA00A91A47 /* FileSearchServiceProtocol.swift */; };
+		8D9DA2162D5966BA00A91A47 /* LoggingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA20D2D5966BA00A91A47 /* LoggingService.swift */; };
+		8D9DA2172D5966BA00A91A47 /* RepositoryServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA20F2D5966BA00A91A47 /* RepositoryServiceProtocol.swift */; };
+		8D9DA2182D5966BA00A91A47 /* KeychainServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA20C2D5966BA00A91A47 /* KeychainServiceProtocol.swift */; };
+		8D9DA2192D5966BA00A91A47 /* FileManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2092D5966BA00A91A47 /* FileManagerProtocol.swift */; };
+		8D9DA21A2D5966BA00A91A47 /* StorageServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2112D5966BA00A91A47 /* StorageServiceProtocol.swift */; };
+		8D9DA21B2D5966BA00A91A47 /* BackupServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2062D5966BA00A91A47 /* BackupServiceProtocol.swift */; };
+		8D9DA21C2D5966BA00A91A47 /* DateProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2082D5966BA00A91A47 /* DateProviderProtocol.swift */; };
+		8D9DA21D2D5966BA00A91A47 /* HealthCheckable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA20B2D5966BA00A91A47 /* HealthCheckable.swift */; };
+		8D9DA2232D5966D300A91A47 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA21E2D5966D300A91A47 /* KeychainService.swift */; };
+		8D9DA2242D5966D300A91A47 /* LoggerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA21F2D5966D300A91A47 /* LoggerFactory.swift */; };
+		8D9DA2252D5966D300A91A47 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2202D5966D300A91A47 /* PermissionManager.swift */; };
+		8D9DA2262D5966D300A91A47 /* RepositoryDiscoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2212D5966D300A91A47 /* RepositoryDiscoveryService.swift */; };
+		8D9DA2272D5966D300A91A47 /* SecurityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2222D5966D300A91A47 /* SecurityService.swift */; };
+		8D9DA22C2D5967F300A91A47 /* XPCConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2292D5967F300A91A47 /* XPCConnectionState.swift */; };
+		8D9DA22D2D5967F300A91A47 /* XPCHealthStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA22A2D5967F300A91A47 /* XPCHealthStatus.swift */; };
+		8D9DA22E2D5967F300A91A47 /* XPCCommandConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2282D5967F300A91A47 /* XPCCommandConfig.swift */; };
+		8D9DA22F2D5967F300A91A47 /* XPCMessageQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA22B2D5967F300A91A47 /* XPCMessageQueue.swift */; };
+		8D9DA2332D59680100A91A47 /* ResticXPCServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2322D59680100A91A47 /* ResticXPCServiceProtocol.swift */; };
+		8D9DA2342D59680100A91A47 /* RepositoryDiscoveryXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2302D59680100A91A47 /* RepositoryDiscoveryXPCProtocol.swift */; };
+		8D9DA2352D59680100A91A47 /* ResticXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2312D59680100A91A47 /* ResticXPCProtocol.swift */; };
+		8D9DA2412D59681300A91A47 /* ResticXPCService+Commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2372D59681300A91A47 /* ResticXPCService+Commands.swift */; };
+		8D9DA2422D59681300A91A47 /* ResticXPCService+Resources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA23D2D59681300A91A47 /* ResticXPCService+Resources.swift */; };
+		8D9DA2432D59681300A91A47 /* ResticXPCService+HealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA23A2D59681300A91A47 /* ResticXPCService+HealthCheck.swift */; };
+		8D9DA2442D59681300A91A47 /* ResticXPCService+Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA23E2D59681300A91A47 /* ResticXPCService+Validation.swift */; };
+		8D9DA2452D59681300A91A47 /* XPCConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA23F2D59681300A91A47 /* XPCConnectionManager.swift */; };
+		8D9DA2462D59681300A91A47 /* ResticXPCService+Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2382D59681300A91A47 /* ResticXPCService+Connection.swift */; };
+		8D9DA2472D59681300A91A47 /* ResticXPCService+Operations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA23B2D59681300A91A47 /* ResticXPCService+Operations.swift */; };
+		8D9DA2482D59681300A91A47 /* ResticXPCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2362D59681300A91A47 /* ResticXPCService.swift */; };
+		8D9DA2492D59681300A91A47 /* ResticXPCService+Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA23C2D59681300A91A47 /* ResticXPCService+Queue.swift */; };
+		8D9DA24A2D59681300A91A47 /* XPCHealthMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2402D59681300A91A47 /* XPCHealthMonitor.swift */; };
+		8D9DA24B2D59681300A91A47 /* ResticXPCService+ErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA2392D59681300A91A47 /* ResticXPCService+ErrorHandling.swift */; };
+		8D9DA24E2D59683B00A91A47 /* ResticXPCError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DA24C2D59683B00A91A47 /* ResticXPCError.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8D9DA1B12D5933C700A91A47 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8D9DA19C2D5933C700A91A47 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8D9DA1A42D5933C700A91A47;
+			remoteInfo = UmbraCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		8D9DA1A52D5933C700A91A47 /* UmbraCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UmbraCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D9DA1AF2D5933C700A91A47 /* UmbraCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UmbraCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D9DA1C12D59543900A91A47 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		8D9DA1D62D59552600A91A47 /* LoggerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggerProtocol.swift; sourceTree = "<group>"; };
+		8D9DA1D92D59553A00A91A47 /* CoreError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreError.swift; sourceTree = "<group>"; };
+		8D9DA1E62D59666E00A91A47 /* BookmarkError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkError.swift; sourceTree = "<group>"; };
+		8D9DA1E72D59666E00A91A47 /* KeychainError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainError.swift; sourceTree = "<group>"; };
+		8D9DA1E82D59666E00A91A47 /* RepositoryDiscoveryError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDiscoveryError.swift; sourceTree = "<group>"; };
+		8D9DA1E92D59666E00A91A47 /* SecurityError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityError.swift; sourceTree = "<group>"; };
+		8D9DA1EA2D59666E00A91A47 /* ServiceError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceError.swift; sourceTree = "<group>"; };
+		8D9DA1F02D59668800A91A47 /* LoggerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggerProtocol.swift; sourceTree = "<group>"; };
+		8D9DA1F12D59668800A91A47 /* OSLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OSLogger.swift; sourceTree = "<group>"; };
+		8D9DA1F42D59669900A91A47 /* ProcessError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessError.swift; sourceTree = "<group>"; };
+		8D9DA1F52D59669900A91A47 /* ProcessResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessResult.swift; sourceTree = "<group>"; };
+		8D9DA1F62D59669900A91A47 /* Repository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repository.swift; sourceTree = "<group>"; };
+		8D9DA1F72D59669900A91A47 /* RepositoryCredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryCredentials.swift; sourceTree = "<group>"; };
+		8D9DA1F82D59669900A91A47 /* RepositoryHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryHealth.swift; sourceTree = "<group>"; };
+		8D9DA1F92D59669900A91A47 /* RepositoryStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryStatus.swift; sourceTree = "<group>"; };
+		8D9DA1FA2D59669900A91A47 /* ResticCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResticCommand.swift; sourceTree = "<group>"; };
+		8D9DA1FB2D59669900A91A47 /* ResticSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResticSnapshot.swift; sourceTree = "<group>"; };
+		8D9DA1FC2D59669900A91A47 /* SecurityScopedAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedAccess.swift; sourceTree = "<group>"; };
+		8D9DA2062D5966BA00A91A47 /* BackupServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2072D5966BA00A91A47 /* BookmarkServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2082D5966BA00A91A47 /* DateProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateProviderProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2092D5966BA00A91A47 /* FileManagerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManagerProtocol.swift; sourceTree = "<group>"; };
+		8D9DA20A2D5966BA00A91A47 /* FileSearchServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA20B2D5966BA00A91A47 /* HealthCheckable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCheckable.swift; sourceTree = "<group>"; };
+		8D9DA20C2D5966BA00A91A47 /* KeychainServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA20D2D5966BA00A91A47 /* LoggingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingService.swift; sourceTree = "<group>"; };
+		8D9DA20E2D5966BA00A91A47 /* NotificationCenterProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationCenterProtocol.swift; sourceTree = "<group>"; };
+		8D9DA20F2D5966BA00A91A47 /* RepositoryServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2102D5966BA00A91A47 /* SecurityServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2112D5966BA00A91A47 /* StorageServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA21E2D5966D300A91A47 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		8D9DA21F2D5966D300A91A47 /* LoggerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggerFactory.swift; sourceTree = "<group>"; };
+		8D9DA2202D5966D300A91A47 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		8D9DA2212D5966D300A91A47 /* RepositoryDiscoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDiscoveryService.swift; sourceTree = "<group>"; };
+		8D9DA2222D5966D300A91A47 /* SecurityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityService.swift; sourceTree = "<group>"; };
+		8D9DA2282D5967F300A91A47 /* XPCCommandConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCCommandConfig.swift; sourceTree = "<group>"; };
+		8D9DA2292D5967F300A91A47 /* XPCConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCConnectionState.swift; sourceTree = "<group>"; };
+		8D9DA22A2D5967F300A91A47 /* XPCHealthStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHealthStatus.swift; sourceTree = "<group>"; };
+		8D9DA22B2D5967F300A91A47 /* XPCMessageQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCMessageQueue.swift; sourceTree = "<group>"; };
+		8D9DA2302D59680100A91A47 /* RepositoryDiscoveryXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryDiscoveryXPCProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2312D59680100A91A47 /* ResticXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResticXPCProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2322D59680100A91A47 /* ResticXPCServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResticXPCServiceProtocol.swift; sourceTree = "<group>"; };
+		8D9DA2362D59681300A91A47 /* ResticXPCService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResticXPCService.swift; sourceTree = "<group>"; };
+		8D9DA2372D59681300A91A47 /* ResticXPCService+Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+Commands.swift"; sourceTree = "<group>"; };
+		8D9DA2382D59681300A91A47 /* ResticXPCService+Connection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+Connection.swift"; sourceTree = "<group>"; };
+		8D9DA2392D59681300A91A47 /* ResticXPCService+ErrorHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+ErrorHandling.swift"; sourceTree = "<group>"; };
+		8D9DA23A2D59681300A91A47 /* ResticXPCService+HealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+HealthCheck.swift"; sourceTree = "<group>"; };
+		8D9DA23B2D59681300A91A47 /* ResticXPCService+Operations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+Operations.swift"; sourceTree = "<group>"; };
+		8D9DA23C2D59681300A91A47 /* ResticXPCService+Queue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+Queue.swift"; sourceTree = "<group>"; };
+		8D9DA23D2D59681300A91A47 /* ResticXPCService+Resources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+Resources.swift"; sourceTree = "<group>"; };
+		8D9DA23E2D59681300A91A47 /* ResticXPCService+Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResticXPCService+Validation.swift"; sourceTree = "<group>"; };
+		8D9DA23F2D59681300A91A47 /* XPCConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCConnectionManager.swift; sourceTree = "<group>"; };
+		8D9DA2402D59681300A91A47 /* XPCHealthMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCHealthMonitor.swift; sourceTree = "<group>"; };
+		8D9DA24C2D59683B00A91A47 /* ResticXPCError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResticXPCError.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D9DA1A22D5933C700A91A47 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8D9DA1AC2D5933C700A91A47 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D9DA1B02D5933C700A91A47 /* UmbraCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8D9DA19B2D5933C700A91A47 = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1C02D59543900A91A47 /* Documentation */,
+				8D9DA1C12D59543900A91A47 /* README.md */,
+				8D9DA1CC2D59543900A91A47 /* Sources */,
+				8D9DA1CF2D59543900A91A47 /* Tests */,
+				8D9DA1A62D5933C700A91A47 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8D9DA1A62D5933C700A91A47 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1A52D5933C700A91A47 /* UmbraCore.framework */,
+				8D9DA1AF2D5933C700A91A47 /* UmbraCoreTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8D9DA1C02D59543900A91A47 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Documentation;
+			sourceTree = "<group>";
+		};
+		8D9DA1C22D59543900A91A47 /* Errors */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1E62D59666E00A91A47 /* BookmarkError.swift */,
+				8D9DA1E72D59666E00A91A47 /* KeychainError.swift */,
+				8D9DA1E82D59666E00A91A47 /* RepositoryDiscoveryError.swift */,
+				8D9DA1E92D59666E00A91A47 /* SecurityError.swift */,
+				8D9DA1EA2D59666E00A91A47 /* ServiceError.swift */,
+				8D9DA1D92D59553A00A91A47 /* CoreError.swift */,
+			);
+			path = Errors;
+			sourceTree = "<group>";
+		};
+		8D9DA1C32D59543900A91A47 /* Logging */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1F02D59668800A91A47 /* LoggerProtocol.swift */,
+				8D9DA1F12D59668800A91A47 /* OSLogger.swift */,
+			);
+			path = Logging;
+			sourceTree = "<group>";
+		};
+		8D9DA1C42D59543900A91A47 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1F42D59669900A91A47 /* ProcessError.swift */,
+				8D9DA1F52D59669900A91A47 /* ProcessResult.swift */,
+				8D9DA1F62D59669900A91A47 /* Repository.swift */,
+				8D9DA1F72D59669900A91A47 /* RepositoryCredentials.swift */,
+				8D9DA1F82D59669900A91A47 /* RepositoryHealth.swift */,
+				8D9DA1F92D59669900A91A47 /* RepositoryStatus.swift */,
+				8D9DA1FA2D59669900A91A47 /* ResticCommand.swift */,
+				8D9DA1FB2D59669900A91A47 /* ResticSnapshot.swift */,
+				8D9DA1FC2D59669900A91A47 /* SecurityScopedAccess.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		8D9DA1C52D59543900A91A47 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA2062D5966BA00A91A47 /* BackupServiceProtocol.swift */,
+				8D9DA2072D5966BA00A91A47 /* BookmarkServiceProtocol.swift */,
+				8D9DA2082D5966BA00A91A47 /* DateProviderProtocol.swift */,
+				8D9DA2092D5966BA00A91A47 /* FileManagerProtocol.swift */,
+				8D9DA20A2D5966BA00A91A47 /* FileSearchServiceProtocol.swift */,
+				8D9DA20B2D5966BA00A91A47 /* HealthCheckable.swift */,
+				8D9DA20C2D5966BA00A91A47 /* KeychainServiceProtocol.swift */,
+				8D9DA20D2D5966BA00A91A47 /* LoggingService.swift */,
+				8D9DA20E2D5966BA00A91A47 /* NotificationCenterProtocol.swift */,
+				8D9DA20F2D5966BA00A91A47 /* RepositoryServiceProtocol.swift */,
+				8D9DA2102D5966BA00A91A47 /* SecurityServiceProtocol.swift */,
+				8D9DA2112D5966BA00A91A47 /* StorageServiceProtocol.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
+		8D9DA1C62D59543900A91A47 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA21E2D5966D300A91A47 /* KeychainService.swift */,
+				8D9DA21F2D5966D300A91A47 /* LoggerFactory.swift */,
+				8D9DA2202D5966D300A91A47 /* PermissionManager.swift */,
+				8D9DA2212D5966D300A91A47 /* RepositoryDiscoveryService.swift */,
+				8D9DA2222D5966D300A91A47 /* SecurityService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		8D9DA1C72D59543900A91A47 /* UmbraCore */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1C22D59543900A91A47 /* Errors */,
+				8D9DA1C32D59543900A91A47 /* Logging */,
+				8D9DA1C42D59543900A91A47 /* Models */,
+				8D9DA1C52D59543900A91A47 /* Protocols */,
+				8D9DA1C62D59543900A91A47 /* Services */,
+			);
+			path = UmbraCore;
+			sourceTree = "<group>";
+		};
+		8D9DA1C82D59543900A91A47 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA2282D5967F300A91A47 /* XPCCommandConfig.swift */,
+				8D9DA2292D5967F300A91A47 /* XPCConnectionState.swift */,
+				8D9DA22A2D5967F300A91A47 /* XPCHealthStatus.swift */,
+				8D9DA22B2D5967F300A91A47 /* XPCMessageQueue.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		8D9DA1C92D59543900A91A47 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA2302D59680100A91A47 /* RepositoryDiscoveryXPCProtocol.swift */,
+				8D9DA2312D59680100A91A47 /* ResticXPCProtocol.swift */,
+				8D9DA2322D59680100A91A47 /* ResticXPCServiceProtocol.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
+		8D9DA1CA2D59543900A91A47 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA2362D59681300A91A47 /* ResticXPCService.swift */,
+				8D9DA2372D59681300A91A47 /* ResticXPCService+Commands.swift */,
+				8D9DA2382D59681300A91A47 /* ResticXPCService+Connection.swift */,
+				8D9DA2392D59681300A91A47 /* ResticXPCService+ErrorHandling.swift */,
+				8D9DA23A2D59681300A91A47 /* ResticXPCService+HealthCheck.swift */,
+				8D9DA23B2D59681300A91A47 /* ResticXPCService+Operations.swift */,
+				8D9DA23C2D59681300A91A47 /* ResticXPCService+Queue.swift */,
+				8D9DA23D2D59681300A91A47 /* ResticXPCService+Resources.swift */,
+				8D9DA23E2D59681300A91A47 /* ResticXPCService+Validation.swift */,
+				8D9DA23F2D59681300A91A47 /* XPCConnectionManager.swift */,
+				8D9DA2402D59681300A91A47 /* XPCHealthMonitor.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		8D9DA1CB2D59543900A91A47 /* UmbraXPC */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA24D2D59683B00A91A47 /* Errors */,
+				8D9DA1C82D59543900A91A47 /* Models */,
+				8D9DA1C92D59543900A91A47 /* Protocols */,
+				8D9DA1CA2D59543900A91A47 /* Services */,
+			);
+			path = UmbraXPC;
+			sourceTree = "<group>";
+		};
+		8D9DA1CC2D59543900A91A47 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1C72D59543900A91A47 /* UmbraCore */,
+				8D9DA1CB2D59543900A91A47 /* UmbraXPC */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		8D9DA1CD2D59543900A91A47 /* UmbraCoreTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = UmbraCoreTests;
+			sourceTree = "<group>";
+		};
+		8D9DA1CE2D59543900A91A47 /* UmbraXPCTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = UmbraXPCTests;
+			sourceTree = "<group>";
+		};
+		8D9DA1CF2D59543900A91A47 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA1CD2D59543900A91A47 /* UmbraCoreTests */,
+				8D9DA1CE2D59543900A91A47 /* UmbraXPCTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		8D9DA24D2D59683B00A91A47 /* Errors */ = {
+			isa = PBXGroup;
+			children = (
+				8D9DA24C2D59683B00A91A47 /* ResticXPCError.swift */,
+			);
+			path = Errors;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		8D9DA1A02D5933C700A91A47 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		8D9DA1A42D5933C700A91A47 /* UmbraCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8D9DA1B82D5933C700A91A47 /* Build configuration list for PBXNativeTarget "UmbraCore" */;
+			buildPhases = (
+				8D9DA1A02D5933C700A91A47 /* Headers */,
+				8D9DA1A12D5933C700A91A47 /* Sources */,
+				8D9DA1A22D5933C700A91A47 /* Frameworks */,
+				8D9DA1A32D5933C700A91A47 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = UmbraCore;
+			packageProductDependencies = (
+			);
+			productName = UmbraCore;
+			productReference = 8D9DA1A52D5933C700A91A47 /* UmbraCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		8D9DA1AE2D5933C700A91A47 /* UmbraCoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8D9DA1BD2D5933C700A91A47 /* Build configuration list for PBXNativeTarget "UmbraCoreTests" */;
+			buildPhases = (
+				8D9DA1AB2D5933C700A91A47 /* Sources */,
+				8D9DA1AC2D5933C700A91A47 /* Frameworks */,
+				8D9DA1AD2D5933C700A91A47 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8D9DA1B22D5933C700A91A47 /* PBXTargetDependency */,
+			);
+			name = UmbraCoreTests;
+			packageProductDependencies = (
+			);
+			productName = UmbraCoreTests;
+			productReference = 8D9DA1AF2D5933C700A91A47 /* UmbraCoreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8D9DA19C2D5933C700A91A47 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					8D9DA1A42D5933C700A91A47 = {
+						CreatedOnToolsVersion = 16.2;
+						LastSwiftMigration = 1620;
+					};
+					8D9DA1AE2D5933C700A91A47 = {
+						CreatedOnToolsVersion = 16.2;
+						LastSwiftMigration = 1620;
+					};
+				};
+			};
+			buildConfigurationList = 8D9DA19F2D5933C700A91A47 /* Build configuration list for PBXProject "UmbraCore" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8D9DA19B2D5933C700A91A47;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8D9DA1A62D5933C700A91A47 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D9DA1A42D5933C700A91A47 /* UmbraCore */,
+				8D9DA1AE2D5933C700A91A47 /* UmbraCoreTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D9DA1A32D5933C700A91A47 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D9DA1D02D59543900A91A47 /* README.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8D9DA1AD2D5933C700A91A47 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D9DA1D12D59543900A91A47 /* README.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D9DA1A12D5933C700A91A47 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D9DA1DA2D59553A00A91A47 /* CoreError.swift in Sources */,
+				8D9DA1EB2D59666E00A91A47 /* KeychainError.swift in Sources */,
+				8D9DA1EC2D59666E00A91A47 /* BookmarkError.swift in Sources */,
+				8D9DA1ED2D59666E00A91A47 /* SecurityError.swift in Sources */,
+				8D9DA1EE2D59666E00A91A47 /* RepositoryDiscoveryError.swift in Sources */,
+				8D9DA1EF2D59666E00A91A47 /* ServiceError.swift in Sources */,
+				8D9DA1F22D59668800A91A47 /* LoggerProtocol.swift in Sources */,
+				8D9DA1F32D59668800A91A47 /* OSLogger.swift in Sources */,
+				8D9DA1FD2D59669900A91A47 /* ProcessResult.swift in Sources */,
+				8D9DA1FE2D59669900A91A47 /* RepositoryCredentials.swift in Sources */,
+				8D9DA1FF2D59669900A91A47 /* RepositoryStatus.swift in Sources */,
+				8D9DA2002D59669900A91A47 /* ResticCommand.swift in Sources */,
+				8D9DA2012D59669900A91A47 /* ResticSnapshot.swift in Sources */,
+				8D9DA2022D59669900A91A47 /* SecurityScopedAccess.swift in Sources */,
+				8D9DA2032D59669900A91A47 /* ProcessError.swift in Sources */,
+				8D9DA2042D59669900A91A47 /* RepositoryHealth.swift in Sources */,
+				8D9DA2052D59669900A91A47 /* Repository.swift in Sources */,
+				8D9DA2122D5966BA00A91A47 /* BookmarkServiceProtocol.swift in Sources */,
+				8D9DA2132D5966BA00A91A47 /* NotificationCenterProtocol.swift in Sources */,
+				8D9DA2142D5966BA00A91A47 /* SecurityServiceProtocol.swift in Sources */,
+				8D9DA2152D5966BA00A91A47 /* FileSearchServiceProtocol.swift in Sources */,
+				8D9DA2162D5966BA00A91A47 /* LoggingService.swift in Sources */,
+				8D9DA2172D5966BA00A91A47 /* RepositoryServiceProtocol.swift in Sources */,
+				8D9DA2182D5966BA00A91A47 /* KeychainServiceProtocol.swift in Sources */,
+				8D9DA2192D5966BA00A91A47 /* FileManagerProtocol.swift in Sources */,
+				8D9DA21A2D5966BA00A91A47 /* StorageServiceProtocol.swift in Sources */,
+				8D9DA21B2D5966BA00A91A47 /* BackupServiceProtocol.swift in Sources */,
+				8D9DA21C2D5966BA00A91A47 /* DateProviderProtocol.swift in Sources */,
+				8D9DA21D2D5966BA00A91A47 /* HealthCheckable.swift in Sources */,
+				8D9DA22C2D5967F300A91A47 /* XPCConnectionState.swift in Sources */,
+				8D9DA22D2D5967F300A91A47 /* XPCHealthStatus.swift in Sources */,
+				8D9DA22E2D5967F300A91A47 /* XPCCommandConfig.swift in Sources */,
+				8D9DA22F2D5967F300A91A47 /* XPCMessageQueue.swift in Sources */,
+				8D9DA2332D59680100A91A47 /* ResticXPCServiceProtocol.swift in Sources */,
+				8D9DA2342D59680100A91A47 /* RepositoryDiscoveryXPCProtocol.swift in Sources */,
+				8D9DA2352D59680100A91A47 /* ResticXPCProtocol.swift in Sources */,
+				8D9DA2412D59681300A91A47 /* ResticXPCService+Commands.swift in Sources */,
+				8D9DA2422D59681300A91A47 /* ResticXPCService+Resources.swift in Sources */,
+				8D9DA2432D59681300A91A47 /* ResticXPCService+HealthCheck.swift in Sources */,
+				8D9DA2442D59681300A91A47 /* ResticXPCService+Validation.swift in Sources */,
+				8D9DA2452D59681300A91A47 /* XPCConnectionManager.swift in Sources */,
+				8D9DA2462D59681300A91A47 /* ResticXPCService+Connection.swift in Sources */,
+				8D9DA2472D59681300A91A47 /* ResticXPCService+Operations.swift in Sources */,
+				8D9DA2482D59681300A91A47 /* ResticXPCService.swift in Sources */,
+				8D9DA2492D59681300A91A47 /* ResticXPCService+Queue.swift in Sources */,
+				8D9DA24A2D59681300A91A47 /* XPCHealthMonitor.swift in Sources */,
+				8D9DA24B2D59681300A91A47 /* ResticXPCService+ErrorHandling.swift in Sources */,
+				8D9DA24E2D59683B00A91A47 /* ResticXPCError.swift in Sources */,
+				8D9DA2232D5966D300A91A47 /* KeychainService.swift in Sources */,
+				8D9DA2242D5966D300A91A47 /* LoggerFactory.swift in Sources */,
+				8D9DA2252D5966D300A91A47 /* PermissionManager.swift in Sources */,
+				8D9DA2262D5966D300A91A47 /* RepositoryDiscoveryService.swift in Sources */,
+				8D9DA2272D5966D300A91A47 /* SecurityService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8D9DA1AB2D5933C700A91A47 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D9DA1D72D59552600A91A47 /* LoggerProtocol.swift in Sources */,
+				8D9DA1DB2D59553A00A91A47 /* CoreError.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8D9DA1B22D5933C700A91A47 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8D9DA1A42D5933C700A91A47 /* UmbraCore */;
+			targetProxy = 8D9DA1B12D5933C700A91A47 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		8D9DA1B92D5933C700A91A47 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = 3865U3A32G;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.mpy.UmbraCore;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8D9DA1BA2D5933C700A91A47 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = 3865U3A32G;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.mpy.UmbraCore;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		8D9DA1BB2D5933C700A91A47 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		8D9DA1BC2D5933C700A91A47 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		8D9DA1BE2D5933C700A91A47 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3865U3A32G;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.mpy.UmbraCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "UmbraCoreTests-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8D9DA1BF2D5933C700A91A47 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3865U3A32G;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.mpy.UmbraCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "UmbraCoreTests-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8D9DA19F2D5933C700A91A47 /* Build configuration list for PBXProject "UmbraCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D9DA1BB2D5933C700A91A47 /* Debug */,
+				8D9DA1BC2D5933C700A91A47 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8D9DA1B82D5933C700A91A47 /* Build configuration list for PBXNativeTarget "UmbraCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D9DA1B92D5933C700A91A47 /* Debug */,
+				8D9DA1BA2D5933C700A91A47 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8D9DA1BD2D5933C700A91A47 /* Build configuration list for PBXNativeTarget "UmbraCoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D9DA1BE2D5933C700A91A47 /* Debug */,
+				8D9DA1BF2D5933C700A91A47 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8D9DA19C2D5933C700A91A47 /* Project object */;
+}
