@@ -98,7 +98,7 @@ import Foundation
 
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
+
         guard let time = dateFormatter.date(from: timeString) else {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
@@ -175,7 +175,7 @@ import Foundation
     }
 
     // MARK: - Equatable
-    
+
     override public func isEqual(_ object: Any?) -> Bool {
         guard let other = object as? ResticSnapshot else { return false }
         return id == other.id &&
@@ -187,7 +187,7 @@ import Foundation
                size == other.size &&
                repositoryId == other.repositoryId
     }
-    
+
     public override var hash: Int {
         var hasher = Hasher()
         hasher.combine(id)
@@ -207,14 +207,14 @@ import Foundation
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
         dateFormatter.timeStyle = .medium
-        
+
         return """
         Snapshot \(shortId)
         Created: \(dateFormatter.string(from: time))
         Host: \(hostname)
         Size: \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
         Paths: \(paths.joined(separator: ", "))
-        \(tags?.isEmpty == false ? "Tags: \(tags!.joined(separator: ", "))" : "")
+        \(tags?.isEmpty == false ? "Tags: \(tags?.joined(separator: ", ") ?? "")" : "")
         """
     }
 }

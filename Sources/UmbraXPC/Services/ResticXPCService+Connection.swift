@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 import Foundation
@@ -27,51 +27,52 @@ extension ResticXPCService {
         configureErrorHandlers()
         configureMessageHandlers()
     }
-    
+
     private func configureInterfaces() {
         connection.remoteObjectInterface = NSXPCInterface(with: ResticXPCProtocol.self)
         connection.exportedInterface = NSXPCInterface(with: ResticXPCProtocol.self)
-        
+
         // Set up allowed classes for secure coding
         let remoteInterface = connection.remoteObjectInterface
+        let allowedClasses = Set<AnyClass>([NSString.self, NSArray.self, NSDictionary.self])
         remoteInterface?.setClasses(
-            NSSet(array: [NSString.self, NSArray.self, NSDictionary.self]) as! Set<AnyHashable>,
+            Set(allowedClasses.map { $0 as AnyHashable }),
             for: #selector(ResticXPCProtocol.executeCommand(_:)),
             argumentIndex: 0,
             ofReply: false
         )
     }
-    
+
     private func configureSecuritySettings() {
         // Set audit session identifier for security
         connection.auditSessionIdentifier = au_session_self()
-        
+
         // Configure sandbox extensions
         connection.setAccessibilityPermissions([
             .allowFileAccess,
             .allowNetworkAccess
         ])
-        
+
         // Set up security validation
         connection.setValidationHandler { [weak self] in
             self?.validateConnection() ?? false
         }
     }
-    
+
     private func configureErrorHandlers() {
         connection.interruptionHandler = { [weak self] in
             self?.handleInterruption()
         }
-        
+
         connection.invalidationHandler = { [weak self] in
             self?.handleInvalidation()
         }
-        
+
         connection.errorHandler = { [weak self] error in
             self?.handleError(error)
         }
     }
-    
+
     private func configureMessageHandlers() {
         messageHandler = { [weak self] message in
             guard let self = self else {
@@ -79,7 +80,7 @@ extension ResticXPCService {
             }
             try await self.handleMessage(message)
         }
-        
+
         commandHandler = { [weak self] command in
             guard let self = self else {
                 throw ResticXPCError.serviceUnavailable
@@ -87,42 +88,42 @@ extension ResticXPCService {
             try await self.executeCommand(command)
         }
     }
-    
+
     private func handleInterruption() {
         logger.warning("XPC connection interrupted")
         connectionState = .interrupted
-        
+
         notificationCenter.post(
             name: .xpcConnectionInterrupted,
             object: nil,
             userInfo: ["service": serviceName]
         )
-        
+
         // Attempt to recover
         Task {
             try await recoverConnection()
         }
     }
-    
+
     private func handleInvalidation() {
         logger.error("XPC connection invalidated")
         connectionState = .invalidated
-        
+
         notificationCenter.post(
             name: .xpcConnectionInvalidated,
             object: nil,
             userInfo: ["service": serviceName]
         )
-        
+
         // Clean up resources
         cleanupResources()
     }
-    
+
     private func handleError(_ error: Error) {
         logger.error("XPC connection error", metadata: [
             "error": .string(error.localizedDescription)
         ])
-        
+
         notificationCenter.post(
             name: .xpcConnectionError,
             object: nil,
@@ -131,21 +132,21 @@ extension ResticXPCService {
                 "error": error
             ]
         )
-        
+
         // Update metrics
         metrics.recordError()
     }
-    
+
     private func recoverConnection() async throws {
         guard connectionState == .interrupted else {
             return
         }
-        
+
         logger.info("Attempting to recover XPC connection")
-        
+
         // Wait before attempting recovery
         try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        
+
         do {
             try await reconnect()
             connectionState = .connected
@@ -157,18 +158,18 @@ extension ResticXPCService {
             throw ResticXPCError.recoveryFailed(error)
         }
     }
-    
+
     private func cleanupResources() {
         // Cancel any pending operations
         pendingOperations.forEach { $0.cancel() }
         pendingOperations.removeAll()
-        
+
         // Release any held resources
         connection.suspend()
         messageHandler = nil
         commandHandler = nil
     }
-    
+
     func validateInterface() {
         guard let service = connection.remoteObjectProxy as? ResticXPCServiceProtocol else {
             handleError(ResticXPCError.connectionFailed)

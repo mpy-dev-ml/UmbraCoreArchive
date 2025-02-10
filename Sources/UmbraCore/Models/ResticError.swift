@@ -9,7 +9,8 @@
 import Foundation
 
 /// Error codes for Restic backup operations
-@objc public enum ResticBackupErrorCode: Int {
+@objc
+public enum ResticBackupErrorCode: Int {
     case repositoryNotFound = 1
     case invalidCredentials = """
         The provided credentials are invalid. \
@@ -30,10 +31,11 @@ import Foundation
 }
 
 /// Represents errors that can occur during Restic backup operations
-@objc public class ResticBackupError: NSError {
+@objc
+public class ResticBackupError: NSError {
     /// Domain identifier for Restic backup errors
     public static let domain = "dev.mpy.rBUM.ResticBackup"
-    
+
     /// Creates a new ResticBackupError with the specified code and message
     /// - Parameters:
     ///   - code: The error code indicating the type of error
@@ -48,25 +50,26 @@ import Foundation
         var userInfo: [String: Any] = [
             NSLocalizedDescriptionKey: message
         ]
-        
+
         if let details = details {
             userInfo["details"] = details
         }
-        
+
         return ResticBackupError(
             domain: domain,
             code: code.rawValue,
             userInfo: userInfo
         )
     }
-    
+
     public var errorDetails: String? {
         return userInfo["details"] as? String
     }
 }
 
 /// Error type for Restic command operations
-@objc public enum ResticError: Int, LocalizedError {
+@objc
+public enum ResticError: Int, LocalizedError {
     case invalidCommand = 1
     case invalidWorkingDirectory = 2
     case invalidBookmark = 3
@@ -88,13 +91,17 @@ import Foundation
     case resticNotInstalled
     case snapshotNotFound(String)
     case unexpectedError(String)
-    
+
     public var errorDescription: String? {
         switch self {
-        case .compressionError(let message):
+        case let .compressionError(message):
             return "Compression error: \(message)"
-        case .insufficientDiskSpace(let required, let available):
-            return "Insufficient disk space - Required: \(required) bytes, Available: \(available) bytes"
+        case let .insufficientDiskSpace(required, available):
+            return """
+                Insufficient disk space - \
+                Required: \(required) bytes, \
+                Available: \(available) bytes
+                """
         case .invalidCommand:
             return "Invalid command"
         case .invalidWorkingDirectory:
@@ -107,21 +114,21 @@ import Foundation
             return "Resource error"
         case .unknownError:
             return "Unknown error"
-        case .invalidConfiguration(let message):
+        case let .invalidConfiguration(message):
             return "Invalid configuration: \(message)"
-        case .invalidCredentials(let message):
+        case let .invalidCredentials(message):
             return "Invalid credentials: \(message)"
-        case .invalidPath(let message):
+        case let .invalidPath(message):
             return "Invalid path: \(message)"
-        case .invalidSettings(let message):
+        case let .invalidSettings(message):
             return "Invalid settings: \(message)"
-        case .invalidSnapshotId(let message):
+        case let .invalidSnapshotId(message):
             return "Invalid snapshot ID: \(message)"
-        case .invalidTag(let message):
+        case let .invalidTag(message):
             return "Invalid tag: \(message)"
-        case .lockError(let message):
+        case let .lockError(message):
             return "Lock error: \(message)"
-        case .networkError(let message):
+        case let .networkError(message):
             return "Network error: \(message)"
         case .repositoryExists:
             return "Repository already exists"
@@ -129,13 +136,13 @@ import Foundation
             return "Repository not found"
         case .resticNotInstalled:
             return "Restic is not installed"
-        case .snapshotNotFound(let message):
+        case let .snapshotNotFound(message):
             return "Snapshot not found: \(message)"
-        case .unexpectedError(let message):
+        case let .unexpectedError(message):
             return "Unexpected error: \(message)"
         }
     }
-    
+
     public static func error(_ code: ResticError, _ message: String) -> NSError {
         return NSError(
             domain: "dev.mpy.rBUM.Restic",

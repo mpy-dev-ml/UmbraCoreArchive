@@ -25,7 +25,7 @@ extension FileManager {
 /// Errors that can occur during file manager operations
 public enum FileManagerError: LocalizedError {
     case failedToGetDiskSpace
-    
+
     public var errorDescription: String? {
         switch self {
         case .failedToGetDiskSpace:

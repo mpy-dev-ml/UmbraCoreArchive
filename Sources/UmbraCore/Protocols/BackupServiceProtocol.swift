@@ -12,78 +12,78 @@ import Foundation
 public protocol BackupServiceProtocol: Sendable {
     /// The delegate to receive backup operation updates
     var delegate: BackupServiceDelegate? { get set }
-    
+
     // Core backup operations
-    
+
     /// Starts a backup operation with the specified configuration
     /// - Parameter configuration: The configuration for the backup operation
     /// - Returns: A boolean indicating whether the backup was started successfully
     func startBackup(with configuration: BackupConfiguration) async throws -> Bool
-    
+
     /// Stops the current backup operation
     /// - Returns: A boolean indicating whether the backup was stopped successfully
     func stopBackup() async throws -> Bool
-    
+
     /// Pauses the current backup operation
     /// - Returns: A boolean indicating whether the backup was paused successfully
     func pauseBackup() async throws -> Bool
-    
+
     /// Resumes a paused backup operation
     /// - Returns: A boolean indicating whether the backup was resumed successfully
     func resumeBackup() async throws -> Bool
-    
+
     /// Gets the current status of the backup operation
     /// - Returns: The current backup status
     func getBackupStatus() async -> BackupStatus
-    
+
     // Backup configuration
-    
+
     /// Sets the backup configuration
     /// - Parameter configuration: The new backup configuration
     /// - Throws: BackupError if the configuration cannot be set
     func setConfiguration(_ configuration: BackupConfiguration) throws
-    
+
     /// Gets the current backup configuration
     /// - Returns: The current backup configuration
     /// - Throws: BackupError if the configuration cannot be retrieved
     func getConfiguration() throws -> BackupConfiguration
-    
+
     /// Updates the backup schedule
     /// - Parameter schedule: The new backup schedule
     /// - Throws: BackupError if the schedule cannot be updated
     func updateSchedule(_ schedule: BackupSchedule) throws
-    
+
     /// Gets the current backup schedule
     /// - Returns: The current backup schedule
     /// - Throws: BackupError if the schedule cannot be retrieved
     func getSchedule() throws -> BackupSchedule
-    
+
     // Backup history and metrics
-    
+
     /// Gets the backup history for a given time period
     /// - Parameter period: The time period to get history for
     /// - Returns: An array of backup history entries
     /// - Throws: BackupError if the history cannot be retrieved
     func getBackupHistory(for period: TimePeriod) throws -> [BackupHistoryEntry]
-    
+
     /// Gets the backup metrics for a given time period
     /// - Parameter period: The time period to get metrics for
     /// - Returns: The backup metrics for the specified period
     /// - Throws: BackupError if the metrics cannot be retrieved
     func getBackupMetrics(for period: TimePeriod) throws -> BackupMetrics
-    
+
     // Retention policy management
-    
+
     /// Sets the retention policy for backups
     /// - Parameter policy: The new retention policy
     /// - Throws: BackupError if the policy cannot be set
     func setRetentionPolicy(_ policy: RetentionPolicy) throws
-    
+
     /// Gets the current retention policy
     /// - Returns: The current retention policy
     /// - Throws: BackupError if the policy cannot be retrieved
     func getRetentionPolicy() throws -> RetentionPolicy
-    
+
     /// Applies the retention policy to existing backups
     /// - Returns: The number of backups affected by the policy application
     /// - Throws: BackupError if the policy cannot be applied
@@ -94,24 +94,24 @@ public protocol BackupServiceProtocol: Sendable {
 public protocol BackupServiceDelegate: AnyObject {
     /// Called when a backup operation starts
     func backupDidStart()
-    
+
     /// Called when a backup operation completes successfully
     func backupDidComplete()
-    
+
     /// Called when a backup operation fails
     /// - Parameter error: The error that caused the failure
     func backupDidFail(_ error: Error)
-    
+
     /// Called when a backup operation is paused
     func backupDidPause()
-    
+
     /// Called when a backup operation is resumed
     func backupDidResume()
-    
+
     /// Called when backup progress is updated
     /// - Parameter progress: The current backup progress
     func backupProgressDidUpdate(_ progress: BackupProgress)
-    
+
     /// Called when the backup status changes
     /// - Parameter status: The new backup status
     func backupStatusDidChange(_ status: BackupStatus)
@@ -135,7 +135,7 @@ public struct BackupConfiguration: Codable, Hashable {
     public let tags: [String]
     /// Exclude patterns
     public let excludePatterns: [String]
-    
+
     public init(
         sourcePaths: [URL],
         targetURL: URL,
@@ -165,7 +165,7 @@ public struct BackupSchedule: Codable, Hashable {
     public let startTime: Date
     /// Whether the schedule is enabled
     public let isEnabled: Bool
-    
+
     public init(days: Set<DayOfWeek>, startTime: Date, isEnabled: Bool = true) {
         self.days = days
         self.startTime = startTime
@@ -187,7 +187,7 @@ public struct RetentionPolicy: Codable, Hashable {
     public let keepMonthly: Int?
     /// Keep yearly snapshots for n years
     public let keepYearly: Int?
-    
+
     public init(
         keepLast: Int? = nil,
         keepHourly: Int? = nil,
@@ -219,7 +219,7 @@ public struct BackupProgress: Codable, Hashable {
     public let currentSpeed: Int64
     /// Estimated time remaining in seconds
     public let estimatedTimeRemaining: TimeInterval
-    
+
     public init(
         totalFiles: Int,
         processedFiles: Int,
@@ -255,7 +255,7 @@ public struct BackupHistoryEntry: Codable, Hashable {
     public let totalBytes: Int64
     /// Any error that occurred
     public let error: String?
-    
+
     public init(
         id: String,
         startTime: Date,
@@ -289,7 +289,7 @@ public struct BackupMetrics: Codable, Hashable {
     public let averageBackupDuration: TimeInterval
     /// Average backup size in bytes
     public let averageBackupSize: Int64
-    
+
     public init(
         successfulBackups: Int,
         failedBackups: Int,
@@ -340,7 +340,7 @@ public struct TimePeriod: Codable, Hashable {
     public let start: Date
     /// End of the time period
     public let end: Date
-    
+
     public init(start: Date, end: Date) {
         self.start = start
         self.end = end

@@ -10,80 +10,148 @@ import Foundation
 import os.log
 
 #if os(macOS)
-/// A macOS-specific implementation of `LoggerProtocol` using the system's unified logging system.
-///
-/// `OSLogger` provides a thread-safe, performant logging interface that integrates with
-/// the macOS logging subsystem. It supports:
-/// - Multiple log levels (debug, info, warning, error, fault)
-/// - Subsystem and category organisation
-/// - Privacy-aware logging
-/// - Health monitoring
-///
-/// Key features:
-/// - Thread-safe logging operations
-/// - Automatic log persistence
-/// - Integration with Console.app
-/// - Performance logging support
-///
-/// Example usage:
-/// ```swift
-/// let logger = OSLogger(subsystem: "dev.mpy.rBUM", category: "Security")
-///
-/// // Basic logging
-/// logger.info("Starting security scan",
-///            file: #file,
-///            function: #function,
-///            line: #line)
-///
-/// // Health monitoring
-/// if await logger.performHealthCheck() {
-///     print("Logger is healthy")
-/// }
-/// ```
-///
-/// Implementation notes:
-/// 1. All logging operations are thread-safe
-/// 2. Messages are formatted with source context
-/// 3. Health checks verify logging capability
-/// 4. Privacy is respected using `.public` for messages
-public final class OSLogger: NSObject, LoggerProtocol, HealthCheckable {
+/// OS-level logger implementation
+@objc
+public class OSLogger: NSObject, LoggerProtocol {
     // MARK: - Properties
 
-    /// The underlying system logger instance
-    let logger: os.Logger
+    /// OS Log instance
+    private let osLog: OSLog
 
-    /// The subsystem identifier for this logger
-    let subsystem: String
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 
-    /// The category identifier for this logger
-    let category: String
-
-    /// Indicates if the logger is currently healthy and operational
-    public private(set) var isHealthy: Bool = true
+    /// Queue for synchronizing operations
+    private let queue = DispatchQueue(
+        label: "dev.mpy.umbra.os-logger",
+        qos: .utility
+    )
 
     // MARK: - Initialization
 
-    /// Creates a new OSLogger instance with the specified subsystem and category.
-    ///
-    /// - Parameters:
-    ///   - subsystem: The identifier for the subsystem, typically reverse DNS notation
-    ///   - category: The category within the subsystem for more granular organisation
-    ///
-    /// Example:
-    /// ```swift
-    /// let securityLogger = OSLogger(
-    ///     subsystem: "dev.mpy.rBUM",
-    ///     category: "Security"
-    /// )
-    /// ```
+    /// Initialize with configuration
+    @objc
     public init(
-        subsystem: String = "dev.mpy.rBUM",
-        category: String
+        subsystem: String = "dev.mpy.umbra",
+        category: String = "default",
+        performanceMonitor: PerformanceMonitor = PerformanceMonitor()
     ) {
-        self.subsystem = subsystem
-        self.category = category
-        logger = os.Logger(subsystem: subsystem, category: category)
+        self.osLog = OSLog(
+            subsystem: subsystem,
+            category: category
+        )
+        self.performanceMonitor = performanceMonitor
         super.init()
+    }
+
+    // MARK: - LoggerProtocol
+
+    /// Log debug message
+    @objc
+    public func debug(
+        _ message: String,
+        config: LogConfig = LogConfig()
+    ) {
+        log(
+            message,
+            type: .debug,
+            config: config
+        )
+    }
+
+    /// Log info message
+    @objc
+    public func info(
+        _ message: String,
+        config: LogConfig = LogConfig()
+    ) {
+        log(
+            message,
+            type: .info,
+            config: config
+        )
+    }
+
+    /// Log warning message
+    @objc
+    public func warning(
+        _ message: String,
+        config: LogConfig = LogConfig()
+    ) {
+        log(
+            message,
+            type: .default,
+            config: config
+        )
+    }
+
+    /// Log error message
+    @objc
+    public func error(
+        _ message: String,
+        config: LogConfig = LogConfig()
+    ) {
+        log(
+            message,
+            type: .error,
+            config: config
+        )
+    }
+
+    /// Log critical message
+    @objc
+    public func critical(
+        _ message: String,
+        config: LogConfig = LogConfig()
+    ) {
+        log(
+            message,
+            type: .fault,
+            config: config
+        )
+    }
+
+    // MARK: - Private Methods
+
+    /// Log message with type
+    private func log(
+        _ message: String,
+        type: OSLogType,
+        config: LogConfig
+    ) {
+        queue.async {
+            self.performanceMonitor.trackDuration(
+                "oslog.write"
+            ) {
+                let formattedMessage = self.formatMessage(
+                    message,
+                    config: config
+                )
+
+                os_log(
+                    "%{public}@",
+                    log: self.osLog,
+                    type: type,
+                    formattedMessage
+                )
+            }
+        }
+    }
+
+    /// Format message with metadata
+    private func formatMessage(
+        _ message: String,
+        config: LogConfig
+    ) -> String {
+        guard !config.metadata.isEmpty else {
+            return message
+        }
+
+        let metadata = config.metadata
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: " ")
+
+        return "\(message) [\(metadata)]"
     }
 }
 #endif

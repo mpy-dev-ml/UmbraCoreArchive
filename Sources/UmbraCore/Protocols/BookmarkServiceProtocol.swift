@@ -22,33 +22,33 @@ import Foundation
     /// - Returns: Bookmark data
     /// - Throws: BookmarkError if creation fails
     @objc func createBookmark(for url: URL) throws -> Data
-    
+
     /// Resolve a security-scoped bookmark to its URL
     ///
     /// - Parameter bookmark: Bookmark data to resolve
     /// - Returns: Resolved URL
     /// - Throws: BookmarkError if resolution fails
     @objc func resolveBookmark(_ bookmark: Data) throws -> URL
-    
+
     /// Start accessing a bookmarked URL
     ///
     /// - Parameter url: URL to access
-    /// - Returns: true if access was started
-    /// - Throws: BookmarkError if access fails
-    @objc func startAccessing(_ url: URL) throws -> Bool
-    
+    /// - Parameter error: Error pointer for Objective-C compatibility
+    /// - Returns: true if access was started, false if an error occurred
+    @objc func startAccessing(_ url: URL, error: NSErrorPointer) -> Bool
+
     /// Stop accessing a bookmarked URL
     ///
     /// - Parameter url: URL to stop accessing
     @objc func stopAccessing(_ url: URL)
-    
+
     /// Validate a security-scoped bookmark
     ///
     /// - Parameter bookmark: Bookmark data to validate
-    /// - Returns: true if bookmark is valid
-    /// - Throws: BookmarkError if validation fails
-    @objc func validateBookmark(_ bookmark: Data) throws -> Bool
-    
+    /// - Parameter error: Error pointer for Objective-C compatibility
+    /// - Returns: true if bookmark is valid, false if an error occurred
+    @objc func validateBookmark(_ bookmark: Data, error: NSErrorPointer) -> Bool
+
     /// Check if a URL is currently being accessed
     ///
     /// - Parameter url: URL to check

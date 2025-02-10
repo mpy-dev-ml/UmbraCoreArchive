@@ -36,7 +36,10 @@ public final class ProgressTracker: ProgressTrackerProtocol {
 
     private let notificationCenter: NotificationCenter
     private var operations: [UUID: OperationState] = [:]
-    private let queue = DispatchQueue(label: "dev.mpy.rBUM.ProgressTracker", attributes: .concurrent)
+    private let queue = DispatchQueue(
+        label: "dev.mpy.rBUM.ProgressTracker",
+        attributes: .concurrent
+    )
 
     // MARK: - Initialization
 
@@ -49,65 +52,75 @@ public final class ProgressTracker: ProgressTrackerProtocol {
     // MARK: - ProgressTrackerProtocol
 
     public func startOperation(_ operationId: UUID) {
-        queue.async(flags: .barrier) {
+        queue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+
             self.operations[operationId] = OperationState(
                 startTime: Date(),
                 progress: 0,
                 status: .running
             )
-        }
 
-        notificationCenter.post(
-            name: .progressTrackerOperationStarted,
-            object: self,
-            userInfo: ["operationId": operationId]
-        )
+            self.notificationCenter.post(
+                name: .progressTrackerOperationStarted,
+                object: self,
+                userInfo: [
+                    "operationId": operationId
+                ]
+            )
+        }
     }
 
     public func updateProgress(_ operationId: UUID, progress: Double) {
-        queue.async(flags: .barrier) {
+        queue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+
             guard var state = self.operations[operationId] else { return }
             state.progress = progress
             self.operations[operationId] = state
+
+            let userInfo: [String: Any] = [
+                "operationId": operationId,
+                "progress": progress
+            ]
+
+            self.notificationCenter.post(
+                name: .progressTrackerProgressUpdated,
+                object: self,
+                userInfo: userInfo
+            )
         }
-
-        let userInfo: [String: Any] = [
-            "operationId": operationId,
-            "progress": progress
-        ]
-
-        notificationCenter.post(
-            name: .progressTrackerProgressUpdated,
-            object: self,
-            userInfo: userInfo
-        )
     }
 
     public func failOperation(_ operationId: UUID, error: Error) {
-        queue.async(flags: .barrier) {
+        queue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+
             guard var state = self.operations[operationId] else { return }
             state.status = .failed(error)
             self.operations[operationId] = state
+
+            let userInfo: [String: Any] = [
+                "operationId": operationId,
+                "error": error
+            ]
+
+            self.notificationCenter.post(
+                name: .progressTrackerOperationFailed,
+                object: self,
+                userInfo: userInfo
+            )
         }
-
-        let userInfo: [String: Any] = [
-            "operationId": operationId,
-            "error": error
-        ]
-
-        notificationCenter.post(
-            name: .progressTrackerOperationFailed,
-            object: self,
-            userInfo: userInfo
-        )
     }
 
     public func reset() {
-        queue.async(flags: .barrier) {
-            self.operations.removeAll()
-        }
+        queue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
 
-        notificationCenter.post(name: .progressTrackerReset, object: self)
+            self.operations.removeAll()
+
+            self.notificationCenter.post(name: .progressTrackerReset, object: self)
+        }
     }
 }
 

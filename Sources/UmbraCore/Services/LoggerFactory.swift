@@ -9,41 +9,100 @@
 import Foundation
 import os.log
 
-/// Factory for creating loggers in the rBUM application.
-///
-/// The LoggerFactory provides a centralized way to create loggers with consistent configuration
-/// across the application. It supports:
-/// - Categorized logging domains
-/// - Platform-specific logger implementations
-/// - Configurable logging options
-///
-/// Example usage:
-/// ```swift
-/// // Create a logger with string category
-/// let securityLogger = LoggerFactory.createLogger(category: "Security")
-///
-/// // Configure logging options
-/// LoggerFactory.configuration = .init(includeSourceInfo: true)
-/// ```
-///
-/// Implementation notes:
-/// 1. Uses platform-specific logger implementations
-/// 2. Provides consistent configuration across loggers
-/// 3. Supports categorized logging domains
-public enum LoggerFactory {
-    /// The subsystem identifier for all loggers
-    private static let subsystem = "dev.mpy.rBUM"
-    
+/// Factory for creating loggers
+@objc
+public class LoggerFactory: NSObject {
+    // MARK: - Types
+
+    /// Logger configuration
+    public struct Configuration {
+        /// Minimum log level
+        public let minimumLevel: Logger.Level
+
+        /// Log destination
+        public let destination: LogDestination
+
+        /// Initialize with values
+        public init(
+            minimumLevel: Logger.Level = .info,
+            destination: LogDestination = .osLog
+        ) {
+            self.minimumLevel = minimumLevel
+            self.destination = destination
+        }
+    }
+
+    // MARK: - Properties
+
+    /// Shared instance
+    public static let shared = LoggerFactory()
+
+    /// Default configuration
+    private let defaultConfig = Configuration()
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Cache of created loggers
+    private var loggers: [String: LoggerProtocol] = [:]
+
+    /// Queue for synchronizing access
+    private let queue = DispatchQueue(
+        label: "dev.mpy.umbra.logger-factory",
+        attributes: .concurrent
+    )
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    @objc
+    public init(performanceMonitor: PerformanceMonitor = PerformanceMonitor()) {
+        self.performanceMonitor = performanceMonitor
+        super.init()
+    }
+
     // MARK: - Public Methods
 
-    /// Create a new logger for the given category
-    /// - Parameter category: String category for the logger
-    /// - Returns: A new logger instance conforming to LoggerProtocol
-    public static func createLogger(category: String) -> LoggerProtocol {
-        #if os(macOS)
-            return OSLogger(subsystem: subsystem, category: category)
-        #else
-            #error("Platform not supported")
-        #endif
+    /// Get logger for category
+    @objc
+    public func getLogger(
+        forCategory category: String,
+        configuration: Configuration? = nil
+    ) -> LoggerProtocol {
+        return queue.sync {
+            if let logger = loggers[category] {
+                return logger
+            }
+
+            let config = configuration ?? defaultConfig
+            let logger = createLogger(
+                forCategory: category,
+                configuration: config
+            )
+
+            loggers[category] = logger
+            return logger
+        }
+    }
+
+    /// Reset all loggers
+    @objc
+    public func resetLoggers() {
+        queue.async(flags: .barrier) {
+            self.loggers.removeAll()
+        }
+    }
+
+    // MARK: - Private Methods
+
+    /// Create logger for category
+    private func createLogger(
+        forCategory category: String,
+        configuration: Configuration
+    ) -> LoggerProtocol {
+        return Logger(
+            minimumLevel: configuration.minimumLevel,
+            destination: configuration.destination
+        )
     }
 }

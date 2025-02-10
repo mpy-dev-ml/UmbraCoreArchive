@@ -12,22 +12,22 @@ import Foundation
 public struct MaintenanceSchedule: Codable, CustomStringConvertible, Equatable {
     /// Days of the week to run maintenance
     public let days: Set<MaintenanceDay>
-    
+
     /// Hour of the day to start maintenance (0-23)
     public let hour: Int
-    
+
     /// Minute of the hour to start maintenance (0-59)
     public let minute: Int
-    
+
     /// Whether maintenance should run automatically
     public let isEnabled: Bool
-    
+
     /// Maximum duration in minutes before maintenance is considered stuck
     public let maxDuration: Int
-    
+
     /// Tasks to perform during maintenance
     public let tasks: Set<MaintenanceTask>
-    
+
     public init(
         days: Set<MaintenanceDay> = [.sunday],
         hour: Int = 2, // 2 AM default
@@ -54,7 +54,7 @@ public enum MaintenanceDay: String, Codable, CaseIterable {
     case thursday
     case friday
     case saturday
-    
+
     /// Convert from Calendar.Component.weekday
     public static func from(weekday: Int) -> MaintenanceDay? {
         switch weekday {
@@ -68,7 +68,7 @@ public enum MaintenanceDay: String, Codable, CaseIterable {
         default: return nil
         }
     }
-    
+
     /// Convert to Calendar.Component.weekday
     public var weekday: Int {
         switch self {
@@ -96,21 +96,21 @@ public enum MaintenanceTask: String, Codable, CaseIterable {
 public struct MaintenanceResult: Codable, CustomStringConvertible, Equatable {
     /// When the maintenance run started
     public let startTime: Date
-    
+
     /// When the maintenance run completed
     public let endTime: Date
-    
+
     /// Tasks that were completed successfully
     public let completedTasks: Set<MaintenanceTask>
-    
+
     /// Tasks that failed
     public let failedTasks: [MaintenanceTask: Error]
-    
+
     /// Whether the maintenance run was successful overall
     public var isSuccessful: Bool {
         failedTasks.isEmpty
     }
-    
+
     /// Duration of the maintenance run in seconds
     public var duration: TimeInterval {
         endTime.timeIntervalSince(startTime)

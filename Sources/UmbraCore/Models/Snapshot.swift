@@ -12,22 +12,22 @@ import Foundation
 @objc public class Snapshot: NSObject, NSSecureCoding {
     /// Unique identifier for the snapshot
     @objc public let id: String
-    
+
     /// Time when the snapshot was created
     @objc public let timestamp: Date
-    
+
     /// Hostname where the snapshot was created
     @objc public let hostname: String
-    
+
     /// Tags associated with the snapshot
     @objc public let tags: [String]
-    
+
     /// Paths included in the snapshot
     @objc public let paths: [String]
-    
+
     /// Size of the snapshot in bytes
     @objc public let size: Int64
-    
+
     /// Initialize a new snapshot
     /// - Parameters:
     ///   - id: Unique identifier
@@ -52,11 +52,11 @@ import Foundation
         self.size = size
         super.init()
     }
-    
+
     // MARK: - NSSecureCoding
-    
+
     public static var supportsSecureCoding: Bool { true }
-    
+
     @objc public func encode(with coder: NSCoder) {
         coder.encode(id, forKey: "id")
         coder.encode(timestamp, forKey: "timestamp")
@@ -65,7 +65,7 @@ import Foundation
         coder.encode(paths, forKey: "paths")
         coder.encode(size, forKey: "size")
     }
-    
+
     @objc required public init?(coder: NSCoder) {
         guard let id = coder.decodeObject(of: NSString.self, forKey: "id") as String?,
               let timestamp = coder.decodeObject(of: NSDate.self, forKey: "timestamp") as Date?,
@@ -75,7 +75,7 @@ import Foundation
         else {
             return nil
         }
-        
+
         self.id = id
         self.timestamp = timestamp
         self.hostname = hostname

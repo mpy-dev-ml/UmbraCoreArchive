@@ -18,7 +18,7 @@ public enum CoreError: LocalizedError {
     case invalidConfiguration(String)
     /// Indicates an operation failed due to a system error
     case systemError(String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .authenticationFailed:

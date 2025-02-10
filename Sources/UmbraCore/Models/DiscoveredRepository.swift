@@ -44,22 +44,22 @@ import Foundation
 public struct DiscoveredRepository: Identifiable, Hashable {
     /// Unique identifier for the repository
     public let id: UUID
-    
+
     /// The URL where the repository was discovered
     public let url: URL
-    
+
     /// The type of repository (local, SFTP, etc.)
     public let type: RepositoryType
-    
+
     /// Timestamp when the repository was discovered
     public let discoveredAt: Date
-    
+
     /// Whether the repository has been verified as a valid Restic repository
     public let isVerified: Bool
-    
+
     /// Additional metadata found during discovery
     public let metadata: RepositoryMetadata
-    
+
     /// Creates a new discovered repository instance
     /// - Parameters:
     ///   - id: Unique identifier for the repository
@@ -83,15 +83,15 @@ public struct DiscoveredRepository: Identifiable, Hashable {
         self.isVerified = isVerified
         self.metadata = metadata
     }
-    
+
     // MARK: - Hashable
-    
+
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-    
+
     // MARK: - Equatable
-    
+
     public static func == (lhs: DiscoveredRepository, rhs: DiscoveredRepository) -> Bool {
         lhs.id == rhs.id
     }
@@ -129,13 +129,13 @@ public struct DiscoveredRepository: Identifiable, Hashable {
 public struct RepositoryMetadata: Hashable {
     /// Size of the repository in bytes (if available)
     public let size: UInt64?
-    
+
     /// Last modified date of the repository (if available)
     public let lastModified: Date?
-    
+
     /// Number of snapshots found (if available)
     public let snapshotCount: Int?
-    
+
     /// Creates a new repository metadata instance
     /// - Parameters:
     ///   - size: Size of the repository in bytes

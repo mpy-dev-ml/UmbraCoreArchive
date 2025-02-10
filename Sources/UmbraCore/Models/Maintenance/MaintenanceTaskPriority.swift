@@ -14,7 +14,7 @@ public enum TaskPriority: Int, Comparable {
     case high = 1       // Should run soon
     case medium = 2     // Run when convenient
     case low = 3        // Run if resources available
-    
+
     public static func < (lhs: TaskPriority, rhs: TaskPriority) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
@@ -24,28 +24,28 @@ public enum TaskPriority: Int, Comparable {
 public struct TaskConfiguration: Codable, CustomStringConvertible, Equatable {
     /// The maintenance task
     public let task: MaintenanceTask
-    
+
     /// Task priority
     public let priority: TaskPriority
-    
+
     /// Estimated duration in minutes
     public let estimatedDuration: Int
-    
+
     /// Maximum memory usage in MB
     public let maxMemoryUsage: Int
-    
+
     /// CPU intensity (0-100)
     public let cpuIntensity: Int
-    
+
     /// Whether the task can run in parallel with others
     public let allowsParallel: Bool
-    
+
     /// Tasks that must complete before this one
     public let dependencies: Set<MaintenanceTask>
-    
+
     /// Whether the task can be interrupted
     public let isInterruptible: Bool
-    
+
     /// Initializes a new task configuration
     /// - Parameters:
     ///   - task: The maintenance task

@@ -12,19 +12,19 @@ import Foundation
 public struct PerformanceThresholds {
     /// Maximum acceptable memory usage in bytes
     public let maxMemoryUsage: UInt64
-    
+
     /// Maximum acceptable CPU usage percentage
     public let maxCPUUsage: Double
-    
+
     /// Minimum acceptable backup speed in bytes per second
     public let minBackupSpeed: Double
-    
+
     /// Maximum acceptable operation duration in milliseconds
     public let maxOperationDuration: Double
-    
+
     /// Minimum acceptable operation success rate percentage
     public let minSuccessRate: Double
-    
+
     /// Initialises a new PerformanceThresholds instance with default or custom values
     /// - Parameters:
     ///   - maxMemoryUsage: Maximum acceptable memory usage in bytes (default: 1GB)
@@ -51,48 +51,48 @@ public struct PerformanceThresholds {
 public struct PerformanceAlert: Identifiable {
     /// Unique identifier for the alert
     public let id: UUID
-    
+
     /// Timestamp when the alert was triggered
     public let timestamp: Date
-    
+
     /// Severity level of the alert
     public let severity: AlertSeverity
-    
+
     /// Type of the alert
     public let type: AlertType
-    
+
     /// Human-readable message describing the alert
     public let message: String
-    
+
     /// Additional context information for the alert
     public let context: [String: String]
-    
+
     /// Severity levels for performance alerts
     public enum AlertSeverity {
         /// Warning-level alert
         case warning
-        
+
         /// Critical-level alert
         case critical
     }
-    
+
     /// Types of performance alerts
     public enum AlertType {
         /// High memory usage alert
         case highMemoryUsage
-        
+
         /// High CPU usage alert
         case highCPUUsage
-        
+
         /// Low backup speed alert
         case lowBackupSpeed
-        
+
         /// Long operation duration alert
         case longOperationDuration
-        
+
         /// Low success rate alert
         case lowSuccessRate
-        
+
         /// Human-readable description of the alert type
         var localizedDescription: String {
             switch self {

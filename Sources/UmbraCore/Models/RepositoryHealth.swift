@@ -12,25 +12,25 @@ import Foundation
 @objc public class RepositoryHealth: NSObject, NSSecureCoding {
     /// Status of the repository
     @objc public let status: String
-    
+
     /// Last check timestamp
     @objc public let lastCheck: Date
-    
+
     /// Number of errors found
     @objc public let errorCount: Int
-    
+
     /// Error messages if any
     @objc public let errors: [String]
-    
+
     /// Size consistency check result
     @objc public let sizeConsistent: Bool
-    
+
     /// Index integrity check result
     @objc public let indexIntegrity: Bool
-    
+
     /// Pack files integrity check result
     @objc public let packIntegrity: Bool
-    
+
     /// Initialize a new repository health status
     /// - Parameters:
     ///   - status: Overall status
@@ -58,11 +58,11 @@ import Foundation
         self.packIntegrity = packIntegrity
         super.init()
     }
-    
+
     // MARK: - NSSecureCoding
-    
+
     public static var supportsSecureCoding: Bool { true }
-    
+
     @objc public func encode(with coder: NSCoder) {
         coder.encode(status, forKey: "status")
         coder.encode(lastCheck, forKey: "lastCheck")
@@ -72,7 +72,7 @@ import Foundation
         coder.encode(indexIntegrity, forKey: "indexIntegrity")
         coder.encode(packIntegrity, forKey: "packIntegrity")
     }
-    
+
     @objc required public init?(coder: NSCoder) {
         guard let status = coder.decodeObject(of: NSString.self, forKey: "status") as String?,
               let lastCheck = coder.decodeObject(of: NSDate.self, forKey: "lastCheck") as Date?,
@@ -80,7 +80,7 @@ import Foundation
         else {
             return nil
         }
-        
+
         self.status = status
         self.lastCheck = lastCheck
         self.errorCount = coder.decodeInteger(forKey: "errorCount")
