@@ -1,11 +1,3 @@
-//
-// LoggerProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
@@ -34,16 +26,26 @@ import os.log
 ///     }
 ///
 ///     func validateAccess() {
-///         logger.info("Validating access",
-///                    file: #file,
-///                    function: #function,
-///                    line: #line)
+///         logger.info(
+///             """
+///             Starting access validation for security \
+///             service
+///             """,
+///             file: #file,
+///             function: #function,
+///             line: #line
+///         )
 ///
 ///         guard isAccessValid else {
-///             logger.error("Access validation failed",
-///                         file: #file,
-///                         function: #function,
-///                         line: #line)
+///             logger.error(
+///                 """
+///                 Access validation failed: invalid \
+///                 security token
+///                 """,
+///                 file: #file,
+///                 function: #function,
+///                 line: #line
+///             )
 ///             return
 ///         }
 ///     }
@@ -73,10 +75,15 @@ public protocol LoggerProtocol {
     ///
     /// Example usage:
     /// ```swift
-    /// logger.debug("Processing request with ID: \(requestId)",
-    ///             file: #file,
-    ///             function: #function,
-    ///             line: #line)
+    /// logger.debug(
+    ///     """
+    ///     Processing request \(requestId) with payload \
+    ///     size: \(payloadSize) bytes
+    ///     """,
+    ///     file: #file,
+    ///     function: #function,
+    ///     line: #line
+    /// )
     /// ```
     func debug(_ message: String, file: String, function: String, line: Int)
 
@@ -97,10 +104,15 @@ public protocol LoggerProtocol {
     ///
     /// Example usage:
     /// ```swift
-    /// logger.info("Service initialisation complete",
-    ///            file: #file,
-    ///            function: #function,
-    ///            line: #line)
+    /// logger.info(
+    ///     """
+    ///     Service initialisation completed successfully \
+    ///     in \(initTime) seconds
+    ///     """,
+    ///     file: #file,
+    ///     function: #function,
+    ///     line: #line
+    /// )
     /// ```
     func info(_ message: String, file: String, function: String, line: Int)
 
@@ -121,10 +133,15 @@ public protocol LoggerProtocol {
     ///
     /// Example usage:
     /// ```swift
-    /// logger.warning("High memory usage detected: \(memoryUsage)MB",
-    ///               file: #file,
-    ///               function: #function,
-    ///               line: #line)
+    /// logger.warning(
+    ///     """
+    ///     High memory usage detected: \(memoryUsage)MB \
+    ///     exceeds warning threshold of \(threshold)MB
+    ///     """,
+    ///     file: #file,
+    ///     function: #function,
+    ///     line: #line
+    /// )
     /// ```
     func warning(_ message: String, file: String, function: String, line: Int)
 
@@ -145,10 +162,16 @@ public protocol LoggerProtocol {
     ///
     /// Example usage:
     /// ```swift
-    /// logger.error("Failed to save file: \(error.localizedDescription)",
-    ///             file: #file,
-    ///             function: #function,
-    ///             line: #line)
+    /// logger.error(
+    ///     """
+    ///     Failed to save file \(filename): \
+    ///     \(error.localizedDescription). Disk space \
+    ///     remaining: \(diskSpace)MB
+    ///     """,
+    ///     file: #file,
+    ///     function: #function,
+    ///     line: #line
+    /// )
     /// ```
     func error(_ message: String, file: String, function: String, line: Int)
 }
