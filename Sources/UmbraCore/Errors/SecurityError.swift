@@ -1,11 +1,3 @@
-//
-// SecurityError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// An enumeration of errors that can occur during security-related operations.
@@ -310,6 +302,8 @@ public enum SecurityError: LocalizedError, Equatable {
     /// - Verify data types
     /// - Log validation details
     case xpcValidationFailed(String)
+
+    // MARK: Public
 
     /// A localised description of the error suitable for user display.
     ///

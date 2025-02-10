@@ -1,11 +1,3 @@
-//
-// BookmarkError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Errors that can occur during security-scoped bookmark operations
@@ -27,25 +19,27 @@ public enum BookmarkError: LocalizedError {
     /// Resource not available
     case resourceUnavailable(String)
 
+    // MARK: Public
+
     /// Localized description of the error
     public var errorDescription: String? {
         switch self {
-        case .notFound(let id):
-            return "Bookmark not found: \(id)"
-        case .accessDenied(let path):
-            return "Access denied to resource: \(path)"
-        case .staleBookmark(let id):
-            return "Bookmark is stale and needs to be recreated: \(id)"
-        case .activeAccess(let id):
-            return "Cannot perform operation while bookmark is being accessed: \(id)"
-        case .invalidData(let reason):
-            return "Invalid bookmark data: \(reason)"
-        case .storageError(let reason):
-            return "Failed to store bookmark: \(reason)"
-        case .permissionError(let reason):
-            return "Permission error: \(reason)"
-        case .resourceUnavailable(let path):
-            return "Resource not available: \(path)"
+        case let .notFound(id):
+            "Bookmark not found: \(id)"
+        case let .accessDenied(path):
+            "Access denied to resource: \(path)"
+        case let .staleBookmark(id):
+            "Bookmark is stale and needs to be recreated: \(id)"
+        case let .activeAccess(id):
+            "Cannot perform operation while bookmark is being accessed: \(id)"
+        case let .invalidData(reason):
+            "Invalid bookmark data: \(reason)"
+        case let .storageError(reason):
+            "Failed to store bookmark: \(reason)"
+        case let .permissionError(reason):
+            "Permission error: \(reason)"
+        case let .resourceUnavailable(path):
+            "Resource not available: \(path)"
         }
     }
 
@@ -53,21 +47,21 @@ public enum BookmarkError: LocalizedError {
     public var failureReason: String? {
         switch self {
         case .notFound:
-            return "The specified bookmark could not be found in storage"
+            "The specified bookmark could not be found in storage"
         case .accessDenied:
-            return "The system denied access to the security-scoped resource"
+            "The system denied access to the security-scoped resource"
         case .staleBookmark:
-            return "The bookmark data is no longer valid and needs to be recreated"
+            "The bookmark data is no longer valid and needs to be recreated"
         case .activeAccess:
-            return "The bookmark is currently being accessed and cannot be modified"
+            "The bookmark is currently being accessed and cannot be modified"
         case .invalidData:
-            return "The bookmark data is corrupted or invalid"
+            "The bookmark data is corrupted or invalid"
         case .storageError:
-            return "Failed to store or retrieve bookmark data"
+            "Failed to store or retrieve bookmark data"
         case .permissionError:
-            return "Insufficient permissions to access the resource"
+            "Insufficient permissions to access the resource"
         case .resourceUnavailable:
-            return "The resource is not available or does not exist"
+            "The resource is not available or does not exist"
         }
     }
 
@@ -75,21 +69,21 @@ public enum BookmarkError: LocalizedError {
     public var recoverySuggestion: String? {
         switch self {
         case .notFound:
-            return "Create a new bookmark for the resource"
+            "Create a new bookmark for the resource"
         case .accessDenied:
-            return "Request user permission to access the resource"
+            "Request user permission to access the resource"
         case .staleBookmark:
-            return "Create a new bookmark and update any stored references"
+            "Create a new bookmark and update any stored references"
         case .activeAccess:
-            return "Stop accessing the bookmark before performing this operation"
+            "Stop accessing the bookmark before performing this operation"
         case .invalidData:
-            return "Create a new bookmark with valid data"
+            "Create a new bookmark with valid data"
         case .storageError:
-            return "Check storage permissions and available space"
+            "Check storage permissions and available space"
         case .permissionError:
-            return "Request necessary permissions from the user"
+            "Request necessary permissions from the user"
         case .resourceUnavailable:
-            return "Verify the resource exists and is accessible"
+            "Verify the resource exists and is accessible"
         }
     }
 
@@ -97,21 +91,21 @@ public enum BookmarkError: LocalizedError {
     public var helpAnchor: String {
         switch self {
         case .notFound:
-            return "bookmark-not-found"
+            "bookmark-not-found"
         case .accessDenied:
-            return "bookmark-access-denied"
+            "bookmark-access-denied"
         case .staleBookmark:
-            return "bookmark-stale"
+            "bookmark-stale"
         case .activeAccess:
-            return "bookmark-active-access"
+            "bookmark-active-access"
         case .invalidData:
-            return "bookmark-invalid-data"
+            "bookmark-invalid-data"
         case .storageError:
-            return "bookmark-storage-error"
+            "bookmark-storage-error"
         case .permissionError:
-            return "bookmark-permission-error"
+            "bookmark-permission-error"
         case .resourceUnavailable:
-            return "bookmark-resource-unavailable"
+            "bookmark-resource-unavailable"
         }
     }
 }

@@ -1,12 +1,6 @@
-//
-// SandboxError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - SandboxError
 
 /// An enumeration of errors that can occur during sandboxed operations.
 ///
@@ -141,6 +135,8 @@ public enum SandboxError: LocalizedError {
     ///
     /// - Parameter URL: The URL for which bookmark creation failed
     case bookmarkCreationFailed(URL)
+
+    // MARK: Public
 
     /// A localised description of the error suitable for user display.
     ///

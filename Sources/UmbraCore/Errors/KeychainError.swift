@@ -1,11 +1,3 @@
-//
-// KeychainError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// An enumeration of errors that can occur during keychain operations.
@@ -86,6 +78,8 @@ public enum KeychainError: LocalizedError {
     /// Indicates that XPC configuration failed.
     case xpcConfigurationFailed
 
+    // MARK: Public
+
     /// A localised description of the error suitable for user display.
     ///
     /// This property provides a human-readable description of the error,
@@ -108,17 +102,17 @@ public enum KeychainError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case let .saveFailed(status):
-            return "Failed to save item to keychain: \(status)"
+            "Failed to save item to keychain: \(status)"
         case let .retrievalFailed(status):
-            return "Failed to retrieve item from keychain: \(status)"
+            "Failed to retrieve item from keychain: \(status)"
         case let .updateFailed(status):
-            return "Failed to update item in keychain: \(status)"
+            "Failed to update item in keychain: \(status)"
         case let .deleteFailed(status):
-            return "Failed to delete item from keychain: \(status)"
+            "Failed to delete item from keychain: \(status)"
         case .accessValidationFailed:
-            return "Failed to validate keychain access"
+            "Failed to validate keychain access"
         case .xpcConfigurationFailed:
-            return "Failed to configure XPC for keychain access"
+            "Failed to configure XPC for keychain access"
         }
     }
 }
