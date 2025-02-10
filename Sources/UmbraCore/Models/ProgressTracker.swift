@@ -1,45 +1,34 @@
-//
-// ProgressTracker.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - ProgressTrackerProtocol
 
 /// Protocol for tracking progress of operations
 public protocol ProgressTrackerProtocol {
     /// Start tracking an operation
     /// - Parameter operationId: Unique identifier for the operation
-    func startOperation(_ operationId: UUID)
+    func startOperation(_ operationID: UUID)
 
     /// Update progress for an operation
     /// - Parameters:
     ///   - operationId: Operation identifier
     ///   - progress: Progress value between 0 and 1
-    func updateProgress(_ operationId: UUID, progress: Double)
+    func updateProgress(_ operationID: UUID, progress: Double)
 
     /// Mark an operation as failed
     /// - Parameters:
     ///   - operationId: Operation identifier
     ///   - error: Error that caused the failure
-    func failOperation(_ operationId: UUID, error: Error)
+    func failOperation(_ operationID: UUID, error: Error)
 
     /// Reset all progress tracking
     func reset()
 }
 
+// MARK: - ProgressTracker
+
 /// Default implementation of progress tracker
 public final class ProgressTracker: ProgressTrackerProtocol {
-    // MARK: - Properties
-
-    private let notificationCenter: NotificationCenter
-    private var operations: [UUID: OperationState] = [:]
-    private let queue = DispatchQueue(
-        label: "dev.mpy.rBUM.ProgressTracker",
-        attributes: .concurrent
-    )
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -49,42 +38,50 @@ public final class ProgressTracker: ProgressTrackerProtocol {
         self.notificationCenter = notificationCenter
     }
 
+    // MARK: Public
+
     // MARK: - ProgressTrackerProtocol
 
-    public func startOperation(_ operationId: UUID) {
+    public func startOperation(_ operationID: UUID) {
         queue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
-            self.operations[operationId] = OperationState(
+            operations[operationID] = OperationState(
                 startTime: Date(),
                 progress: 0,
                 status: .running
             )
 
-            self.notificationCenter.post(
+            notificationCenter.post(
                 name: .progressTrackerOperationStarted,
                 object: self,
                 userInfo: [
-                    "operationId": operationId
+                    "operationId": operationID,
                 ]
             )
         }
     }
 
-    public func updateProgress(_ operationId: UUID, progress: Double) {
+    public func updateProgress(_ operationID: UUID, progress: Double) {
         queue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
-            guard var state = self.operations[operationId] else { return }
+            guard var state = operations[operationID] else {
+                return
+            }
             state.progress = progress
-            self.operations[operationId] = state
+            operations[operationID] = state
 
             let userInfo: [String: Any] = [
-                "operationId": operationId,
-                "progress": progress
+                "operationId": operationID,
+                "progress": progress,
             ]
 
-            self.notificationCenter.post(
+            notificationCenter.post(
                 name: .progressTrackerProgressUpdated,
                 object: self,
                 userInfo: userInfo
@@ -92,20 +89,24 @@ public final class ProgressTracker: ProgressTrackerProtocol {
         }
     }
 
-    public func failOperation(_ operationId: UUID, error: Error) {
+    public func failOperation(_ operationID: UUID, error: Error) {
         queue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
-            guard var state = self.operations[operationId] else { return }
+            guard var state = operations[operationID] else {
+                return
+            }
             state.status = .failed(error)
-            self.operations[operationId] = state
+            operations[operationID] = state
 
             let userInfo: [String: Any] = [
-                "operationId": operationId,
-                "error": error
+                "operationId": operationID,
+                "error": error,
             ]
 
-            self.notificationCenter.post(
+            notificationCenter.post(
                 name: .progressTrackerOperationFailed,
                 object: self,
                 userInfo: userInfo
@@ -115,22 +116,35 @@ public final class ProgressTracker: ProgressTrackerProtocol {
 
     public func reset() {
         queue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
-            self.operations.removeAll()
+            operations.removeAll()
 
-            self.notificationCenter.post(name: .progressTrackerReset, object: self)
+            notificationCenter.post(name: .progressTrackerReset, object: self)
         }
     }
+
+    // MARK: Private
+
+    private let notificationCenter: NotificationCenter
+    private var operations: [UUID: OperationState] = [:]
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.rBUM.ProgressTracker",
+        attributes: .concurrent
+    )
 }
 
-// MARK: - Supporting Types
+// MARK: - OperationState
 
 private struct OperationState {
     let startTime: Date
     var progress: Double
     var status: OperationStatus
 }
+
+// MARK: - OperationStatus
 
 private enum OperationStatus {
     case running
@@ -141,7 +155,8 @@ private enum OperationStatus {
 
 public extension Notification.Name {
     /// Posted when an operation starts
-    static let progressTrackerOperationStarted = Notification.Name("progressTrackerOperationStarted")
+    static let progressTrackerOperationStarted = Notification
+        .Name("progressTrackerOperationStarted")
 
     /// Posted when progress is updated
     static let progressTrackerProgressUpdated = Notification.Name("progressTrackerProgressUpdated")

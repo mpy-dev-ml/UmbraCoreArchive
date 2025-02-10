@@ -1,26 +1,8 @@
-//
-// PreparedCommand.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// A prepared command ready for execution
 @objc public class PreparedCommand: NSObject {
-    /// The command to execute
-    @objc public let command: String
-
-    /// Arguments to pass to the command
-    @objc public let arguments: [String]
-
-    /// Environment variables for the command
-    @objc public let environment: [String: String]
-
-    /// Working directory for the command
-    @objc public let workingDirectory: String
+    // MARK: Lifecycle
 
     /// Initialize a new prepared command
     /// - Parameters:
@@ -40,4 +22,18 @@ import Foundation
         self.workingDirectory = workingDirectory
         super.init()
     }
+
+    // MARK: Public
+
+    /// The command to execute
+    @objc public let command: String
+
+    /// Arguments to pass to the command
+    @objc public let arguments: [String]
+
+    /// Environment variables for the command
+    @objc public let environment: [String: String]
+
+    /// Working directory for the command
+    @objc public let workingDirectory: String
 }

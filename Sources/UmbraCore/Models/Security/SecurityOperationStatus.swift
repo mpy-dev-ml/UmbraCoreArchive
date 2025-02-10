@@ -1,11 +1,3 @@
-//
-// SecurityOperationStatus.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// An enumeration representing the status of a security operation.
@@ -42,15 +34,30 @@ import Foundation
 /// // Handling different statuses
 /// switch operation.status {
 /// case .success:
-///     logger.info("Access granted to \(operation.url)")
+///     logger.info(
+///         """
+///         Access granted to \(operation.url.lastPathComponent)
+///         """
+///     )
 ///     metrics.recordSuccess()
 ///
 /// case .failure:
-///     logger.error("Access denied: \(operation.error ?? "Unknown error")")
+///     let errorMsg = operation.error ?? "Unknown error"
+///     logger.error(
+///         """
+///         Access denied to \(operation.url.lastPathComponent): \
+///         \(errorMsg)
+///         """
+///     )
 ///     metrics.recordFailure()
 ///
 /// case .pending:
-///     logger.info("Waiting for access to \(operation.url)")
+///     logger.info(
+///         """
+///         Waiting for access to \
+///         \(operation.url.lastPathComponent)
+///         """
+///     )
 ///     startProgressIndicator()
 /// }
 ///
@@ -115,7 +122,10 @@ public enum SecurityOperationStatus: String {
     ///     operationType: .bookmark,
     ///     timestamp: Date(),
     ///     status: .failure,
-    ///     error: "Bookmark data is stale"
+    ///     error: """
+    ///         Unable to resolve bookmark: data is stale or \
+    ///         corrupted
+    ///         """
     /// )
     ///
     /// // Failed XPC connection
@@ -124,7 +134,10 @@ public enum SecurityOperationStatus: String {
     ///     operationType: .xpc,
     ///     timestamp: Date(),
     ///     status: .failure,
-    ///     error: "Service connection timeout"
+    ///     error: """
+    ///         XPC service connection timed out after \
+    ///         30 seconds
+    ///         """
     /// )
     /// ```
     ///

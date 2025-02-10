@@ -1,12 +1,6 @@
-//
-// DiscoveredRepository.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - DiscoveredRepository
 
 /// A discovered Restic repository in the filesystem
 ///
@@ -42,23 +36,7 @@ import Foundation
 /// - ``isVerified``
 /// - ``metadata``
 public struct DiscoveredRepository: Identifiable, Hashable {
-    /// Unique identifier for the repository
-    public let id: UUID
-
-    /// The URL where the repository was discovered
-    public let url: URL
-
-    /// The type of repository (local, SFTP, etc.)
-    public let type: RepositoryType
-
-    /// Timestamp when the repository was discovered
-    public let discoveredAt: Date
-
-    /// Whether the repository has been verified as a valid Restic repository
-    public let isVerified: Bool
-
-    /// Additional metadata found during discovery
-    public let metadata: RepositoryMetadata
+    // MARK: Lifecycle
 
     /// Creates a new discovered repository instance
     /// - Parameters:
@@ -84,18 +62,40 @@ public struct DiscoveredRepository: Identifiable, Hashable {
         self.metadata = metadata
     }
 
-    // MARK: - Hashable
+    // MARK: Public
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
+    /// Unique identifier for the repository
+    public let id: UUID
+
+    /// The URL where the repository was discovered
+    public let url: URL
+
+    /// The type of repository (local, SFTP, etc.)
+    public let type: RepositoryType
+
+    /// Timestamp when the repository was discovered
+    public let discoveredAt: Date
+
+    /// Whether the repository has been verified as a valid Restic repository
+    public let isVerified: Bool
+
+    /// Additional metadata found during discovery
+    public let metadata: RepositoryMetadata
 
     // MARK: - Equatable
 
     public static func == (lhs: DiscoveredRepository, rhs: DiscoveredRepository) -> Bool {
         lhs.id == rhs.id
     }
+
+    // MARK: - Hashable
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }
+
+// MARK: - RepositoryMetadata
 
 /// Additional metadata about a discovered repository
 ///
@@ -127,14 +127,7 @@ public struct DiscoveredRepository: Identifiable, Hashable {
 /// - ``lastModified``
 /// - ``snapshotCount``
 public struct RepositoryMetadata: Hashable {
-    /// Size of the repository in bytes (if available)
-    public let size: UInt64?
-
-    /// Last modified date of the repository (if available)
-    public let lastModified: Date?
-
-    /// Number of snapshots found (if available)
-    public let snapshotCount: Int?
+    // MARK: Lifecycle
 
     /// Creates a new repository metadata instance
     /// - Parameters:
@@ -150,4 +143,15 @@ public struct RepositoryMetadata: Hashable {
         self.lastModified = lastModified
         self.snapshotCount = snapshotCount
     }
+
+    // MARK: Public
+
+    /// Size of the repository in bytes (if available)
+    public let size: UInt64?
+
+    /// Last modified date of the repository (if available)
+    public let lastModified: Date?
+
+    /// Number of snapshots found (if available)
+    public let snapshotCount: Int?
 }

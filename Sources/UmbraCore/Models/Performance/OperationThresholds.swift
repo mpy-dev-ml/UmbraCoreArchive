@@ -1,48 +1,42 @@
-//
-// OperationThresholds.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - OperationThresholds
 
 /// Represents thresholds for different operation types
 public struct OperationThresholds {
-    /// Base thresholds for all operations
-    public let base: PerformanceThresholds
-
-    /// Operation-specific thresholds
-    public let operationSpecific: [String: PerformanceThresholds]
-
     /// Default thresholds for unknown operations
-    public static let `default` = OperationThresholds(
+    public static let `default`: OperationThresholds = .init(
         base: PerformanceThresholds(),
         operationSpecific: [
             "backup": PerformanceThresholds(
                 maxMemoryUsage: 2 * 1024 * 1024 * 1024, // 2GB
                 maxCPUUsage: 90.0,
                 minBackupSpeed: 5 * 1024 * 1024, // 5MB/s
-                maxOperationDuration: 7200000, // 2 hours
+                maxOperationDuration: 7_200_000, // 2 hours
                 minSuccessRate: 98.0
             ),
             "restore": PerformanceThresholds(
                 maxMemoryUsage: 3 * 1024 * 1024 * 1024, // 3GB
                 maxCPUUsage: 95.0,
                 minBackupSpeed: 10 * 1024 * 1024, // 10MB/s
-                maxOperationDuration: 3600000, // 1 hour
+                maxOperationDuration: 3_600_000, // 1 hour
                 minSuccessRate: 99.0
             ),
             "check": PerformanceThresholds(
                 maxMemoryUsage: 1024 * 1024 * 1024, // 1GB
                 maxCPUUsage: 70.0,
                 minBackupSpeed: 0.0,
-                maxOperationDuration: 1800000, // 30 minutes
+                maxOperationDuration: 1_800_000, // 30 minutes
                 minSuccessRate: 99.9
-            )
+            ),
         ]
     )
+
+    /// Base thresholds for all operations
+    public let base: PerformanceThresholds
+
+    /// Operation-specific thresholds
+    public let operationSpecific: [String: PerformanceThresholds]
 
     /// Get thresholds for a specific operation
     /// - Parameter operation: Operation name
@@ -51,6 +45,8 @@ public struct OperationThresholds {
         operationSpecific[operation] ?? base
     }
 }
+
+// MARK: - ExtendedPerformanceMetrics
 
 /// Additional performance metrics for monitoring system behaviour
 public struct ExtendedPerformanceMetrics {
@@ -142,7 +138,7 @@ public struct ExtendedPerformanceMetrics {
     public static func createMetricsSnapshot() -> ExtendedPerformanceMetrics {
         // In real implementation, this would use system APIs
         // For now, return dummy values
-        return ExtendedPerformanceMetrics(
+        ExtendedPerformanceMetrics(
             ioMetrics: IOMetrics(
                 readOperations: 1000,
                 writeOperations: 500,

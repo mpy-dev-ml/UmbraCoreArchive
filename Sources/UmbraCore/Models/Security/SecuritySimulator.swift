@@ -1,11 +1,3 @@
-//
-// SecuritySimulator.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
@@ -15,53 +7,116 @@ import os.log
 /// that might occur in production environments. This allows testing of error handling
 /// and timeout scenarios without waiting for actual security operations to complete.
 ///
-/// Usage:
+/// Features:
+/// - Simulated security failures
+/// - Configurable operation delays
+/// - Detailed error logging
+/// - Controlled testing environment
+///
+/// Example usage:
 /// ```swift
-/// let simulator = SecuritySimulator(logger: logger, configuration: config)
-/// try simulator.simulateFailureIfNeeded(operation: "read", url: fileURL) { msg in
-///     SecurityError.accessDenied(msg)
+/// // Create simulator with configuration
+/// let simulator = SecuritySimulator(
+///     logger: logger,
+///     configuration: DevelopmentConfiguration(
+///         shouldSimulateAccessFailures: true,
+///         artificialDelay: 2.0
+///     )
+/// )
+///
+/// // Test error handling
+/// try simulator.simulateFailureIfNeeded(
+///     operation: "read",
+///     url: fileURL
+/// ) { message in
+///     SecurityError.accessDenied(
+///         """
+///         Access denied to \(fileURL.lastPathComponent): \
+///         \(message)
+///         """
+///     )
 /// }
+///
+/// // Test timeout handling
+/// try await simulator.simulateDelay()
 /// ```
 @available(macOS 13.0, *)
 public struct SecuritySimulator {
-    private let logger: Logger
-    private let configuration: DevelopmentConfiguration
+    // MARK: Lifecycle
 
-    /// Initializes a new `SecuritySimulator` instance with the given logger and configuration.
+    /// Initialises a new `SecuritySimulator` instance
+    ///
+    /// Creates a simulator that can generate controlled security scenarios
+    /// for testing purposes.
     ///
     /// - Parameters:
-    ///   - logger: The logger to use for logging simulated security events.
-    ///   - configuration: The development configuration that controls the simulation behavior.
+    ///   - logger: Logger for recording simulated events
+    ///   - configuration: Controls simulation behaviour
+    ///
+    /// Example:
+    /// ```swift
+    /// let simulator = SecuritySimulator(
+    ///     logger: Logger(
+    ///         subsystem: "com.umbra.core",
+    ///         category: "security-sim"
+    ///     ),
+    ///     configuration: DevelopmentConfiguration(
+    ///         shouldSimulateAccessFailures: true,
+    ///         artificialDelay: 1.5
+    ///     )
+    /// )
+    /// ```
     public init(logger: Logger, configuration: DevelopmentConfiguration) {
         self.logger = logger
         self.configuration = configuration
     }
 
-    /// Simulates a security failure for the given operation and URL if configured to do so.
+    // MARK: Internal
+
+    /// Simulates a security failure for testing purposes
     ///
-    /// If the `shouldSimulateAccessFailures` property in the `configuration` is `true`, this
-    /// method will simulate a security failure by logging an error message and throwing an
-    /// error created by the given `error` closure.
+    /// If enabled in configuration, simulates a security failure by:
+    /// 1. Logging an error message
+    /// 2. Throwing a configured error
     ///
     /// - Parameters:
-    ///   - operation: The name of the operation that failed (e.g., "read", "write", etc.).
-    ///   - url: The URL associated with the failed operation.
-    ///   - error: A closure that creates an error with a given error message.
+    ///   - operation: Name of the operation (e.g., "read", "write")
+    ///   - url: URL associated with the operation
+    ///   - error: Closure creating an error with given message
     ///
-    /// - Throws: The error created by the `error` closure if simulation is enabled.
+    /// - Throws: Error from closure if simulation is enabled
+    ///
+    /// Example:
+    /// ```swift
+    /// try simulator.simulateFailureIfNeeded(
+    ///     operation: "write",
+    ///     url: fileURL
+    /// ) { message in
+    ///     SecurityError.permissionDenied(
+    ///         """
+    ///         Cannot write to \(fileURL.lastPathComponent): \
+    ///         \(message)
+    ///         """
+    ///     )
+    /// }
+    /// ```
     func simulateFailureIfNeeded(
         operation: String,
         url: URL,
         error: (String) -> Error
     ) throws {
-        guard configuration.shouldSimulateAccessFailures else { return }
+        guard configuration.shouldSimulateAccessFailures else {
+            return
+        }
 
         let errorMessage = "\(operation) failed (simulated)"
+        let logMessage = """
+        Simulating \(operation) failure for URL: \
+        \(url.path)
+        """
+
         logger.error(
-            """
-            Simulating \(operation) failure for URL: \
-            \(url.path)
-            """,
+            logMessage,
             file: #file,
             function: #function,
             line: #line
@@ -69,15 +124,47 @@ public struct SecuritySimulator {
         throw error(errorMessage)
     }
 
-    /// Simulates a delay if an artificial delay is configured.
+    /// Simulates a delay in operation execution
     ///
-    /// If the `artificialDelay` property in the `configuration` is greater than 0, this
-    /// method will asynchronously sleep for the specified duration.
+    /// If configured, introduces an artificial delay to simulate:
+    /// - Network latency
+    /// - Disk I/O delays
+    /// - Service response times
     ///
-    /// - Throws: Any error that occurs during the asynchronous sleep operation.
+    /// - Throws: Any error during the sleep operation
+    ///
+    /// Example:
+    /// ```swift
+    /// // Simulate network delay
+    /// try await simulator.simulateDelay()
+    ///
+    /// // Proceed with operation
+    /// try await performNetworkRequest()
+    /// ```
     func simulateDelay() async throws {
         if configuration.artificialDelay > 0 {
-            try await Task.sleep(nanoseconds: UInt64(configuration.artificialDelay * 1_000_000_000))
+            let nanoseconds = UInt64(
+                configuration.artificialDelay * 1_000_000_000
+            )
+            try await Task.sleep(nanoseconds: nanoseconds)
         }
     }
+
+    // MARK: Private
+
+    /// Logger for recording simulated security events
+    ///
+    /// Used to:
+    /// - Track simulated failures
+    /// - Monitor delay injections
+    /// - Debug test scenarios
+    private let logger: Logger
+
+    /// Configuration controlling simulation behaviour
+    ///
+    /// Controls:
+    /// - Whether to simulate failures
+    /// - Length of artificial delays
+    /// - Other test parameters
+    private let configuration: DevelopmentConfiguration
 }

@@ -1,15 +1,29 @@
-//
-// MaintenanceSchedule.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - MaintenanceSchedule
 
 /// Configuration for repository maintenance scheduling
 public struct MaintenanceSchedule: Codable, CustomStringConvertible, Equatable {
+    // MARK: Lifecycle
+
+    public init(
+        days: Set<MaintenanceDay> = [.sunday],
+        hour: Int = 2, // 2 AM default
+        minute: Int = 0,
+        isEnabled: Bool = true,
+        maxDuration: Int = 120,
+        tasks: Set<MaintenanceTask> = MaintenanceTask.allCases
+    ) {
+        self.days = days
+        self.hour = min(max(hour, 0), 23)
+        self.minute = min(max(minute, 0), 59)
+        self.isEnabled = isEnabled
+        self.maxDuration = max(maxDuration, 30)
+        self.tasks = tasks
+    }
+
+    // MARK: Public
+
     /// Days of the week to run maintenance
     public let days: Set<MaintenanceDay>
 
@@ -27,23 +41,9 @@ public struct MaintenanceSchedule: Codable, CustomStringConvertible, Equatable {
 
     /// Tasks to perform during maintenance
     public let tasks: Set<MaintenanceTask>
-
-    public init(
-        days: Set<MaintenanceDay> = [.sunday],
-        hour: Int = 2, // 2 AM default
-        minute: Int = 0,
-        isEnabled: Bool = true,
-        maxDuration: Int = 120,
-        tasks: Set<MaintenanceTask> = MaintenanceTask.allCases
-    ) {
-        self.days = days
-        self.hour = min(max(hour, 0), 23)
-        self.minute = min(max(minute, 0), 59)
-        self.isEnabled = isEnabled
-        self.maxDuration = max(maxDuration, 30)
-        self.tasks = tasks
-    }
 }
+
+// MARK: - MaintenanceDay
 
 /// Days of the week for maintenance scheduling
 public enum MaintenanceDay: String, Codable, CaseIterable {
@@ -55,42 +55,48 @@ public enum MaintenanceDay: String, Codable, CaseIterable {
     case friday
     case saturday
 
-    /// Convert from Calendar.Component.weekday
-    public static func from(weekday: Int) -> MaintenanceDay? {
-        switch weekday {
-        case 1: return .sunday
-        case 2: return .monday
-        case 3: return .tuesday
-        case 4: return .wednesday
-        case 5: return .thursday
-        case 6: return .friday
-        case 7: return .saturday
-        default: return nil
-        }
-    }
+    // MARK: Public
 
     /// Convert to Calendar.Component.weekday
     public var weekday: Int {
         switch self {
-        case .sunday: return 1
-        case .monday: return 2
-        case .tuesday: return 3
-        case .wednesday: return 4
-        case .thursday: return 5
-        case .friday: return 6
-        case .saturday: return 7
+        case .sunday: 1
+        case .monday: 2
+        case .tuesday: 3
+        case .wednesday: 4
+        case .thursday: 5
+        case .friday: 6
+        case .saturday: 7
+        }
+    }
+
+    /// Convert from Calendar.Component.weekday
+    public static func from(weekday: Int) -> MaintenanceDay? {
+        switch weekday {
+        case 1: .sunday
+        case 2: .monday
+        case 3: .tuesday
+        case 4: .wednesday
+        case 5: .thursday
+        case 6: .friday
+        case 7: .saturday
+        default: nil
         }
     }
 }
 
+// MARK: - MaintenanceTask
+
 /// Tasks that can be performed during maintenance
 public enum MaintenanceTask: String, Codable, CaseIterable {
     case healthCheck = "health_check"
-    case prune = "prune"
+    case prune
     case rebuildIndex = "rebuild_index"
     case checkIntegrity = "check_integrity"
     case removeStaleSnapshots = "remove_stale_snapshots"
 }
+
+// MARK: - MaintenanceResult
 
 /// Result of a maintenance run
 public struct MaintenanceResult: Codable, CustomStringConvertible, Equatable {
@@ -117,6 +123,6 @@ public struct MaintenanceResult: Codable, CustomStringConvertible, Equatable {
     }
 }
 
-    public var description: String {
-        return String(describing: self)
-    }
+public var description: String {
+    String(describing: self)
+}

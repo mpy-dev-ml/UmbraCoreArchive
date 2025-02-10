@@ -1,32 +1,8 @@
-//
-// Snapshot.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Class representing a backup snapshot
 @objc public class Snapshot: NSObject, NSSecureCoding {
-    /// Unique identifier for the snapshot
-    @objc public let id: String
-
-    /// Time when the snapshot was created
-    @objc public let timestamp: Date
-
-    /// Hostname where the snapshot was created
-    @objc public let hostname: String
-
-    /// Tags associated with the snapshot
-    @objc public let tags: [String]
-
-    /// Paths included in the snapshot
-    @objc public let paths: [String]
-
-    /// Size of the snapshot in bytes
-    @objc public let size: Int64
+    // MARK: Lifecycle
 
     /// Initialize a new snapshot
     /// - Parameters:
@@ -53,20 +29,7 @@ import Foundation
         super.init()
     }
 
-    // MARK: - NSSecureCoding
-
-    public static var supportsSecureCoding: Bool { true }
-
-    @objc public func encode(with coder: NSCoder) {
-        coder.encode(id, forKey: "id")
-        coder.encode(timestamp, forKey: "timestamp")
-        coder.encode(hostname, forKey: "hostname")
-        coder.encode(tags, forKey: "tags")
-        coder.encode(paths, forKey: "paths")
-        coder.encode(size, forKey: "size")
-    }
-
-    @objc required public init?(coder: NSCoder) {
+    @objc public required init?(coder: NSCoder) {
         guard let id = coder.decodeObject(of: NSString.self, forKey: "id") as String?,
               let timestamp = coder.decodeObject(of: NSDate.self, forKey: "timestamp") as Date?,
               let hostname = coder.decodeObject(of: NSString.self, forKey: "hostname") as String?,
@@ -81,7 +44,40 @@ import Foundation
         self.hostname = hostname
         self.tags = tags
         self.paths = paths
-        self.size = coder.decodeInt64(forKey: "size")
+        size = coder.decodeInt64(forKey: "size")
         super.init()
+    }
+
+    // MARK: Public
+
+    // MARK: - NSSecureCoding
+
+    public static var supportsSecureCoding: Bool { true }
+
+    /// Unique identifier for the snapshot
+    @objc public let id: String
+
+    /// Time when the snapshot was created
+    @objc public let timestamp: Date
+
+    /// Hostname where the snapshot was created
+    @objc public let hostname: String
+
+    /// Tags associated with the snapshot
+    @objc public let tags: [String]
+
+    /// Paths included in the snapshot
+    @objc public let paths: [String]
+
+    /// Size of the snapshot in bytes
+    @objc public let size: Int64
+
+    @objc public func encode(with coder: NSCoder) {
+        coder.encode(id, forKey: "id")
+        coder.encode(timestamp, forKey: "timestamp")
+        coder.encode(hostname, forKey: "hostname")
+        coder.encode(tags, forKey: "tags")
+        coder.encode(paths, forKey: "paths")
+        coder.encode(size, forKey: "size")
     }
 }

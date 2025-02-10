@@ -1,17 +1,10 @@
-//
-// SecurityOperation.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// A model representing a security-related operation and its metadata.
 ///
-/// `SecurityOperation` encapsulates all relevant information about a security operation,
-/// including its type, status, timing, and any errors that occurred. This struct is used to:
+/// `SecurityOperation` encapsulates all relevant information about a security
+/// operation, including its type, status, timing, and any errors that occurred.
+/// This struct is used to:
 /// - Track security operation history
 /// - Monitor operation success/failure rates
 /// - Debug security-related issues
@@ -33,11 +26,22 @@ import Foundation
 /// )
 ///
 /// // Log the operation
-/// logger.info("Security operation completed: \(operation)")
+/// logger.info(
+///     """
+///     Security operation \(operation.operationType) completed \
+///     for \(operation.url.lastPathComponent)
+///     """
+/// )
 ///
 /// // Track failed operations
 /// if operation.status == .failure {
-///     logger.error("Operation failed: \(operation.error ?? "Unknown error")")
+///     logger.error(
+///         """
+///         Operation \(operation.operationType) failed for \
+///         \(operation.url.lastPathComponent): \
+///         \(operation.error ?? "Unknown error")
+///         """
+///     )
 /// }
 ///
 /// // Store in operation history
@@ -51,6 +55,49 @@ import Foundation
 /// 4. Timestamps should use system time zone
 @available(macOS 13.0, *)
 public struct SecurityOperation: Hashable {
+    // MARK: Lifecycle
+
+    /// Creates a new SecurityOperation instance.
+    ///
+    /// This initialiser creates an immutable record of a security operation
+    /// with all its associated metadata.
+    ///
+    /// - Parameters:
+    ///   - url: The URL of the resource involved in the operation
+    ///   - operationType: The type of security operation performed
+    ///   - timestamp: When the operation occurred (defaults to current time)
+    ///   - status: The final status of the operation
+    ///   - error: Optional error message if the operation failed
+    ///
+    /// Example:
+    /// ```swift
+    /// let operation = SecurityOperation(
+    ///     url: fileURL,
+    ///     operationType: .bookmark,
+    ///     timestamp: Date(),
+    ///     status: .failure,
+    ///     error: """
+    ///         Unable to resolve bookmark: data is stale or \
+    ///         corrupted
+    ///         """
+    /// )
+    /// ```
+    public init(
+        url: URL,
+        operationType: SecurityOperationType,
+        timestamp: Date,
+        status: SecurityOperationStatus,
+        error: String? = nil
+    ) {
+        self.url = url
+        self.operationType = operationType
+        self.timestamp = timestamp
+        self.status = status
+        self.error = error
+    }
+
+    // MARK: Public
+
     /// The URL associated with the security operation.
     ///
     /// This URL represents the resource that was the target of the operation,
@@ -111,42 +158,6 @@ public struct SecurityOperation: Hashable {
     /// The error is nil for successful operations.
     public let error: String?
 
-    /// Creates a new SecurityOperation instance.
-    ///
-    /// This initialiser creates an immutable record of a security operation
-    /// with all its associated metadata.
-    ///
-    /// - Parameters:
-    ///   - url: The URL of the resource involved in the operation
-    ///   - operationType: The type of security operation performed
-    ///   - timestamp: When the operation occurred (defaults to current time)
-    ///   - status: The final status of the operation
-    ///   - error: Optional error message if the operation failed
-    ///
-    /// Example:
-    /// ```swift
-    /// let operation = SecurityOperation(
-    ///     url: fileURL,
-    ///     operationType: .bookmark,
-    ///     timestamp: Date(),
-    ///     status: .failure,
-    ///     error: "Bookmark data is stale"
-    /// )
-    /// ```
-    public init(
-        url: URL,
-        operationType: SecurityOperationType,
-        timestamp: Date,
-        status: SecurityOperationStatus,
-        error: String? = nil
-    ) {
-        self.url = url
-        self.operationType = operationType
-        self.timestamp = timestamp
-        self.status = status
-        self.error = error
-    }
-
     /// Compares two SecurityOperation instances for equality.
     ///
     /// Two operations are considered equal if they have the same:
@@ -164,11 +175,27 @@ public struct SecurityOperation: Hashable {
     ///
     /// Example:
     /// ```swift
-    /// let op1 = SecurityOperation(url: url, type: .access, timestamp: now)
-    /// let op2 = SecurityOperation(url: url, type: .access, timestamp: now)
+    /// let op1 = SecurityOperation(
+    ///     url: fileURL,
+    ///     operationType: .access,
+    ///     timestamp: Date(),
+    ///     status: .pending
+    /// )
+    ///
+    /// let op2 = SecurityOperation(
+    ///     url: fileURL,
+    ///     operationType: .access,
+    ///     timestamp: Date(),
+    ///     status: .success
+    /// )
+    ///
+    /// // Operations are equal despite different statuses
     /// let areEqual = op1 == op2 // true
     /// ```
-    public static func == (lhs: SecurityOperation, rhs: SecurityOperation) -> Bool {
+    public static func == (
+        lhs: SecurityOperation,
+        rhs: SecurityOperation
+    ) -> Bool {
         lhs.url == rhs.url &&
             lhs.operationType == rhs.operationType &&
             lhs.timestamp == rhs.timestamp
@@ -183,8 +210,6 @@ public struct SecurityOperation: Hashable {
     ///
     /// Note: Status and error are not included in the hash
     /// to maintain consistency with equality comparison.
-    ///
-    /// - Parameter hasher: The hasher to use for combining the components
     ///
     /// Example:
     /// ```swift

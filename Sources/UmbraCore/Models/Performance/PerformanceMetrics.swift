@@ -1,12 +1,6 @@
-//
-// PerformanceMetrics.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - MetricMeasurement
 
 /// Represents a single performance metric measurement
 public struct MetricMeasurement {
@@ -26,6 +20,8 @@ public struct MetricMeasurement {
     public let metadata: [String: String]?
 }
 
+// MARK: - MonitoredOperation
+
 /// Represents a monitored operation
 public struct MonitoredOperation {
     /// Unique identifier for the operation
@@ -40,18 +36,22 @@ public struct MonitoredOperation {
     /// End time of the operation
     public let endTime: Date?
 
-    /// Duration in milliseconds
-    public var duration: Double? {
-        guard let endTime = endTime else { return nil }
-        return endTime.timeIntervalSince(startTime) * 1000
-    }
-
     /// Status of the operation
     public let status: OperationStatus?
 
     /// Additional context about the operation
     public let metadata: [String: String]?
+
+    /// Duration in milliseconds
+    public var duration: Double? {
+        guard let endTime else {
+            return nil
+        }
+        return endTime.timeIntervalSince(startTime) * 1000
+    }
 }
+
+// MARK: - PerformanceReport
 
 /// Comprehensive performance report
 public struct PerformanceReport {
@@ -67,6 +67,8 @@ public struct PerformanceReport {
     /// Summary statistics
     public let statistics: PerformanceStatistics
 }
+
+// MARK: - PerformanceStatistics
 
 /// Statistical summary of performance metrics
 public struct PerformanceStatistics {

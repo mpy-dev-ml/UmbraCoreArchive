@@ -1,15 +1,37 @@
-//
-// LockMetrics.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - LockMetrics
 
 /// Metrics for repository lock operations
 public struct LockMetrics: Codable, CustomStringConvertible, Equatable {
+    // MARK: Lifecycle
+
+    public init(
+        successfulAcquisitions: Int = 0,
+        failedAcquisitions: Int = 0,
+        averageAcquisitionTime: TimeInterval = 0,
+        maxAcquisitionTime: TimeInterval = 0,
+        staleLockCount: Int = 0,
+        timeoutCount: Int = 0,
+        averageHoldTime: TimeInterval = 0,
+        maxHoldTime: TimeInterval = 0,
+        contentionRate: Double = 0,
+        operationMetrics: [RepositoryOperation: OperationMetrics] = [:]
+    ) {
+        self.successfulAcquisitions = successfulAcquisitions
+        self.failedAcquisitions = failedAcquisitions
+        self.averageAcquisitionTime = averageAcquisitionTime
+        self.maxAcquisitionTime = maxAcquisitionTime
+        self.staleLockCount = staleLockCount
+        self.timeoutCount = timeoutCount
+        self.averageHoldTime = averageHoldTime
+        self.maxHoldTime = maxHoldTime
+        self.contentionRate = contentionRate
+        self.operationMetrics = operationMetrics
+    }
+
+    // MARK: Public
+
     /// Total number of successful lock acquisitions
     public let successfulAcquisitions: Int
 
@@ -39,48 +61,13 @@ public struct LockMetrics: Codable, CustomStringConvertible, Equatable {
 
     /// Metrics broken down by operation type
     public let operationMetrics: [RepositoryOperation: OperationMetrics]
-
-    public init(
-        successfulAcquisitions: Int = 0,
-        failedAcquisitions: Int = 0,
-        averageAcquisitionTime: TimeInterval = 0,
-        maxAcquisitionTime: TimeInterval = 0,
-        staleLockCount: Int = 0,
-        timeoutCount: Int = 0,
-        averageHoldTime: TimeInterval = 0,
-        maxHoldTime: TimeInterval = 0,
-        contentionRate: Double = 0,
-        operationMetrics: [RepositoryOperation: OperationMetrics] = [:]
-    ) {
-        self.successfulAcquisitions = successfulAcquisitions
-        self.failedAcquisitions = failedAcquisitions
-        self.averageAcquisitionTime = averageAcquisitionTime
-        self.maxAcquisitionTime = maxAcquisitionTime
-        self.staleLockCount = staleLockCount
-        self.timeoutCount = timeoutCount
-        self.averageHoldTime = averageHoldTime
-        self.maxHoldTime = maxHoldTime
-        self.contentionRate = contentionRate
-        self.operationMetrics = operationMetrics
-    }
 }
+
+// MARK: - OperationMetrics
 
 /// Metrics for a specific operation type
 public struct OperationMetrics: Codable, CustomStringConvertible, Equatable {
-    /// Number of successful operations
-    public let successCount: Int
-
-    /// Number of failed operations
-    public let failureCount: Int
-
-    /// Average operation duration in seconds
-    public let averageDuration: TimeInterval
-
-    /// Maximum operation duration in seconds
-    public let maxDuration: TimeInterval
-
-    /// Number of times this operation was blocked by other operations
-    public let blockCount: Int
+    // MARK: Lifecycle
 
     public init(
         successCount: Int = 0,
@@ -95,8 +82,25 @@ public struct OperationMetrics: Codable, CustomStringConvertible, Equatable {
         self.maxDuration = maxDuration
         self.blockCount = blockCount
     }
+
+    // MARK: Public
+
+    /// Number of successful operations
+    public let successCount: Int
+
+    /// Number of failed operations
+    public let failureCount: Int
+
+    /// Average operation duration in seconds
+    public let averageDuration: TimeInterval
+
+    /// Maximum operation duration in seconds
+    public let maxDuration: TimeInterval
+
+    /// Number of times this operation was blocked by other operations
+    public let blockCount: Int
 }
 
-    public var description: String {
-        return String(describing: self)
-    }
+public var description: String {
+    String(describing: self)
+}

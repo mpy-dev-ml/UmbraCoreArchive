@@ -1,11 +1,3 @@
-//
-// SecurityOperationType.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// An enumeration of different types of security operations that can be performed.
@@ -51,7 +43,12 @@ import Foundation
 /// }
 ///
 /// // String representation
-/// logger.info("Performing \(operation.operationType.rawValue) operation")
+/// logger.info(
+///     """
+///     Performing \(operation.operationType.rawValue) \
+///     operation on \(operation.url.lastPathComponent)
+///     """
+/// )
 /// ```
 ///
 /// Implementation notes:
@@ -183,7 +180,10 @@ public enum SecurityOperationType: String {
     ///     operationType: .xpc,
     ///     timestamp: Date(),
     ///     status: .failure,
-    ///     error: "Connection interrupted"
+    ///     error: """
+    ///         XPC connection interrupted. Please check service \
+    ///         availability and try again.
+    ///         """
     /// )
     /// ```
     ///

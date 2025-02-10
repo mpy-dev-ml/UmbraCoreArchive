@@ -1,21 +1,11 @@
-//
-// BackupTypes.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - SnapshotFilter
 
 /// Represents filter criteria for snapshot operations in a backup repository.
 /// Used to filter snapshots based on hostname and tags when listing or managing snapshots.
 public struct SnapshotFilter {
-    /// Optional hostname to filter snapshots by. If provided, only snapshots from this host will be included.
-    public let hostname: String?
-
-    /// Optional array of tags to filter snapshots by. If provided, only snapshots containing all specified tags will be included.
-    public let tags: [String]?
+    // MARK: Lifecycle
 
     /// Initialises a new SnapshotFilter with optional hostname and tags criteria.
     /// - Parameters:
@@ -25,25 +15,25 @@ public struct SnapshotFilter {
         self.hostname = hostname
         self.tags = tags
     }
+
+    // MARK: Public
+
+    /// Optional hostname to filter snapshots by. If provided, only snapshots from this host will be
+    /// included.
+    public let hostname: String?
+
+    /// Optional array of tags to filter snapshots by. If provided, only snapshots containing all
+    /// specified tags will be included.
+    public let tags: [String]?
 }
 
+// MARK: - BackupProgress
+
 /// Represents the current progress of a backup operation.
-/// Provides detailed information about files processed, processing speed, and estimated completion time.
+/// Provides detailed information about files processed, processing speed, and estimated completion
+/// time.
 public struct BackupProgress {
-    /// Total number of files that need to be processed in this backup operation
-    public let totalFiles: Int
-
-    /// Number of files that have been processed so far
-    public let processedFiles: Int
-
-    /// Current processing speed in bytes per second
-    public let speed: Int64
-
-    /// Total number of bytes processed so far
-    public let processedBytes: Int64
-
-    /// Estimated time remaining for the backup operation in seconds, if available
-    public let estimatedTimeRemaining: TimeInterval?
+    // MARK: Lifecycle
 
     /// Initialises a new BackupProgress instance with the current backup operation status.
     /// - Parameters:
@@ -65,4 +55,21 @@ public struct BackupProgress {
         self.processedBytes = processedBytes
         self.estimatedTimeRemaining = estimatedTimeRemaining
     }
+
+    // MARK: Public
+
+    /// Total number of files that need to be processed in this backup operation
+    public let totalFiles: Int
+
+    /// Number of files that have been processed so far
+    public let processedFiles: Int
+
+    /// Current processing speed in bytes per second
+    public let speed: Int64
+
+    /// Total number of bytes processed so far
+    public let processedBytes: Int64
+
+    /// Estimated time remaining for the backup operation in seconds, if available
+    public let estimatedTimeRemaining: TimeInterval?
 }

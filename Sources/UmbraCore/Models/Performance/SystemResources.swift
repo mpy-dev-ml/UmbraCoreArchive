@@ -1,12 +1,6 @@
-//
-// SystemResources.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - SystemResources
 
 /// A class that encapsulates system resource information.
 ///
@@ -27,26 +21,7 @@ import Foundation
 /// ```
 @objc
 public class SystemResources: NSObject, NSSecureCoding {
-    // MARK: - Properties
-
-    /// Available system memory in bytes
-    @objc
-    public let availableMemory: UInt64
-
-    /// Available disk space in bytes
-    @objc
-    public let availableDiskSpace: UInt64
-
-    /// CPU usage as a percentage (0-100)
-    @objc
-    public let cpuUsagePercentage: Double
-
-    /// System load averages for 1, 5, and 15 minutes
-    @objc
-    public let systemLoad: [Double]
-
-    /// Whether this class supports secure coding
-    public static var supportsSecureCoding: Bool { true }
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -105,6 +80,27 @@ public class SystemResources: NSObject, NSSecureCoding {
         super.init()
     }
 
+    // MARK: Public
+
+    /// Whether this class supports secure coding
+    public static var supportsSecureCoding: Bool { true }
+
+    /// Available system memory in bytes
+    @objc
+    public let availableMemory: UInt64
+
+    /// Available disk space in bytes
+    @objc
+    public let availableDiskSpace: UInt64
+
+    /// CPU usage as a percentage (0-100)
+    @objc
+    public let cpuUsagePercentage: Double
+
+    /// System load averages for 1, 5, and 15 minutes
+    @objc
+    public let systemLoad: [Double]
+
     // MARK: - NSSecureCoding
 
     /// Encodes the SystemResources instance to an NSCoder.
@@ -159,7 +155,7 @@ public class SystemResources: NSObject, NSSecureCoding {
     }
 }
 
-// MARK: - CustomStringConvertible
+// MARK: CustomStringConvertible
 
 extension SystemResources: CustomStringConvertible {
     public var description: String {

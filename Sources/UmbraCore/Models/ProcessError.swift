@@ -1,11 +1,3 @@
-//
-// ProcessError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Errors that can occur during process execution
@@ -15,6 +7,8 @@ public enum ProcessError: LocalizedError {
     case sandboxViolation(String)
     case timeout(String)
     case environmentError(String)
+
+    // MARK: Public
 
     public var errorDescription: String? {
         switch self {
