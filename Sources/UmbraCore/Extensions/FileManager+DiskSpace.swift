@@ -1,11 +1,3 @@
-//
-// FileManager+DiskSpace.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 extension FileManager {
@@ -22,14 +14,18 @@ extension FileManager {
     }
 }
 
+// MARK: - FileManagerError
+
 /// Errors that can occur during file manager operations
 public enum FileManagerError: LocalizedError {
     case failedToGetDiskSpace
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
         case .failedToGetDiskSpace:
-            return "Failed to get available disk space"
+            "Failed to get available disk space"
         }
     }
 }
