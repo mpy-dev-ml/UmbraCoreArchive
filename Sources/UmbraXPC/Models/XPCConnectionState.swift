@@ -1,20 +1,6 @@
-//
-// XPCConnectionState.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// XPCConnectionState.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - XPCConnectionState
 
 /// Represents the current state of an XPC connection
 public enum XPCConnectionState: Equatable {
@@ -36,17 +22,7 @@ public enum XPCConnectionState: Equatable {
     /// Connection has failed permanently
     case failed(Error)
 
-    /// Whether the connection is in a state that allows recovery
-    var canRecover: Bool {
-        switch self {
-        case .interrupted, .invalidated:
-            return true
-        case .recovering(let attempt, _):
-            return attempt < XPCConnectionState.maxRecoveryAttempts
-        default:
-            return false
-        }
-    }
+    // MARK: Internal
 
     /// Maximum number of recovery attempts before considering the connection failed
     static let maxRecoveryAttempts = 3
@@ -56,7 +32,22 @@ public enum XPCConnectionState: Equatable {
 
     /// Maximum time to wait for recovery before failing
     static let recoveryTimeout: TimeInterval = 30.0
+
+    /// Whether the connection is in a state that allows recovery
+    var canRecover: Bool {
+        switch self {
+        case .interrupted,
+             .invalidated:
+            true
+        case let .recovering(attempt, _):
+            attempt < XPCConnectionState.maxRecoveryAttempts
+        default:
+            false
+        }
+    }
 }
+
+// MARK: - XPCConnectionStateDelegate
 
 /// Protocol for tracking XPC connection state changes
 public protocol XPCConnectionStateDelegate: AnyObject {

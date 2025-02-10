@@ -1,59 +1,9 @@
-//
-// XPCHealthMonitor.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// XPCHealthMonitor.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Monitors the health of XPC services
 @available(macOS 13.0, *)
 public actor XPCHealthMonitor {
-    // MARK: - Types
-
-    /// Constants for health monitoring
-    private enum Constants {
-        static let criticalFailureThreshold = 3
-        static let healthyThreshold = 5
-        static let defaultInterval: TimeInterval = 30.0
-        static let responseTimeThreshold: TimeInterval = 1.0
-    }
-
-    // MARK: - Properties
-
-    /// Current health status
-    private(set) var currentStatus: XPCHealthStatus
-
-    /// Logger instance
-    private let logger: LoggerProtocol
-
-    /// Connection manager
-    private let connectionManager: XPCConnectionManager
-
-    /// Health check timer
-    private var healthCheckTimer: Timer?
-
-    /// Health check interval in seconds
-    private let healthCheckInterval: TimeInterval
-
-    /// Number of consecutive successful health checks
-    private var successfulChecks: Int = 0
-
-    /// Number of consecutive failed health checks
-    private var failedChecks: Int = 0
-
-    /// Last recorded response time
-    private var lastResponseTime: TimeInterval = 0
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -69,7 +19,7 @@ public actor XPCHealthMonitor {
     ) {
         self.connectionManager = connectionManager
         self.logger = logger
-        self.healthCheckInterval = interval
+        healthCheckInterval = interval
 
         // Initialize with default values
         let resources = SystemResources(
@@ -80,7 +30,7 @@ public actor XPCHealthMonitor {
             activeConnections: 0
         )
 
-        self.currentStatus = XPCHealthStatus(
+        currentStatus = XPCHealthStatus(
             state: .unknown("Initial state"),
             lastChecked: Date(),
             responseTime: 0,
@@ -89,6 +39,8 @@ public actor XPCHealthMonitor {
             resources: resources
         )
     }
+
+    // MARK: Public
 
     // MARK: - Public Methods
 
@@ -107,7 +59,7 @@ public actor XPCHealthMonitor {
 
         let metadata = [
             "interval": String(healthCheckInterval),
-            "threshold": String(Constants.criticalFailureThreshold)
+            "threshold": String(Constants.criticalFailureThreshold),
         ]
         logger.info(
             "Started health monitoring",
@@ -149,6 +101,44 @@ public actor XPCHealthMonitor {
         }
     }
 
+    // MARK: Internal
+
+    /// Current health status
+    private(set) var currentStatus: XPCHealthStatus
+
+    // MARK: Private
+
+    // MARK: - Types
+
+    /// Constants for health monitoring
+    private enum Constants {
+        static let criticalFailureThreshold = 3
+        static let healthyThreshold = 5
+        static let defaultInterval: TimeInterval = 30.0
+        static let responseTimeThreshold: TimeInterval = 1.0
+    }
+
+    /// Logger instance
+    private let logger: LoggerProtocol
+
+    /// Connection manager
+    private let connectionManager: XPCConnectionManager
+
+    /// Health check timer
+    private var healthCheckTimer: Timer?
+
+    /// Health check interval in seconds
+    private let healthCheckInterval: TimeInterval
+
+    /// Number of consecutive successful health checks
+    private var successfulChecks: Int = 0
+
+    /// Number of consecutive failed health checks
+    private var failedChecks: Int = 0
+
+    /// Last recorded response time
+    private var lastResponseTime: TimeInterval = 0
+
     // MARK: - Private Methods
 
     /// Get current system resources
@@ -185,21 +175,21 @@ public actor XPCHealthMonitor {
         successfulChecks += 1
         failedChecks = 0
 
-        let state: XPCHealthStatus.State
-        if successfulChecks >= Constants.healthyThreshold {
-            state = .healthy
-        } else {
-            state = .recovering(
-                "Service recovering: \(successfulChecks)/\(Constants.healthyThreshold) checks passed"
-            )
-        }
+        let state: XPCHealthStatus.State =
+            if successfulChecks >= Constants.healthyThreshold {
+                .healthy
+            } else {
+                .recovering(
+                    "Service recovering: \(successfulChecks)/\(Constants.healthyThreshold) checks passed"
+                )
+            }
 
         if lastResponseTime > Constants.responseTimeThreshold {
             logger.warning(
                 "Slow response time detected",
                 metadata: [
                     "responseTime": String(format: "%.3f", lastResponseTime),
-                    "threshold": String(Constants.responseTimeThreshold)
+                    "threshold": String(Constants.responseTimeThreshold),
                 ],
                 privacy: .public
             )
@@ -214,22 +204,22 @@ public actor XPCHealthMonitor {
         successfulChecks = 0
 
         // Determine state based on consecutive failures
-        let state: XPCHealthStatus.State
-        if failedChecks >= Constants.criticalFailureThreshold {
-            state = .critical(
-                """
-                Service consistently failing health checks: \
-                \(failedChecks) consecutive failures
-                """
-            )
-        } else {
-            state = .degraded(
-                """
-                Service failed health check: \
-                \(failedChecks)/\(Constants.criticalFailureThreshold) failures
-                """
-            )
-        }
+        let state: XPCHealthStatus.State =
+            if failedChecks >= Constants.criticalFailureThreshold {
+                .critical(
+                    """
+                    Service consistently failing health checks: \
+                    \(failedChecks) consecutive failures
+                    """
+                )
+            } else {
+                .degraded(
+                    """
+                    Service failed health check: \
+                    \(failedChecks)/\(Constants.criticalFailureThreshold) failures
+                    """
+                )
+            }
 
         await updateStatus(state, resources: resources)
     }
@@ -263,7 +253,7 @@ public actor XPCHealthMonitor {
             metadata: [
                 "error": errorMessage,
                 "failedChecks": String(failedChecks),
-                "responseTime": String(format: "%.3f", lastResponseTime)
+                "responseTime": String(format: "%.3f", lastResponseTime),
             ],
             privacy: .public
         )
@@ -293,7 +283,7 @@ public actor XPCHealthMonitor {
                     "newState": String(describing: state),
                     "responseTime": String(format: "%.3f", lastResponseTime),
                     "successfulChecks": String(successfulChecks),
-                    "failedChecks": String(failedChecks)
+                    "failedChecks": String(failedChecks),
                 ],
                 privacy: .public
             )

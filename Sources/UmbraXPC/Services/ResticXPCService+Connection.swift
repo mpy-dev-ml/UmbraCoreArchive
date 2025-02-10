@@ -1,11 +1,3 @@
-//
-// ResticXPCService+Connection.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
@@ -40,7 +32,7 @@ extension ResticXPCService {
         let allowedClasses = Set<AnyClass>([
             NSString.self,
             NSArray.self,
-            NSDictionary.self
+            NSDictionary.self,
         ])
 
         let selector = #selector(ResticXPCProtocol.executeCommand(_:))
@@ -60,14 +52,16 @@ extension ResticXPCService {
         // Configure sandbox extensions
         let permissions: [XPCPermission] = [
             .allowFileAccess,
-            .allowNetworkAccess
+            .allowNetworkAccess,
         ]
         connection.setAccessibilityPermissions(permissions)
 
         // Set up security validation
         connection.setValidationHandler { [weak self] in
-            guard let self = self else { return false }
-            return self.validateConnection()
+            guard let self else {
+                return false
+            }
+            return validateConnection()
         }
     }
 
@@ -89,17 +83,17 @@ extension ResticXPCService {
     /// Configure message and command handlers
     private func configureMessageHandlers() {
         messageHandler = { [weak self] message in
-            guard let self = self else {
+            guard let self else {
                 throw ResticXPCError.serviceUnavailable
             }
-            try await self.handleMessage(message)
+            try await handleMessage(message)
         }
 
         commandHandler = { [weak self] command in
-            guard let self = self else {
+            guard let self else {
                 throw ResticXPCError.serviceUnavailable
             }
-            try await self.executeCommand(command)
+            try await executeCommand(command)
         }
     }
 
@@ -149,7 +143,7 @@ extension ResticXPCService {
             "XPC connection error",
             metadata: [
                 "service": serviceName,
-                "error": error.localizedDescription
+                "error": error.localizedDescription,
             ],
             privacy: .public
         )
@@ -159,7 +153,7 @@ extension ResticXPCService {
             object: nil,
             userInfo: [
                 "service": serviceName,
-                "error": error
+                "error": error,
             ]
         )
 
@@ -169,7 +163,9 @@ extension ResticXPCService {
 
     /// Attempt to recover a failed connection
     private func recoverConnection() async throws {
-        guard connectionState == .interrupted else { return }
+        guard connectionState == .interrupted else {
+            return
+        }
 
         logger.info(
             "Attempting to recover XPC connection",
@@ -179,7 +175,7 @@ extension ResticXPCService {
 
         // Wait before attempting recovery
         try await Task.sleep(
-            nanoseconds: UInt64(1e9)  // 1 second
+            nanoseconds: UInt64(1e9) // 1 second
         )
 
         do {
@@ -195,7 +191,7 @@ extension ResticXPCService {
                 "Failed to recover XPC connection",
                 metadata: [
                     "service": serviceName,
-                    "error": error.localizedDescription
+                    "error": error.localizedDescription,
                 ],
                 privacy: .public
             )
@@ -235,7 +231,7 @@ extension ResticXPCService {
                 """,
                 metadata: [
                     "service": serviceName,
-                    "actualType": String(describing: type(of: remoteObjectProxy))
+                    "actualType": String(describing: type(of: remoteObjectProxy)),
                 ],
                 privacy: .public
             )
@@ -244,7 +240,7 @@ extension ResticXPCService {
 
         do {
             let isAlive = try await service.ping()
-            self.isHealthy = isAlive
+            isHealthy = isAlive
 
             if isAlive {
                 logger.info(
@@ -265,11 +261,11 @@ extension ResticXPCService {
                 "XPC service validation failed",
                 metadata: [
                     "service": serviceName,
-                    "error": error.localizedDescription
+                    "error": error.localizedDescription,
                 ],
                 privacy: .public
             )
-            self.isHealthy = false
+            isHealthy = false
             throw error
         }
     }

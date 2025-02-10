@@ -1,19 +1,3 @@
-//
-// ResticXPCService+Queue.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// ResticXPCService+Queue.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 @available(macOS 13.0, *)
@@ -58,7 +42,9 @@ extension ResticXPCService {
 
     /// Start the queue processor
     func startQueueProcessor() {
-        guard queueProcessor == nil else { return }
+        guard queueProcessor == nil else {
+            return
+        }
 
         queueProcessor = Task {
             while !Task.isCancelled {
@@ -81,9 +67,9 @@ extension ResticXPCService {
     /// - Parameter command: The command to execute
     /// - Returns: The ID of the queued message
     func enqueueCommand(_ command: XPCCommandConfig) async -> UUID {
-        let messageId = await messageQueue.enqueue(command)
+        let messageID = await messageQueue.enqueue(command)
         startQueueProcessor()
-        return messageId
+        return messageID
     }
 
     /// Get the current status of the message queue
@@ -95,5 +81,45 @@ extension ResticXPCService {
     /// Clean up completed and failed messages
     func cleanupQueue() async {
         await messageQueue.cleanup()
+    }
+}
+
+extension ResticXPCService {
+    func enqueueOperation(_ operation: ResticOperation) throws {
+        let validStates = [
+            OperationState.ready,
+            OperationState.pending,
+            OperationState.queued
+        ]
+        
+        guard validStates.contains(operation.state) else {
+            throw ResticXPCError.invalidOperationState
+        }
+        
+        operationQueue.addOperation(operation)
+    }
+    
+    func cancelOperation(_ identifier: UUID) throws {
+        let validStates = [
+            OperationState.queued,
+            OperationState.running,
+            OperationState.suspended
+        ]
+        
+        guard let operation = findOperation(identifier),
+              validStates.contains(operation.state) else {
+            throw ResticXPCError.operationNotFound
+        }
+        
+        operation.cancel()
+    }
+    
+    private func findOperation(_ identifier: UUID) -> ResticOperation? {
+        operationQueue.operations.first { operation in
+            guard let resticOperation = operation as? ResticOperation else {
+                return false
+            }
+            return resticOperation.identifier == identifier
+        }
     }
 }

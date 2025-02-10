@@ -1,19 +1,3 @@
-//
-// ResticXPCService+Validation.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// ResticXPCService+Validation.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
@@ -24,7 +8,7 @@ extension ResticXPCService {
     /// Validates the XPC connection and service state
     /// - Throws: ResticXPCError if validation fails
     func validateConnection() throws {
-        guard let connection = connection else {
+        guard let connection else {
             throw ResticXPCError.connectionNotEstablished
         }
 
@@ -51,8 +35,8 @@ extension ResticXPCService {
         }
 
         // Check audit session
-        let sessionId = au_session_self()
-        guard connection.auditSessionIdentifier == sessionId else {
+        let sessionID = au_session_self()
+        guard connection.auditSessionIdentifier == sessionID else {
             throw ResticXPCError.invalidSession
         }
     }

@@ -1,20 +1,6 @@
-//
-// XPCHealthStatus.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// XPCHealthStatus.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - XPCHealthStatus
 
 /// Represents the health status of the XPC service
 public struct XPCHealthStatus: Equatable {
@@ -54,15 +40,18 @@ public struct XPCHealthStatus: Equatable {
     /// Whether the service requires immediate attention
     public var requiresAttention: Bool {
         switch state {
-        case .healthy, .unknown:
-            return false
+        case .healthy,
+             .unknown:
+            false
         case .degraded:
-            return failedChecks >= 2
+            failedChecks >= 2
         case .unhealthy:
-            return true
+            true
         }
     }
 }
+
+// MARK: - SystemResources
 
 /// System resource metrics
 public struct SystemResources: Equatable {
@@ -84,9 +73,9 @@ public struct SystemResources: Equatable {
     /// Whether resources are within acceptable limits
     public var isWithinLimits: Bool {
         cpuUsage < 80.0 &&
-        memoryUsage < 1_073_741_824 && // 1GB
-        availableDiskSpace > 1_073_741_824 && // 1GB
-        activeFileHandles < 1000 &&
-        activeConnections < 10
+            memoryUsage < 1_073_741_824 && // 1GB
+            availableDiskSpace > 1_073_741_824 && // 1GB
+            activeFileHandles < 1000 &&
+            activeConnections < 10
     }
 }

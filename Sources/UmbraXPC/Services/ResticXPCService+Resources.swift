@@ -1,19 +1,3 @@
-//
-// ResticXPCService+Resources.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// ResticXPCService+Resources.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
@@ -129,7 +113,7 @@ extension ResticXPCService {
         }
 
         // Check pending operations
-        let cancelledOps = pendingOperations.filter { $0.isCancelled }
+        let cancelledOps = pendingOperations.filter(\.isCancelled)
         for operation in cancelledOps {
             pendingOperations.removeAll { $0 === operation }
         }

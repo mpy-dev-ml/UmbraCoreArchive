@@ -1,20 +1,4 @@
 //
-// ResticXPCService+Commands.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// ResticXPCService+Commands.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
 //  ResticXPCService+Commands.swift
 //
 //
@@ -81,7 +65,7 @@ public extension ResticXPCService {
             workingDirectory: url.path,
             bookmarks: [:],
             timeout: 30,
-            auditSessionId: au_session_self()
+            auditSessionID: au_session_self()
         )
         _ = try await executeResticCommand(command)
     }
@@ -102,7 +86,7 @@ public extension ResticXPCService {
             workingDirectory: destination.path,
             bookmarks: [:],
             timeout: 3600,
-            auditSessionId: au_session_self()
+            auditSessionID: au_session_self()
         )
         let result = try await executeResticCommand(command)
 
@@ -123,7 +107,7 @@ public extension ResticXPCService {
             workingDirectory: "/",
             bookmarks: [:],
             timeout: 30,
-            auditSessionId: au_session_self()
+            auditSessionID: au_session_self()
         )
         let result = try await executeResticCommand(command)
 
@@ -149,7 +133,7 @@ public extension ResticXPCService {
             workingDirectory: source.path,
             bookmarks: [:],
             timeout: 3600,
-            auditSessionId: au_session_self()
+            auditSessionID: au_session_self()
         )
         let result = try await executeResticCommand(command)
 
@@ -263,10 +247,10 @@ private extension ResticXPCService {
     }
 
     private func executeCommand(_ command: PreparedCommand) async throws -> ProcessResult {
-        let operationId = UUID()
+        let operationID = UUID()
 
         // Start progress tracking
-        progressTracker.startOperation(operationId)
+        progressTracker.startOperation(operationID)
 
         do {
             // Execute command
@@ -278,12 +262,12 @@ private extension ResticXPCService {
             )
 
             // Update progress
-            progressTracker.updateProgress(operationId, progress: 1.0)
+            progressTracker.updateProgress(operationID, progress: 1.0)
 
             return process
         } catch {
             // Handle execution error
-            progressTracker.failOperation(operationId, error: error)
+            progressTracker.failOperation(operationID, error: error)
             let errorDesc = error.localizedDescription
             let message = "Command execution failed: \(errorDesc)"
             throw ResticXPCError.executionFailed(message)

@@ -1,27 +1,3 @@
-//
-// ResticXPCServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// ResticXPCServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-//  ResticXPCServiceProtocol.swift
-//
-//
-//
-//  Created by Matthew Yeager on 04/02/2025.
-//
-
 import Foundation
 
 /// Protocol for XPC service that executes Restic commands

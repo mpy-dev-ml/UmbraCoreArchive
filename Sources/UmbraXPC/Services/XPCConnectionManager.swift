@@ -1,80 +1,9 @@
-//
-// XPCConnectionManager.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// XPCConnectionManager.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Manages XPC connection lifecycle and recovery
 @available(macOS 13.0, *)
 public actor XPCConnectionManager {
-    // MARK: - Types
-
-    /// Configuration for XPC connection
-    public struct Configuration {
-        /// Service name
-        public let serviceName: String
-        /// Interface protocol
-        public let interfaceProtocol: Protocol
-        /// Maximum retry attempts
-        public let maxRetryAttempts: Int
-        /// Retry delay in seconds
-        public let retryDelay: TimeInterval
-        /// Health check interval in seconds
-        public let healthCheckInterval: TimeInterval
-
-        /// Initialize with values
-        public init(
-            serviceName: String,
-            interfaceProtocol: Protocol,
-            maxRetryAttempts: Int = 3,
-            retryDelay: TimeInterval = 1.0,
-            healthCheckInterval: TimeInterval = 30.0
-        ) {
-            self.serviceName = serviceName
-            self.interfaceProtocol = interfaceProtocol
-            self.maxRetryAttempts = maxRetryAttempts
-            self.retryDelay = retryDelay
-            self.healthCheckInterval = healthCheckInterval
-        }
-    }
-
-    // MARK: - Properties
-
-    /// The current state of the XPC connection
-    private(set) var state: XPCConnectionState
-
-    /// The active XPC connection instance
-    private var connection: NSXPCConnection?
-
-    /// Logger for connection events
-    private let logger: LoggerProtocol
-
-    /// Security service for connection validation
-    private let securityService: SecurityServiceProtocol
-
-    /// Configuration for connection management
-    private let configuration: Configuration
-
-    /// Delegate for connection state changes
-    private weak var delegate: XPCConnectionStateDelegate?
-
-    /// Task for connection recovery
-    private var recoveryTask: Task<Void, Never>?
-
-    /// Timer for health checks
-    private var healthCheckTimer: Timer?
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -94,11 +23,48 @@ public actor XPCConnectionManager {
         self.logger = logger
         self.securityService = securityService
         self.delegate = delegate
-        self.state = .disconnected
+        state = .disconnected
     }
 
     deinit {
         cleanup()
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Configuration for XPC connection
+    public struct Configuration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            serviceName: String,
+            interfaceProtocol: Protocol,
+            maxRetryAttempts: Int = 3,
+            retryDelay: TimeInterval = 1.0,
+            healthCheckInterval: TimeInterval = 30.0
+        ) {
+            self.serviceName = serviceName
+            self.interfaceProtocol = interfaceProtocol
+            self.maxRetryAttempts = maxRetryAttempts
+            self.retryDelay = retryDelay
+            self.healthCheckInterval = healthCheckInterval
+        }
+
+        // MARK: Public
+
+        /// Service name
+        public let serviceName: String
+        /// Interface protocol
+        public let interfaceProtocol: Protocol
+        /// Maximum retry attempts
+        public let maxRetryAttempts: Int
+        /// Retry delay in seconds
+        public let retryDelay: TimeInterval
+        /// Health check interval in seconds
+        public let healthCheckInterval: TimeInterval
     }
 
     // MARK: - Public Methods
@@ -109,14 +75,16 @@ public actor XPCConnectionManager {
         try await performanceMonitor.trackDuration(
             "xpc.connect"
         ) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
             // Validate current state
             guard state == .disconnected else {
                 let message = """
-                    Cannot connect while in state: \
-                    \(state)
-                    """
+                Cannot connect while in state: \
+                \(state)
+                """
                 throw XPCError.invalidState(message)
             }
 
@@ -129,13 +97,13 @@ public actor XPCConnectionManager {
             )
 
             // Configure connection
-            self.configureConnection(connection)
+            configureConnection(connection)
 
             // Resume connection
             connection.resume()
 
             // Wait for connection
-            try await self.waitForConnection(connection)
+            try await waitForConnection(connection)
 
             // Update state
             self.connection = connection
@@ -148,13 +116,13 @@ public actor XPCConnectionManager {
             logger.info(message, config: config)
 
             // Start health checks
-            self.startHealthChecks()
+            startHealthChecks()
         }
     }
 
     /// Establish XPC connection
     public func establishConnection() async throws -> NSXPCConnection {
-        if case .active = state, let connection = connection {
+        if case .active = state, let connection {
             return connection
         }
 
@@ -162,7 +130,7 @@ public actor XPCConnectionManager {
 
         do {
             let newConnection = try await createConnection()
-            self.connection = newConnection
+            connection = newConnection
             updateState(.active)
             startHealthCheck()
             return newConnection
@@ -187,6 +155,34 @@ public actor XPCConnectionManager {
         updateState(.invalidated(Date()))
         startRecovery()
     }
+
+    // MARK: Internal
+
+    /// The current state of the XPC connection
+    private(set) var state: XPCConnectionState
+
+    // MARK: Private
+
+    /// The active XPC connection instance
+    private var connection: NSXPCConnection?
+
+    /// Logger for connection events
+    private let logger: LoggerProtocol
+
+    /// Security service for connection validation
+    private let securityService: SecurityServiceProtocol
+
+    /// Configuration for connection management
+    private let configuration: Configuration
+
+    /// Delegate for connection state changes
+    private weak var delegate: XPCConnectionStateDelegate?
+
+    /// Task for connection recovery
+    private var recoveryTask: Task<Void, Never>?
+
+    /// Timer for health checks
+    private var healthCheckTimer: Timer?
 
     // MARK: - Private Methods
 
@@ -225,9 +221,9 @@ public actor XPCConnectionManager {
     private func startRecovery() {
         guard state.canRecover else {
             let message = """
-                Connection cannot be recovered in current state: \
-                \(state)
-                """
+            Connection cannot be recovered in current state: \
+            \(state)
+            """
             logger.error(message, privacy: .public)
             return
         }
@@ -253,16 +249,16 @@ public actor XPCConnectionManager {
                 do {
                     _ = try await establishConnection()
                     let message = """
-                        Connection recovered after \
-                        \(attempt) attempts
-                        """
+                    Connection recovered after \
+                    \(attempt) attempts
+                    """
                     logger.info(message, privacy: .public)
                     return
                 } catch {
                     let message = """
-                        Recovery attempt \(attempt) failed: \
-                        \(error.localizedDescription)
-                        """
+                    Recovery attempt \(attempt) failed: \
+                    \(error.localizedDescription)
+                    """
                     logger.error(message, privacy: .public)
                     attempt += 1
 
@@ -306,7 +302,7 @@ public actor XPCConnectionManager {
     }
 
     private func performHealthCheck() async {
-        guard case .active = state, let connection = connection else {
+        guard case .active = state, let connection else {
             return
         }
 
@@ -318,7 +314,7 @@ public actor XPCConnectionManager {
                 errorHandler
             ) as? ResticXPCProtocol
 
-            guard let remote = remote else {
+            guard let remote else {
                 throw ResticXPCError.invalidRemoteObject
             }
 
@@ -330,9 +326,9 @@ public actor XPCConnectionManager {
             }
         } catch {
             let message = """
-                Health check error: \
-                \(error.localizedDescription)
-                """
+            Health check error: \
+            \(error.localizedDescription)
+            """
             logger.error(message, privacy: .public)
             handleHealthCheckError(error)
         }
@@ -340,9 +336,9 @@ public actor XPCConnectionManager {
 
     private func handleHealthCheckError(_ error: Error) {
         let message = """
-            Health check error: \
-            \(error.localizedDescription)
-            """
+        Health check error: \
+        \(error.localizedDescription)
+        """
         logger.error(message, privacy: .public)
         handleInterruption()
     }
@@ -354,7 +350,7 @@ public actor XPCConnectionManager {
 
         let userInfo: [String: Any] = [
             "oldState": oldState,
-            "newState": newState
+            "newState": newState,
         ]
         NotificationCenter.default.post(
             name: .xpcConnectionStateChanged,
@@ -382,5 +378,102 @@ public actor XPCConnectionManager {
         healthCheckTimer = nil
         connection?.invalidate()
         connection = nil
+    }
+
+    private func validateConnection() throws {
+        let validStates = [
+            XPCConnectionState.connected,
+            XPCConnectionState.active,
+            XPCConnectionState.ready
+        ]
+        
+        guard let currentState = connectionState,
+              validStates.contains(currentState) else {
+            throw XPCError.invalidConnectionState
+        }
+    }
+
+    private func handleConnectionError(_ error: Error) {
+        let recoverySteps = [
+            "Check XPC service status",
+            "Verify connection parameters",
+            "Restart XPC service if needed"
+        ]
+        
+        logger.error(
+            "XPC connection error: \(error.localizedDescription)",
+            category: "XPCConnection",
+            metadata: ["recoverySteps": recoverySteps]
+        )
+    }
+}
+
+extension XPCConnectionManager {
+    func handleConnectionError(
+        _ error: Error,
+        for message: XPCMessage
+    ) {
+        let errorInfo: [String: Any] = [
+            "messageId": message.id,
+            "error": error
+        ]
+        
+        NotificationCenter.default.post(
+            name: .xpcConnectionError,
+            object: self,
+            userInfo: errorInfo
+        )
+        
+        logger.error(
+            "XPC connection error: \(error.localizedDescription)",
+            metadata: ["message_id": message.id]
+        )
+    }
+    
+    func handleDisconnection(
+        for connection: NSXPCConnection,
+        with error: Error?
+    ) {
+        let errorInfo: [String: Any] = [
+            "connection": connection,
+            "error": error as Any
+        ]
+        
+        NotificationCenter.default.post(
+            name: .xpcConnectionDisconnected,
+            object: self,
+            userInfo: errorInfo
+        )
+        
+        if let error = error {
+            logger.error(
+                "XPC connection disconnected with error: \(error.localizedDescription)",
+                metadata: ["connection": connection.description]
+            )
+        } else {
+            logger.info(
+                "XPC connection disconnected normally",
+                metadata: ["connection": connection.description]
+            )
+        }
+    }
+    
+    func handleReconnection(
+        for connection: NSXPCConnection
+    ) {
+        let connectionInfo: [String: Any] = [
+            "connection": connection
+        ]
+        
+        NotificationCenter.default.post(
+            name: .xpcConnectionReconnected,
+            object: self,
+            userInfo: connectionInfo
+        )
+        
+        logger.info(
+            "XPC connection reestablished",
+            metadata: ["connection": connection.description]
+        )
     }
 }

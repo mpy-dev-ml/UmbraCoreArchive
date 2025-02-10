@@ -1,19 +1,3 @@
-//
-// ResticXPCService+ErrorHandling.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// ResticXPCService+ErrorHandling.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 @available(macOS 13.0, *)
@@ -59,7 +43,8 @@ extension ResticXPCService {
     /// - Returns: True if the error was handled and operation should be retried
     private func handleXPCError(_ error: ResticXPCError, retryCount: Int) -> Bool {
         switch error {
-        case .connectionNotEstablished, .connectionInterrupted:
+        case .connectionNotEstablished,
+             .connectionInterrupted:
             // Attempt to reconnect if we haven't exceeded retry limit
             if retryCount < maxRetries {
                 do {
@@ -67,9 +52,9 @@ extension ResticXPCService {
                     return true
                 } catch {
                     let message = """
-                        Failed to re-establish XPC connection: \
-                        \(error.localizedDescription)
-                        """
+                    Failed to re-establish XPC connection: \
+                    \(error.localizedDescription)
+                    """
                     logger.error(
                         message,
                         file: #file,
@@ -84,15 +69,16 @@ extension ResticXPCService {
             // Service is unavailable, retry if within limits
             if retryCount < maxRetries {
                 let message = """
-                    Service unavailable, will retry. \
-                    Attempt \(retryCount + 1) of \(maxRetries)
-                    """
+                Service unavailable, will retry. \
+                Attempt \(retryCount + 1) of \(maxRetries)
+                """
                 logger.warning(message, file: #file, function: #function, line: #line)
                 return true
             }
             return false
 
-        case .invalidBookmark, .staleBookmark:
+        case .invalidBookmark,
+             .staleBookmark:
             // Request bookmark refresh from security service
             Task {
                 await refreshBookmarks()
@@ -111,7 +97,7 @@ extension ResticXPCService {
     ///   - error: The security error
     ///   - retryCount: Number of retry attempts made
     /// - Returns: True if the error was handled and operation should be retried
-    private func handleSecurityError(_ error: SecurityError, retryCount: Int) -> Bool {
+    private func handleSecurityError(_ error: SecurityError, retryCount _: Int) -> Bool {
         switch error {
         case .accessDenied:
             // Request permission refresh from security service
@@ -182,14 +168,14 @@ extension ResticXPCService {
             return [
                 NSURLErrorTimedOut,
                 NSURLErrorNetworkConnectionLost,
-                NSURLErrorNotConnectedToInternet
+                NSURLErrorNotConnectedToInternet,
             ].contains(nsError.code)
 
         case POSIXError.errorDomain:
             return [
                 EAGAIN,
                 EBUSY,
-                ETIMEDOUT
+                ETIMEDOUT,
             ].contains(POSIXErrorCode(rawValue: nsError.code)?.rawValue ?? 0)
 
         default:

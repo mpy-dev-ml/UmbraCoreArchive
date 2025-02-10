@@ -26,7 +26,7 @@ public final class MockResticXPCService: NSObject, ResticXPCServiceProtocol {
     public private(set) var usedPassword: String?
     public var snapshotsToReturn: [String] = []
 
-    public override init() {
+    override public init() {
         super.init()
     }
 

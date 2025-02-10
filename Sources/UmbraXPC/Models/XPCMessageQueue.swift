@@ -1,29 +1,20 @@
-//
-// XPCMessageQueue.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-//
-// XPCMessageQueue.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - XPCQueuedMessage
 
 /// Represents a queued XPC message with retry information
 public struct XPCQueuedMessage: Identifiable {
-    public let id: UUID
-    let command: XPCCommandConfig
-    let createdAt: Date
-    var retryCount: Int
-    var lastAttempt: Date?
-    var status: MessageStatus
+    // MARK: Lifecycle
+
+    init(command: XPCCommandConfig) {
+        id = UUID()
+        self.command = command
+        createdAt = Date()
+        retryCount = 0
+        status = .pending
+    }
+
+    // MARK: Public
 
     public enum MessageStatus {
         case pending
@@ -32,27 +23,23 @@ public struct XPCQueuedMessage: Identifiable {
         case failed(Error)
     }
 
-    init(command: XPCCommandConfig) {
-        self.id = UUID()
-        self.command = command
-        self.createdAt = Date()
-        self.retryCount = 0
-        self.status = .pending
-    }
+    public let id: UUID
+
+    // MARK: Internal
+
+    let command: XPCCommandConfig
+    let createdAt: Date
+    var retryCount: Int
+    var lastAttempt: Date?
+    var status: MessageStatus
 }
+
+// MARK: - XPCMessageQueue
 
 /// Manages the queue of XPC messages with retry logic
 @available(macOS 13.0, *)
 public actor XPCMessageQueue {
-    // MARK: - Properties
-
-    private var messages: [XPCQueuedMessage]
-    private let maxRetries: Int
-    private let retryDelay: TimeInterval
-    private let logger: LoggerProtocol
-
-    /// Current health status
-    private(set) var currentStatus: XPCHealthStatus
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -69,8 +56,24 @@ public actor XPCMessageQueue {
         self.maxRetries = maxRetries
         self.retryDelay = retryDelay
         self.logger = logger
-        self.currentStatus = .unknown
-        self.messages = []
+        currentStatus = .unknown
+        messages = []
+    }
+
+    // MARK: Public
+
+    // MARK: - Queue Status
+
+    /// Represents the current status of the message queue
+    public struct QueueStatus {
+        /// Number of pending messages
+        public let pending: Int
+        /// Number of in-progress messages
+        public let inProgress: Int
+        /// Number of completed messages
+        public let completed: Int
+        /// Number of failed messages
+        public let failed: Int
     }
 
     // MARK: - Queue Management
@@ -95,16 +98,16 @@ public actor XPCMessageQueue {
 
         // Check if message is in progress
         if case .inProgress = messages[index].status {
-            let msgId = messages[index].id
-            let message = "Message \(msgId) is already in progress"
+            let msgID = messages[index].id
+            let message = "Message \(msgID) is already in progress"
             logger.warning(message, privacy: .public)
             return nil
         }
 
         // Check if message is completed
         if case .completed = messages[index].status {
-            let msgId = messages[index].id
-            let message = "Message \(msgId) is already completed"
+            let msgID = messages[index].id
+            let message = "Message \(msgID) is already completed"
             logger.warning(message, privacy: .public)
             return nil
         }
@@ -125,7 +128,7 @@ public actor XPCMessageQueue {
             return
         }
 
-        if let error = error {
+        if let error {
             handleMessageFailure(at: index, error: error)
         } else {
             messages[index].status = .completed
@@ -134,55 +137,17 @@ public actor XPCMessageQueue {
         }
     }
 
-    // MARK: - Private Methods
-
-    private func handleMessageFailure(at index: Int, error: Error) {
-        messages[index].retryCount += 1
-        let msgId = messages[index].id
-        let retryCount = messages[index].retryCount
-
-        if retryCount >= maxRetries {
-            messages[index].status = .failed(error)
-            let message = """
-                Message \(msgId) failed after \
-                \(maxRetries) retries: \
-                \(error.localizedDescription)
-                """
-            logger.error(message, privacy: .public)
-        } else {
-            messages[index].status = .pending
-            let message = """
-                Message \(msgId) failed, scheduling \
-                retry \(retryCount)/\(maxRetries)
-                """
-            logger.warning(message, privacy: .public)
-        }
-    }
-
     /// Clean up completed and failed messages
     public func cleanup() {
         messages.removeAll { message in
             switch message.status {
-            case .completed, .failed:
-                return true
+            case .completed,
+                 .failed:
+                true
             default:
-                return false
+                false
             }
         }
-    }
-
-    // MARK: - Queue Status
-
-    /// Represents the current status of the message queue
-    public struct QueueStatus {
-        /// Number of pending messages
-        public let pending: Int
-        /// Number of in-progress messages
-        public let inProgress: Int
-        /// Number of completed messages
-        public let completed: Int
-        /// Number of failed messages
-        public let failed: Int
     }
 
     /// Get the current queue status
@@ -212,5 +177,42 @@ public actor XPCMessageQueue {
             completed: completed,
             failed: failed
         )
+    }
+
+    // MARK: Internal
+
+    /// Current health status
+    private(set) var currentStatus: XPCHealthStatus
+
+    // MARK: Private
+
+    private var messages: [XPCQueuedMessage]
+    private let maxRetries: Int
+    private let retryDelay: TimeInterval
+    private let logger: LoggerProtocol
+
+    // MARK: - Private Methods
+
+    private func handleMessageFailure(at index: Int, error: Error) {
+        messages[index].retryCount += 1
+        let msgID = messages[index].id
+        let retryCount = messages[index].retryCount
+
+        if retryCount >= maxRetries {
+            messages[index].status = .failed(error)
+            let message = """
+            Message \(msgID) failed after \
+            \(maxRetries) retries: \
+            \(error.localizedDescription)
+            """
+            logger.error(message, privacy: .public)
+        } else {
+            messages[index].status = .pending
+            let message = """
+            Message \(msgID) failed, scheduling \
+            retry \(retryCount)/\(maxRetries)
+            """
+            logger.warning(message, privacy: .public)
+        }
     }
 }

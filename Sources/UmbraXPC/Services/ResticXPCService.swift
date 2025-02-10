@@ -1,54 +1,48 @@
-//
-// ResticXPCService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
-import Security
 import os.log
+import Security
 
-// MARK: - Restic XPC Service
+// MARK: - ResticXPCService
 
 /// Service for managing Restic operations through XPC
 @objc
 public final class ResticXPCService: NSObject {
-    // MARK: - Properties
-    
-    /// XPC connection manager
-    private let connectionManager: XPCConnectionManager
-    
-    /// Queue for synchronizing operations
-    private let queue: DispatchQueue
-    
+    // MARK: - Public Properties
+
     /// Current health state of the service
     @objc private(set) dynamic var isHealthy: Bool
-    
+
+    // MARK: - Private Properties
+
+    /// XPC connection manager
+    private let connectionManager: XPCConnectionManager
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue
+
     /// Active security-scoped bookmarks
     private var activeBookmarks: [String: NSData]
-    
+
     /// Logger for service operations
     private let logger: LoggerProtocol
-    
+
     /// Security service for permissions
     private let securityService: SecurityServiceProtocol
-    
+
     /// Message queue for XPC commands
     private let messageQueue: XPCMessageQueue
-    
+
     /// Task for queue processing
     private var queueProcessor: Task<Void, Never>?
-    
+
     /// Health monitor for service
     private let healthMonitor: XPCHealthMonitor
-    
+
     /// Operation metrics recorder
     private let metricsRecorder: SecurityMetrics
-    
+
     // MARK: - Initialization
-    
+
     /// Creates a new Restic XPC service
     /// - Parameters:
     ///   - logger: Logger for operations
@@ -59,200 +53,287 @@ public final class ResticXPCService: NSObject {
         securityService: SecurityServiceProtocol,
         metrics: SecurityMetrics
     ) {
+        // Store dependencies
         self.logger = logger
         self.securityService = securityService
         self.metricsRecorder = metrics
-        
+
+        // Initialize state
+        self.isHealthy = false
+        self.activeBookmarks = [:]
+
         // Initialize core components
-        self.queue = DispatchQueue(
+        self.queue = Self.createDispatchQueue()
+        self.messageQueue = XPCMessageQueue(logger: logger)
+        self.connectionManager = Self.createConnectionManager(
+            logger: logger,
+            securityService: securityService
+        )
+        self.healthMonitor = Self.createHealthMonitor(
+            connectionManager: connectionManager,
+            logger: logger
+        )
+
+        super.init()
+
+        // Configure components
+        configureComponents()
+
+        // Start services
+        startServices()
+    }
+
+    deinit {
+        stopServices()
+    }
+}
+
+// MARK: - Private Initialization Helpers
+
+private extension ResticXPCService {
+    /// Creates the dispatch queue for operations
+    static func createDispatchQueue() -> DispatchQueue {
+        DispatchQueue(
             label: "com.umbra.core.resticXPC",
             qos: .userInitiated,
             attributes: .concurrent
         )
-        self.isHealthy = false
-        self.activeBookmarks = [:]
-        self.messageQueue = XPCMessageQueue(logger: logger)
-        
-        // Initialize connection manager
-        self.connectionManager = XPCConnectionManager(
+    }
+
+    /// Creates the XPC connection manager
+    static func createConnectionManager(
+        logger: LoggerProtocol,
+        securityService: SecurityServiceProtocol
+    ) -> XPCConnectionManager {
+        XPCConnectionManager(
             logger: logger,
             securityService: securityService
         )
-        
-        // Initialize health monitor
-        self.healthMonitor = XPCHealthMonitor(
+    }
+
+    /// Creates the health monitor
+    static func createHealthMonitor(
+        connectionManager: XPCConnectionManager,
+        logger: LoggerProtocol
+    ) -> XPCHealthMonitor {
+        XPCHealthMonitor(
             connectionManager: connectionManager,
             logger: logger,
             checkInterval: 30
         )
-        
-        super.init()
-        
-        // Configure components
-        self.connectionManager.delegate = self
-        self.healthMonitor.delegate = self
-        
-        // Start services
-        self.startServices()
     }
-    
-    deinit {
-        stopServices()
+
+    /// Configures service components
+    func configureComponents() {
+        connectionManager.delegate = self
+        healthMonitor.delegate = self
     }
-    
-    // MARK: - Service Lifecycle
-    
+}
+
+// MARK: - Service Lifecycle
+
+private extension ResticXPCService {
     /// Starts all service components
-    private func startServices() {
+    func startServices() {
         queue.async { [weak self] in
-            guard let self = self else { return }
-            
-            // Start connection manager
-            self.connectionManager.start()
-            
-            // Start health monitoring
-            self.healthMonitor.start()
-            
-            // Start queue processor
-            self.startQueueProcessor()
-            
+            guard let self else { return }
+            self.startServiceComponents()
             self.logger.info("ResticXPCService started successfully")
         }
     }
-    
+
+    /// Starts individual service components
+    func startServiceComponents() {
+        connectionManager.start()
+        healthMonitor.start()
+        startQueueProcessor()
+    }
+
     /// Stops all service components
-    private func stopServices() {
+    func stopServices() {
         queue.async { [weak self] in
-            guard let self = self else { return }
-            
-            // Stop health monitoring
-            self.healthMonitor.stop()
-            
-            // Stop queue processor
-            self.queueProcessor?.cancel()
-            self.queueProcessor = nil
-            
-            // Stop connection manager
-            self.connectionManager.stop()
-            
-            // Clean up resources
+            guard let self else { return }
+            self.stopServiceComponents()
             self.cleanupResources()
-            
             self.logger.info("ResticXPCService stopped successfully")
         }
     }
-    
+
+    /// Stops individual service components
+    func stopServiceComponents() {
+        healthMonitor.stop()
+        queueProcessor?.cancel()
+        queueProcessor = nil
+        connectionManager.stop()
+    }
+
     /// Starts the queue processor
-    private func startQueueProcessor() {
+    func startQueueProcessor() {
         queueProcessor = Task { [weak self] in
-            guard let self = self else { return }
-            
-            do {
-                try await self.messageQueue.process { message in
-                    try await self.handleMessage(message)
-                }
-            } catch {
-                self.logger.error("Queue processor failed: \(error.localizedDescription)")
-                self.metricsRecorder.recordXPC(
-                    success: false,
-                    error: error.localizedDescription
-                )
-            }
+            guard let self else { return }
+            await self.processMessageQueue()
         }
     }
-    
+
+    /// Processes messages from the queue
+    func processMessageQueue() async {
+        do {
+            try await messageQueue.process { [weak self] message in
+                guard let self else { return }
+                try await self.handleMessage(message)
+            }
+        } catch {
+            handleQueueProcessingError(error)
+        }
+    }
+
+    /// Handles queue processing errors
+    func handleQueueProcessingError(_ error: Error) {
+        let errorMessage = error.localizedDescription
+        logger.error("Queue processor failed: \(errorMessage)")
+        metricsRecorder.recordXPC(
+            success: false,
+            error: errorMessage
+        )
+    }
+
     /// Cleans up service resources
-    private func cleanupResources() {
-        // Release active bookmarks
+    func cleanupResources() {
+        releaseBookmarks()
+        messageQueue.clear()
+    }
+
+    /// Releases active security-scoped bookmarks
+    func releaseBookmarks() {
         for bookmark in activeBookmarks.values {
             autoreleasepool {
                 bookmark.stopAccessingSecurityScopedResource()
             }
         }
         activeBookmarks.removeAll()
-        
-        // Clear message queue
-        messageQueue.clear()
     }
 }
 
-// MARK: - XPC Connection State Delegate
+// MARK: - XPCConnectionStateDelegate
 
 extension ResticXPCService: XPCConnectionStateDelegate {
     public func connectionStateDidChange(_ state: XPCConnectionState) {
         queue.async { [weak self] in
-            guard let self = self else { return }
-            
-            switch state {
-            case .connected:
-                self.isHealthy = true
-                self.logger.info("XPC connection established")
-                self.metricsRecorder.recordXPC(
-                    success: true,
-                    metadata: ["state": "connected"]
-                )
-                
-            case .disconnected:
-                self.isHealthy = false
-                self.logger.warning("XPC connection lost")
-                self.metricsRecorder.recordXPC(
-                    success: false,
-                    error: "Connection lost",
-                    metadata: ["state": "disconnected"]
-                )
-                
-            case .invalid:
-                self.isHealthy = false
-                self.logger.error("XPC connection invalid")
-                self.metricsRecorder.recordXPC(
-                    success: false,
-                    error: "Invalid connection",
-                    metadata: ["state": "invalid"]
-                )
-                
-            case .interrupted:
-                self.isHealthy = false
-                self.logger.warning("XPC connection interrupted")
-                self.metricsRecorder.recordXPC(
-                    success: false,
-                    error: "Connection interrupted",
-                    metadata: ["state": "interrupted"]
-                )
-            }
+            guard let self else { return }
+            self.handleConnectionState(state)
+        }
+    }
+
+    private func handleConnectionState(_ state: XPCConnectionState) {
+        switch state {
+        case .connected:
+            handleConnectedState()
+        case .disconnected:
+            handleDisconnectedState()
+        case .invalid:
+            handleInvalidState()
+        case .interrupted:
+            handleInterruptedState()
+        }
+    }
+
+    private func handleConnectedState() {
+        isHealthy = true
+        logger.info("XPC connection established")
+        recordConnectionMetrics(
+            success: true,
+            state: "connected"
+        )
+    }
+
+    private func handleDisconnectedState() {
+        isHealthy = false
+        logger.warning("XPC connection lost")
+        recordConnectionMetrics(
+            success: false,
+            error: "Connection lost",
+            state: "disconnected"
+        )
+    }
+
+    private func handleInvalidState() {
+        isHealthy = false
+        logger.error("XPC connection invalid")
+        recordConnectionMetrics(
+            success: false,
+            error: "Invalid connection",
+            state: "invalid"
+        )
+    }
+
+    private func handleInterruptedState() {
+        isHealthy = false
+        logger.warning("XPC connection interrupted")
+        recordConnectionMetrics(
+            success: false,
+            error: "Connection interrupted",
+            state: "interrupted"
+        )
+    }
+
+    private func recordConnectionMetrics(
+        success: Bool,
+        error: String? = nil,
+        state: String
+    ) {
+        var metadata = ["state": state]
+        if let error = error {
+            metricsRecorder.recordXPC(
+                success: success,
+                error: error,
+                metadata: metadata
+            )
+        } else {
+            metricsRecorder.recordXPC(
+                success: success,
+                metadata: metadata
+            )
         }
     }
 }
 
-// MARK: - Health Monitor Delegate
+// MARK: - XPCHealthMonitorDelegate
 
 extension ResticXPCService: XPCHealthMonitorDelegate {
     public func healthCheckFailed(_ error: Error) {
         queue.async { [weak self] in
-            guard let self = self else { return }
-            
-            self.isHealthy = false
-            self.logger.error("Health check failed: \(error.localizedDescription)")
-            self.metricsRecorder.recordXPC(
-                success: false,
-                error: error.localizedDescription,
-                metadata: ["type": "health_check"]
-            )
-            
-            // Attempt recovery
-            self.connectionManager.reconnect()
+            guard let self else { return }
+            self.handleHealthCheckFailure(error)
         }
     }
-    
+
     public func healthCheckPassed() {
         queue.async { [weak self] in
-            guard let self = self else { return }
-            
-            self.isHealthy = true
-            self.logger.debug("Health check passed")
-            self.metricsRecorder.recordXPC(
-                success: true,
-                metadata: ["type": "health_check"]
-            )
+            guard let self else { return }
+            self.handleHealthCheckSuccess()
         }
+    }
+
+    private func handleHealthCheckFailure(_ error: Error) {
+        isHealthy = false
+        let errorMessage = error.localizedDescription
+        logger.error("Health check failed: \(errorMessage)")
+        metricsRecorder.recordXPC(
+            success: false,
+            error: errorMessage,
+            metadata: ["type": "health_check"]
+        )
+
+        // Attempt recovery
+        connectionManager.reconnect()
+    }
+
+    private func handleHealthCheckSuccess() {
+        isHealthy = true
+        logger.debug("Health check passed")
+        metricsRecorder.recordXPC(
+            success: true,
+            metadata: ["type": "health_check"]
+        )
     }
 }

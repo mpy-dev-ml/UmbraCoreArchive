@@ -13,7 +13,7 @@ import os.log
 @objc
 public class MockLogger: NSObject, LoggerProtocol {
     // MARK: - Types
-    
+
     /// Logged message
     public struct LoggedMessage: Equatable {
         /// Message text
@@ -22,7 +22,7 @@ public class MockLogger: NSObject, LoggerProtocol {
         public let level: Level
         /// Message metadata
         public let metadata: [String: String]
-        
+
         /// Initialize with values
         public init(
             message: String,
@@ -34,7 +34,7 @@ public class MockLogger: NSObject, LoggerProtocol {
             self.metadata = metadata
         }
     }
-    
+
     /// Log level
     public enum Level: Int {
         case debug = 0
@@ -43,20 +43,20 @@ public class MockLogger: NSObject, LoggerProtocol {
         case error = 3
         case critical = 4
     }
-    
+
     // MARK: - Properties
-    
+
     /// Logged messages
     public private(set) var messages: [LoggedMessage] = []
-    
+
     /// Queue for synchronizing access
     private let queue = DispatchQueue(
         label: "dev.mpy.umbra.mock-logger",
         attributes: .concurrent
     )
-    
+
     // MARK: - LoggerProtocol
-    
+
     /// Log debug message
     @objc
     public func debug(
@@ -69,7 +69,7 @@ public class MockLogger: NSObject, LoggerProtocol {
             metadata: config.metadata
         )
     }
-    
+
     /// Log info message
     @objc
     public func info(
@@ -82,7 +82,7 @@ public class MockLogger: NSObject, LoggerProtocol {
             metadata: config.metadata
         )
     }
-    
+
     /// Log warning message
     @objc
     public func warning(
@@ -95,7 +95,7 @@ public class MockLogger: NSObject, LoggerProtocol {
             metadata: config.metadata
         )
     }
-    
+
     /// Log error message
     @objc
     public func error(
@@ -108,7 +108,7 @@ public class MockLogger: NSObject, LoggerProtocol {
             metadata: config.metadata
         )
     }
-    
+
     /// Log critical message
     @objc
     public func critical(
@@ -121,36 +121,36 @@ public class MockLogger: NSObject, LoggerProtocol {
             metadata: config.metadata
         )
     }
-    
+
     // MARK: - Public Methods
-    
+
     /// Clear logged messages
     public func clear() {
         queue.async(flags: .barrier) {
             self.messages.removeAll()
         }
     }
-    
+
     /// Get messages of level
     public func messages(
         ofLevel level: Level
     ) -> [LoggedMessage] {
-        return queue.sync {
+        queue.sync {
             messages.filter { $0.level == level }
         }
     }
-    
+
     /// Get messages containing text
     public func messages(
         containing text: String
     ) -> [LoggedMessage] {
-        return queue.sync {
+        queue.sync {
             messages.filter { $0.message.contains(text) }
         }
     }
-    
+
     // MARK: - Private Methods
-    
+
     /// Log message with level and metadata
     private func logMessage(
         _ message: String,
