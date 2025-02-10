@@ -1,15 +1,9 @@
-//
-// FileSearchServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
+// MARK: - FileSearchServiceProtocol
+
 /// Protocol for searching files across backups
-public protocol FileSearchServiceProtocol {: Sendable: Sendable
+public protocol FileSearchServiceProtocol { : Sendable: Sendable
     /// Search for a file across all snapshots in a repository
     /// - Parameters:
     ///   - pattern: Search pattern (supports glob patterns)
@@ -19,7 +13,7 @@ public protocol FileSearchServiceProtocol {: Sendable: Sendable
         pattern: String,
         in repository: Repository
     ) async throws -> [FileMatch]
-    
+
     /// Get all versions of a specific file
     /// - Parameters:
     ///   - path: Full path of the file
@@ -31,14 +25,12 @@ public protocol FileSearchServiceProtocol {: Sendable: Sendable
     ) async throws -> [FileVersion]
 }
 
+// MARK: - FileMatch
+
 /// Represents a matched file in a backup
 public struct FileMatch: Identifiable, Hashable {
-    public let id: UUID
-    public let path: String
-    public let size: UInt64
-    public let modTime: Date
-    public let snapshot: ResticSnapshot
-    
+    // MARK: Lifecycle
+
     public init(
         id: UUID = UUID(),
         path: String,
@@ -52,17 +44,22 @@ public struct FileMatch: Identifiable, Hashable {
         self.modTime = modTime
         self.snapshot = snapshot
     }
-}
 
-/// Represents a specific version of a file
-public struct FileVersion: Identifiable, Hashable {
+    // MARK: Public
+
     public let id: UUID
     public let path: String
     public let size: UInt64
     public let modTime: Date
     public let snapshot: ResticSnapshot
-    public let hash: String
-    
+}
+
+// MARK: - FileVersion
+
+/// Represents a specific version of a file
+public struct FileVersion: Identifiable, Hashable {
+    // MARK: Lifecycle
+
     public init(
         id: UUID = UUID(),
         path: String,
@@ -78,7 +75,18 @@ public struct FileVersion: Identifiable, Hashable {
         self.snapshot = snapshot
         self.hash = hash
     }
+
+    // MARK: Public
+
+    public let id: UUID
+    public let path: String
+    public let size: UInt64
+    public let modTime: Date
+    public let snapshot: ResticSnapshot
+    public let hash: String
 }
+
+// MARK: - FileSearchError
 
 /// Errors that can occur during file search operations
 public enum FileSearchError: LocalizedError {
@@ -86,12 +94,14 @@ public enum FileSearchError: LocalizedError {
     case searchFailed(String)
     case snapshotInaccessible
     case repositoryLocked
-    
+
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .invalidPattern(let pattern):
+        case let .invalidPattern(pattern):
             "Invalid search pattern: \(pattern)"
-        case .searchFailed(let reason):
+        case let .searchFailed(reason):
             "File search failed: \(reason)"
         case .snapshotInaccessible:
             "Cannot access snapshot"

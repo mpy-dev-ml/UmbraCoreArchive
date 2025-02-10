@@ -1,11 +1,3 @@
-//
-// ServiceLifecycle+ErrorHandling.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 extension ServiceLifecycle {
@@ -98,7 +90,7 @@ extension ServiceLifecycle {
     ) async throws -> T {
         var lastError: Error?
 
-        for attempt in 1...attempts {
+        for attempt in 1 ... attempts {
             do {
                 return try await work()
             } catch {

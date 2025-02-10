@@ -1,11 +1,3 @@
-//
-// SecurityError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Security-related errors
@@ -31,45 +23,48 @@ public enum SecurityError: LocalizedError {
     /// Key management error
     case keyManagementError(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .bookmarkCreationFailed(let reason):
-            return "Failed to create bookmark: \(reason)"
-        case .bookmarkResolutionFailed(let reason):
-            return "Failed to resolve bookmark: \(reason)"
+        case let .bookmarkCreationFailed(reason):
+            "Failed to create bookmark: \(reason)"
+        case let .bookmarkResolutionFailed(reason):
+            "Failed to resolve bookmark: \(reason)"
         case .bookmarkStale:
-            return "Bookmark is stale and needs to be recreated"
-        case .permissionDenied(let reason):
-            return "Permission denied: \(reason)"
-        case .accessValidationFailed(let reason):
-            return "Access validation failed: \(reason)"
-        case .operationNotPermitted(let reason):
-            return "Operation not permitted: \(reason)"
-        case .keychainError(let reason):
-            return "Keychain error: \(reason)"
-        case .encryptionError(let reason):
-            return "Encryption error: \(reason)"
-        case .decryptionError(let reason):
-            return "Decryption error: \(reason)"
-        case .keyManagementError(let reason):
-            return "Key management error: \(reason)"
+            "Bookmark is stale and needs to be recreated"
+        case let .permissionDenied(reason):
+            "Permission denied: \(reason)"
+        case let .accessValidationFailed(reason):
+            "Access validation failed: \(reason)"
+        case let .operationNotPermitted(reason):
+            "Operation not permitted: \(reason)"
+        case let .keychainError(reason):
+            "Keychain error: \(reason)"
+        case let .encryptionError(reason):
+            "Encryption error: \(reason)"
+        case let .decryptionError(reason):
+            "Decryption error: \(reason)"
+        case let .keyManagementError(reason):
+            "Key management error: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .bookmarkStale:
-            return "Request permission again to create a new bookmark"
+            "Request permission again to create a new bookmark"
         case .permissionDenied:
-            return "Try requesting permission again or select a different file"
+            "Try requesting permission again or select a different file"
         case .keychainError:
-            return "Check keychain access and permissions"
-        case .encryptionError, .decryptionError:
-            return "Verify encryption key and try again"
+            "Check keychain access and permissions"
+        case .encryptionError,
+             .decryptionError:
+            "Verify encryption key and try again"
         case .keyManagementError:
-            return "Check key validity and permissions"
+            "Check key validity and permissions"
         default:
-            return nil
+            nil
         }
     }
 }

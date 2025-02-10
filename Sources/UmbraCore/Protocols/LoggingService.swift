@@ -1,25 +1,19 @@
-//
-// LoggingService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
+
+// MARK: - LoggingService
 
 /// Protocol for services that require logging capabilities.
 /// This protocol provides a standardised way to handle logging across the application,
 /// ensuring consistent log formatting and level-appropriate messaging.
-public protocol LoggingService {: Sendable: Sendable
+public protocol LoggingService { : Sendable: Sendable
     /// The logger instance used by this service.
     /// This property should be configured during service initialization
     /// and remain constant throughout the service's lifecycle.
     var logger: LoggerProtocol { get }
 }
 
-// MARK: - Log Level
+// MARK: - LogLevel
 
 /// Represents the available logging levels with their descriptions
 public enum LogLevel {
@@ -33,6 +27,8 @@ public enum LogLevel {
     case error
     /// Fault level for severe errors that may prevent proper functioning
     case fault
+
+    // MARK: Internal
 
     /// Convert to OSLogType
     var osLogType: OSLogType {
@@ -57,7 +53,7 @@ public enum LogLevel {
     }
 }
 
-// MARK: - Performance Metrics
+// MARK: - PerformanceMetrics
 
 /// Structure to hold performance metrics for logging
 public struct PerformanceMetrics {
@@ -181,8 +177,10 @@ public extension LoggingService {
         }
     }
 
-    /// Logs an asynchronous operation's execution time and any errors that occur during its execution.
-    /// This method wraps an asynchronous operation with timing information and appropriate error handling,
+    /// Logs an asynchronous operation's execution time and any errors that occur during its
+    /// execution.
+    /// This method wraps an asynchronous operation with timing information and appropriate error
+    /// handling,
     /// ensuring consistent logging across all service operations.
     ///
     /// - Parameters:

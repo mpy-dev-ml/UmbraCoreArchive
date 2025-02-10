@@ -1,19 +1,58 @@
-//
-// ProcessService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for managing processes
 public final class ProcessService: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: - Deinitializer
+
+    deinit {
+        terminateAllProcesses()
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Process configuration
     public struct Configuration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            executableURL: URL,
+            arguments: [String] = [],
+            environment: [String: String]? = nil,
+            workingDirectoryURL: URL? = nil,
+            standardInput: Pipe? = nil,
+            standardOutput: Pipe? = nil,
+            standardError: Pipe? = nil
+        ) {
+            self.executableURL = executableURL
+            self.arguments = arguments
+            self.environment = environment
+            self.workingDirectoryURL = workingDirectoryURL
+            self.standardInput = standardInput
+            self.standardOutput = standardOutput
+            self.standardError = standardError
+        }
+
+        // MARK: Public
+
         /// Executable URL
         public let executableURL: URL
 
@@ -34,40 +73,11 @@ public final class ProcessService: BaseSandboxedService {
 
         /// Standard error pipe
         public let standardError: Pipe?
-
-        /// Initialize with values
-        public init(
-            executableURL: URL,
-            arguments: [String] = [],
-            environment: [String: String]? = nil,
-            workingDirectoryURL: URL? = nil,
-            standardInput: Pipe? = nil,
-            standardOutput: Pipe? = nil,
-            standardError: Pipe? = nil
-        ) {
-            self.executableURL = executableURL
-            self.arguments = arguments
-            self.environment = environment
-            self.workingDirectoryURL = workingDirectoryURL
-            self.standardInput = standardInput
-            self.standardOutput = standardOutput
-            self.standardError = standardError
-        }
     }
 
     /// Process result
     public struct Result {
-        /// Exit code
-        public let exitCode: Int32
-
-        /// Standard output data
-        public let standardOutput: Data
-
-        /// Standard error data
-        public let standardError: Data
-
-        /// Duration in seconds
-        public let duration: TimeInterval
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -81,35 +91,20 @@ public final class ProcessService: BaseSandboxedService {
             self.standardError = standardError
             self.duration = duration
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Active processes
-    private var processes: [Process] = []
+        /// Exit code
+        public let exitCode: Int32
 
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.process",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
+        /// Standard output data
+        public let standardOutput: Data
 
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+        /// Standard error data
+        public let standardError: Data
 
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
+        /// Duration in seconds
+        public let duration: TimeInterval
     }
 
     // MARK: - Public Methods
@@ -187,12 +182,50 @@ public final class ProcessService: BaseSandboxedService {
         }
     }
 
+    /// Terminate all processes
+    public func terminateAllProcesses() {
+        queue.async(flags: .barrier) {
+            for process in self.processes {
+                process.terminate()
+            }
+            self.processes.removeAll()
+
+            self.logger.debug(
+                "Terminated all processes",
+                file: #file,
+                function: #function,
+                line: #line
+            )
+        }
+    }
+
+    /// Get active process count
+    /// - Returns: Number of active processes
+    public func getActiveProcessCount() -> Int {
+        queue.sync { processes.count }
+    }
+
+    // MARK: Private
+
+    /// Active processes
+    private var processes: [Process] = []
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.process",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
     /// Execute process with configuration
     private func executeProcess(
         _ process: Process,
         config: Configuration
     ) async throws -> Result {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             do {
                 let result = try executeProcessSync(process, config: config)
                 continuation.resume(returning: result)
@@ -205,7 +238,7 @@ public final class ProcessService: BaseSandboxedService {
     /// Execute process synchronously
     private func executeProcessSync(
         _ process: Process,
-        config: Configuration
+        config _: Configuration
     ) throws -> Result {
         let outputPipe = Pipe()
         let errorPipe = Pipe()
@@ -261,34 +294,5 @@ public final class ProcessService: BaseSandboxedService {
             standardError: errorData,
             duration: duration
         )
-    }
-
-    /// Terminate all processes
-    public func terminateAllProcesses() {
-        queue.async(flags: .barrier) {
-            for process in self.processes {
-                process.terminate()
-            }
-            self.processes.removeAll()
-
-            self.logger.debug(
-                "Terminated all processes",
-                file: #file,
-                function: #function,
-                line: #line
-            )
-        }
-    }
-
-    /// Get active process count
-    /// - Returns: Number of active processes
-    public func getActiveProcessCount() -> Int {
-        queue.sync { processes.count }
-    }
-
-    // MARK: - Deinitializer
-
-    deinit {
-        terminateAllProcesses()
     }
 }

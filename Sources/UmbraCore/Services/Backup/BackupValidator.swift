@@ -1,24 +1,30 @@
-//
-// BackupValidator.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Validator for backup operations
 public struct BackupValidator {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        self.logger = logger
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Validation result
     public struct ValidationResult {
-        /// Whether validation passed
-        public let passed: Bool
-
-        /// Validation issues if any
-        public let issues: [ValidationIssue]
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -28,15 +34,19 @@ public struct BackupValidator {
             self.passed = passed
             self.issues = issues
         }
+
+        // MARK: Public
+
+        /// Whether validation passed
+        public let passed: Bool
+
+        /// Validation issues if any
+        public let issues: [ValidationIssue]
     }
 
     /// Validation issue
     public struct ValidationIssue {
-        /// Issue type
-        public let type: IssueType
-
-        /// Issue description
-        public let description: String
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -46,6 +56,14 @@ public struct BackupValidator {
             self.type = type
             self.description = description
         }
+
+        // MARK: Public
+
+        /// Issue type
+        public let type: IssueType
+
+        /// Issue description
+        public let description: String
     }
 
     /// Issue type
@@ -68,28 +86,6 @@ public struct BackupValidator {
         case custom(String)
     }
 
-    // MARK: - Properties
-
-    /// Logger for tracking operations
-    private let logger: LoggerProtocol
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        self.logger = logger
-    }
-
     // MARK: - Public Methods
 
     /// Validate backup configuration
@@ -99,7 +95,7 @@ public struct BackupValidator {
     public func validateConfiguration(
         _ configuration: BackupConfiguration
     ) async throws -> ValidationResult {
-        return try await performanceMonitor.trackDuration(
+        try await performanceMonitor.trackDuration(
             "backup.validate.configuration"
         ) {
             var issues: [ValidationIssue] = []
@@ -143,7 +139,7 @@ public struct BackupValidator {
                 config: LogConfig(
                     metadata: [
                         "name": configuration.name,
-                        "issues": String(issues.count)
+                        "issues": String(issues.count),
                     ]
                 )
             )
@@ -154,6 +150,14 @@ public struct BackupValidator {
             )
         }
     }
+
+    // MARK: Private
+
+    /// Logger for tracking operations
+    private let logger: LoggerProtocol
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 
     // MARK: - Private Methods
 
@@ -261,14 +265,15 @@ public struct BackupValidator {
                     forPath: storage.url.path
                 )
                 if let freeSize = attributes[.systemFreeSize] as? Int64,
-                   freeSize < quota {
+                   freeSize < quota
+                {
                     issues.append(
                         ValidationIssue(
                             type: .storage,
                             description: """
-                                Storage quota exceeds available space: \
-                                \(storage.url.path)
-                                """
+                            Storage quota exceeds available space: \
+                            \(storage.url.path)
+                            """
                         )
                     )
                 }
@@ -284,7 +289,8 @@ public struct BackupValidator {
         switch configuration.compressionType {
         case .none:
             break
-        case .zip, .gzip:
+        case .zip,
+             .gzip:
             break
         case .lzma:
             guard CompressionManager.shared.isLZMAAvailable else {
@@ -369,8 +375,8 @@ public struct BackupValidator {
                 ValidationIssue(
                     type: .retention,
                     description: """
-                        Minimum required backups cannot exceed maximum backups
-                        """
+                    Minimum required backups cannot exceed maximum backups
+                    """
                 )
             )
         }

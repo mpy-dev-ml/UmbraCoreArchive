@@ -1,140 +1,10 @@
-//
-// ConfigurationService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - ConfigurationService
 
 /// Service for managing configuration settings
 public final class ConfigurationService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Configuration value type
-    public enum ValueType: String, Codable {
-        case string
-        case integer
-        case double
-        case boolean
-        case date
-        case data
-        case array
-        case dictionary
-    }
-
-    /// Configuration value
-    public struct ConfigValue: Codable {
-        /// Value type
-        public let type: ValueType
-
-        /// Raw value
-        public let value: Any
-
-        /// Initialize with value
-        public init(value: Any) throws {
-            switch value {
-            case is String:
-                self.type = .string
-            case is Int:
-                self.type = .integer
-            case is Double:
-                self.type = .double
-            case is Bool:
-                self.type = .boolean
-            case is Date:
-                self.type = .date
-            case is Data:
-                self.type = .data
-            case is [Any]:
-                self.type = .array
-            case is [String: Any]:
-                self.type = .dictionary
-            default:
-                throw ConfigurationError.unsupportedValueType(
-                    String(describing: type(of: value))
-                )
-            }
-            self.value = value
-        }
-
-        // MARK: - Codable Implementation
-
-        private enum CodingKeys: String, CodingKey {
-            case type
-            case value
-        }
-
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.type = try container.decode(ValueType.self, forKey: .type)
-
-            switch type {
-            case .string:
-                self.value = try container.decode(String.self, forKey: .value)
-            case .integer:
-                self.value = try container.decode(Int.self, forKey: .value)
-            case .double:
-                self.value = try container.decode(Double.self, forKey: .value)
-            case .boolean:
-                self.value = try container.decode(Bool.self, forKey: .value)
-            case .date:
-                self.value = try container.decode(Date.self, forKey: .value)
-            case .data:
-                self.value = try container.decode(Data.self, forKey: .value)
-            case .array:
-                self.value = try container.decode([Any].self, forKey: .value)
-            case .dictionary:
-                self.value = try container.decode(
-                    [String: Any].self,
-                    forKey: .value
-                )
-            }
-        }
-
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(type, forKey: .type)
-
-            switch type {
-            case .string:
-                try container.encode(value as! String, forKey: .value)
-            case .integer:
-                try container.encode(value as! Int, forKey: .value)
-            case .double:
-                try container.encode(value as! Double, forKey: .value)
-            case .boolean:
-                try container.encode(value as! Bool, forKey: .value)
-            case .date:
-                try container.encode(value as! Date, forKey: .value)
-            case .data:
-                try container.encode(value as! Data, forKey: .value)
-            case .array:
-                try container.encode(value as! [Any], forKey: .value)
-            case .dictionary:
-                try container.encode(value as! [String: Any], forKey: .value)
-            }
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Configuration values
-    private var values: [String: ConfigValue] = [:]
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.config",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// File URL for persistent storage
-    private let fileURL: URL
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -151,6 +21,146 @@ public final class ConfigurationService: BaseSandboxedService {
         self.fileURL = fileURL
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Configuration value type
+    public enum ValueType: String, Codable {
+        case string
+        case integer
+        case double
+        case boolean
+        case date
+        case data
+        case array
+        case dictionary
+    }
+
+    /// Configuration value
+    public struct ConfigValue: Codable {
+        // MARK: Lifecycle
+
+        /// Initialize with value
+        public init(value: Any) throws {
+            switch value {
+            case is String:
+                type = .string
+            case is Int:
+                type = .integer
+            case is Double:
+                type = .double
+            case is Bool:
+                type = .boolean
+            case is Date:
+                type = .date
+            case is Data:
+                type = .data
+            case is [Any]:
+                type = .array
+            case is [String: Any]:
+                type = .dictionary
+            default:
+                throw ConfigurationError.unsupportedValueType(
+                    String(describing: type(of: value))
+                )
+            }
+            self.value = value
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            type = try container.decode(ValueType.self, forKey: .type)
+
+            switch type {
+            case .string:
+                value = try container.decode(String.self, forKey: .value)
+            case .integer:
+                value = try container.decode(Int.self, forKey: .value)
+            case .double:
+                value = try container.decode(Double.self, forKey: .value)
+            case .boolean:
+                value = try container.decode(Bool.self, forKey: .value)
+            case .date:
+                value = try container.decode(Date.self, forKey: .value)
+            case .data:
+                value = try container.decode(Data.self, forKey: .value)
+            case .array:
+                value = try container.decode([Any].self, forKey: .value)
+            case .dictionary:
+                value = try container.decode(
+                    [String: Any].self,
+                    forKey: .value
+                )
+            }
+        }
+
+        // MARK: Public
+
+        /// Value type
+        public let type: ValueType
+
+        /// Raw value
+        public let value: Any
+
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(type, forKey: .type)
+
+            switch type {
+            case .string:
+                guard let stringValue = value as? String else {
+                    throw ConfigurationError.invalidValueType(expected: String.self, actual: type(of: value))
+                }
+                try container.encode(stringValue, forKey: .value)
+            case .integer:
+                guard let intValue = value as? Int else {
+                    throw ConfigurationError.invalidValueType(expected: Int.self, actual: type(of: value))
+                }
+                try container.encode(intValue, forKey: .value)
+            case .double:
+                guard let doubleValue = value as? Double else {
+                    throw ConfigurationError.invalidValueType(expected: Double.self, actual: type(of: value))
+                }
+                try container.encode(doubleValue, forKey: .value)
+            case .boolean:
+                guard let boolValue = value as? Bool else {
+                    throw ConfigurationError.invalidValueType(expected: Bool.self, actual: type(of: value))
+                }
+                try container.encode(boolValue, forKey: .value)
+            case .date:
+                guard let dateValue = value as? Date else {
+                    throw ConfigurationError.invalidValueType(expected: Date.self, actual: type(of: value))
+                }
+                try container.encode(dateValue, forKey: .value)
+            case .data:
+                guard let dataValue = value as? Data else {
+                    throw ConfigurationError.invalidValueType(expected: Data.self, actual: type(of: value))
+                }
+                try container.encode(dataValue, forKey: .value)
+            case .array:
+                guard let arrayValue = value as? [Any] else {
+                    throw ConfigurationError.invalidValueType(expected: Array<Any>.self, actual: type(of: value))
+                }
+                try container.encode(arrayValue, forKey: .value)
+            case .dictionary:
+                guard let dictValue = value as? [String: Any] else {
+                    throw ConfigurationError.invalidValueType(expected: Dictionary<String, Any>.self, actual: type(of: value))
+                }
+                try container.encode(dictValue, forKey: .value)
+            }
+        }
+
+        // MARK: Private
+
+        // MARK: - Codable Implementation
+
+        private enum CodingKeys: String, CodingKey {
+            case type
+            case value
+        }
     }
 
     // MARK: - Public Methods
@@ -259,6 +269,24 @@ public final class ConfigurationService: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    /// Configuration values
+    private var values: [String: ConfigValue] = [:]
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.config",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// File URL for persistent storage
+    private let fileURL: URL
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
     // MARK: - Private Methods
 
     /// Save configuration to disk
@@ -287,40 +315,44 @@ public final class ConfigurationService: BaseSandboxedService {
     }
 }
 
+// MARK: - ConfigurationError
+
 /// Errors that can occur during configuration operations
 public enum ConfigurationError: LocalizedError {
     /// Value not found
     case valueNotFound(String)
     /// Invalid value type
-    case invalidValueType(String)
+    case invalidValueType(expected: Any.Type, actual: Any.Type)
     /// Unsupported value type
     case unsupportedValueType(String)
     /// Persistence error
     case persistenceError(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .valueNotFound(let key):
-            return "Configuration value not found for key: \(key)"
-        case .invalidValueType(let type):
-            return "Invalid value type: \(type)"
-        case .unsupportedValueType(let type):
-            return "Unsupported value type: \(type)"
-        case .persistenceError(let reason):
-            return "Configuration persistence error: \(reason)"
+        case let .valueNotFound(key):
+            "Configuration value not found for key: \(key)"
+        case let .invalidValueType(expected, actual):
+            "Invalid value type: expected \(expected), actual \(actual)"
+        case let .unsupportedValueType(type):
+            "Unsupported value type: \(type)"
+        case let .persistenceError(reason):
+            "Configuration persistence error: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .valueNotFound:
-            return "Check configuration key"
+            "Check configuration key"
         case .invalidValueType:
-            return "Check value type"
+            "Check value type"
         case .unsupportedValueType:
-            return "Use supported value type"
+            "Use supported value type"
         case .persistenceError:
-            return "Check file permissions and disk space"
+            "Check file permissions and disk space"
         }
     }
 }

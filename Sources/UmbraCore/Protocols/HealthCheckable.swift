@@ -1,12 +1,6 @@
-//
-// HealthCheckable.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - HealthCheckable
 
 /// A protocol that defines health monitoring capabilities for services.
 ///
@@ -121,7 +115,8 @@ import Foundation
 
     /// Validates the service's configuration and dependencies
     ///
-    /// This method checks the service's configuration and dependencies to ensure they are valid and correctly set up.
+    /// This method checks the service's configuration and dependencies to ensure they are valid and
+    /// correctly set up.
     ///
     /// - Returns: A boolean indicating if the validation was successful
     /// - Throws: If the validation process fails
@@ -129,11 +124,14 @@ import Foundation
 
     /// Performs cleanup of any resources used by the service
     ///
-    /// This method releases any resources held by the service, such as file handles, network connections, or memory.
+    /// This method releases any resources held by the service, such as file handles, network
+    /// connections, or memory.
     ///
     /// - Throws: If the cleanup operation fails
     public func cleanup() async throws
 }
+
+// MARK: - HealthState
 
 /// Represents the possible health states of a service
 @objc public enum HealthState: Int {
@@ -141,6 +139,8 @@ import Foundation
     case healthy = 1
     case degraded = 2
     case unhealthy = 3
+
+    // MARK: Public
 
     /// String representation of the health state
     public var description: String {
@@ -155,11 +155,15 @@ import Foundation
     /// Whether the state indicates the service is operational
     public var isOperational: Bool {
         switch self {
-        case .healthy, .degraded: true
-        case .unknown, .unhealthy: false
+        case .healthy,
+             .degraded: true
+        case .unknown,
+             .unhealthy: false
         }
     }
 }
+
+// MARK: - HealthError
 
 /// Health-related errors that can occur during health checks
 @objc public enum HealthError: Int, Error {
@@ -167,37 +171,28 @@ import Foundation
     case connectionFailed = 2
     case invalidState = 3
     case dependencyUnavailable = 4
-    
+
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
         case .timeout:
-            return "Service health check timed out"
+            "Service health check timed out"
         case .connectionFailed:
-            return "Failed to connect to service"
+            "Failed to connect to service"
         case .invalidState:
-            return "Service is in an invalid state"
+            "Service is in an invalid state"
         case .dependencyUnavailable:
-            return "Required dependency is unavailable"
+            "Required dependency is unavailable"
         }
     }
 }
 
+// MARK: - HealthMetrics
+
 /// Metrics collected during health checks
 @objc public class HealthMetrics: NSObject {
-    /// Response time in seconds
-    @objc public let responseTime: TimeInterval
-
-    /// Memory usage in bytes
-    @objc public let memoryUsage: UInt64
-
-    /// CPU usage percentage (0-100)
-    @objc public let cpuUsage: Double
-
-    /// Number of active connections
-    @objc public let activeConnections: Int
-
-    /// Custom metrics dictionary
-    @objc public let customMetrics: [String: NSNumber]
+    // MARK: Lifecycle
 
     public init(
         responseTime: TimeInterval = 0,
@@ -214,8 +209,10 @@ import Foundation
         super.init()
     }
 
+    // MARK: Public
+
     /// Format metrics as a string
-    override public var description: String {
+    public override var description: String {
         """
         Response Time: \(String(format: "%.3f", responseTime))s
         Memory Usage: \(ByteCountFormatter.string(
@@ -227,6 +224,21 @@ import Foundation
         Custom Metrics: \(customMetrics)
         """
     }
+
+    /// Response time in seconds
+    @objc public let responseTime: TimeInterval
+
+    /// Memory usage in bytes
+    @objc public let memoryUsage: UInt64
+
+    /// CPU usage percentage (0-100)
+    @objc public let cpuUsage: Double
+
+    /// Number of active connections
+    @objc public let activeConnections: Int
+
+    /// Custom metrics dictionary
+    @objc public let customMetrics: [String: NSNumber]
 }
 
 /// Default implementation for Swift types that conform to HealthCheckable.
@@ -263,7 +275,7 @@ public extension HealthCheckable {
     /// - Throws: HealthError if the check fails
     func checkHealth() async throws -> HealthCheckResult {
         // Default implementation for checkHealth
-        return HealthCheckResult(
+        HealthCheckResult(
             status: .healthy,
             timestamp: Date(),
             duration: 0,
@@ -277,7 +289,7 @@ public extension HealthCheckable {
     /// - Throws: HealthError if validation fails
     func validateConfiguration() async throws -> Bool {
         // Default implementation for validateConfiguration
-        return true
+        true
     }
 
     /// Performs cleanup operations for the service.

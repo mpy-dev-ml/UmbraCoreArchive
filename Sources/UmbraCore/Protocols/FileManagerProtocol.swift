@@ -1,12 +1,6 @@
-//
-// FileManagerProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - FileManagerProtocol
 
 /// Protocol for file system operations, allowing for easier testing and sandbox compliance.
 ///
@@ -104,6 +98,8 @@ public protocol FileManagerProtocol {
     ) throws -> [URL]
 }
 
+// MARK: - FileError
+
 /// Errors that can occur during file operations
 public enum FileError: LocalizedError {
     case fileNotFound(path: String)
@@ -111,6 +107,8 @@ public enum FileError: LocalizedError {
     case alreadyExists(path: String)
     case invalidPath(path: String)
     case operationFailed(path: String, reason: String)
+
+    // MARK: Public
 
     public var errorDescription: String? {
         switch self {
@@ -128,17 +126,24 @@ public enum FileError: LocalizedError {
     }
 }
 
+// MARK: - DefaultFileManager
+
 /// Default implementation of FileManagerProtocol using FileManager
 public struct DefaultFileManager: FileManagerProtocol {
-    private let fileManager = FileManager.default
+    // MARK: Lifecycle
 
     public init() {}
+
+    // MARK: Public
 
     public func fileExists(atPath path: String) -> Bool {
         fileManager.fileExists(atPath: path)
     }
 
-    public func fileExists(atPath path: String, isDirectory: UnsafeMutablePointer<ObjCBool>?) -> Bool {
+    public func fileExists(
+        atPath path: String,
+        isDirectory: UnsafeMutablePointer<ObjCBool>?
+    ) -> Bool {
         fileManager.fileExists(atPath: path, isDirectory: isDirectory)
     }
 
@@ -255,4 +260,8 @@ public struct DefaultFileManager: FileManagerProtocol {
             throw FileError.operationFailed(path: url.path, reason: error.localizedDescription)
         }
     }
+
+    // MARK: Private
+
+    private let fileManager: FileManager = .default
 }

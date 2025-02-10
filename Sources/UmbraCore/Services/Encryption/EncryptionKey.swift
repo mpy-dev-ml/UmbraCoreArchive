@@ -1,16 +1,52 @@
-//
-// EncryptionKey.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-import Foundation
 import CryptoKit
+import Foundation
 
 /// Wrapper for encryption keys
 public struct EncryptionKey {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with symmetric key
+    /// - Parameters:
+    ///   - symmetricKey: Symmetric key
+    ///   - identifier: Key identifier
+    ///   - storage: Key storage
+    public init(
+        symmetricKey: SymmetricKey,
+        identifier: String,
+        storage: Storage = .memory
+    ) {
+        self.symmetricKey = symmetricKey
+        self.identifier = identifier
+        type = .symmetric
+        self.storage = storage
+        privateKeyData = nil
+        publicKeyData = nil
+    }
+
+    /// Initialize with key pair
+    /// - Parameters:
+    ///   - privateKey: Private key data
+    ///   - publicKey: Public key data
+    ///   - identifier: Key identifier
+    ///   - storage: Key storage
+    public init(
+        privateKey: Data,
+        publicKey: Data,
+        identifier: String,
+        storage: Storage = .memory
+    ) {
+        privateKeyData = privateKey
+        publicKeyData = publicKey
+        self.identifier = identifier
+        type = .asymmetric
+        self.storage = storage
+        symmetricKey = nil
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Key type
@@ -35,8 +71,6 @@ public struct EncryptionKey {
         case custom(String)
     }
 
-    // MARK: - Properties
-
     /// Key identifier
     public let identifier: String
 
@@ -45,55 +79,6 @@ public struct EncryptionKey {
 
     /// Key storage
     public let storage: Storage
-
-    /// Symmetric key
-    private let symmetricKey: SymmetricKey?
-
-    /// Private key data
-    private let privateKeyData: Data?
-
-    /// Public key data
-    private let publicKeyData: Data?
-
-    // MARK: - Initialization
-
-    /// Initialize with symmetric key
-    /// - Parameters:
-    ///   - symmetricKey: Symmetric key
-    ///   - identifier: Key identifier
-    ///   - storage: Key storage
-    public init(
-        symmetricKey: SymmetricKey,
-        identifier: String,
-        storage: Storage = .memory
-    ) {
-        self.symmetricKey = symmetricKey
-        self.identifier = identifier
-        self.type = .symmetric
-        self.storage = storage
-        self.privateKeyData = nil
-        self.publicKeyData = nil
-    }
-
-    /// Initialize with key pair
-    /// - Parameters:
-    ///   - privateKey: Private key data
-    ///   - publicKey: Public key data
-    ///   - identifier: Key identifier
-    ///   - storage: Key storage
-    public init(
-        privateKey: Data,
-        publicKey: Data,
-        identifier: String,
-        storage: Storage = .memory
-    ) {
-        self.privateKeyData = privateKey
-        self.publicKeyData = publicKey
-        self.identifier = identifier
-        self.type = .asymmetric
-        self.storage = storage
-        self.symmetricKey = nil
-    }
 
     // MARK: - Public Methods
 
@@ -141,7 +126,7 @@ public struct EncryptionKey {
             try saveToKeychain()
         case .secureEnclave:
             try saveToSecureEnclave()
-        case .custom(let storageType):
+        case let .custom(storageType):
             throw EncryptionError.operationFailed("Unsupported storage: \(storageType)")
         }
     }
@@ -157,19 +142,30 @@ public struct EncryptionKey {
             try deleteFromKeychain()
         case .secureEnclave:
             try deleteFromSecureEnclave()
-        case .custom(let storageType):
+        case let .custom(storageType):
             throw EncryptionError.operationFailed("Unsupported storage: \(storageType)")
         }
     }
+
+    // MARK: Private
+
+    /// Symmetric key
+    private let symmetricKey: SymmetricKey?
+
+    /// Private key data
+    private let privateKeyData: Data?
+
+    /// Public key data
+    private let publicKeyData: Data?
 
     // MARK: - Private Methods
 
     /// Save key to keychain
     private func saveToKeychain() throws {
-        let query: [String: Any] = [
+        let query: [String: Any] = try [
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: identifier.data(using: .utf8)!,
-            kSecValueData as String: try getKeyData()
+            kSecValueData as String: getKeyData(),
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -182,7 +178,7 @@ public struct EncryptionKey {
     private func deleteFromKeychain() throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: identifier.data(using: .utf8)!
+            kSecAttrApplicationTag as String: identifier.data(using: .utf8)!,
         ]
 
         let status = SecItemDelete(query as CFDictionary)
@@ -212,7 +208,7 @@ public struct EncryptionKey {
             return try getSymmetricKey().withUnsafeBytes { Data($0) }
         case .asymmetric:
             return try getPrivateKeyData()
-        case .custom(let keyType):
+        case let .custom(keyType):
             throw EncryptionError.operationFailed("Unsupported key type: \(keyType)")
         }
     }

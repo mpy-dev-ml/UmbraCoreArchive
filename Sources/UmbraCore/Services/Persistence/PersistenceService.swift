@@ -1,118 +1,8 @@
-//
-// PersistenceService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for managing data persistence
 public final class PersistenceService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Storage location
-    public enum StorageLocation {
-        /// Application support directory
-        case applicationSupport
-        /// Documents directory
-        case documents
-        /// Cache directory
-        case cache
-        /// Temporary directory
-        case temporary
-        /// Custom directory
-        case custom(URL)
-
-        /// Get URL for location
-        func getURL() throws -> URL {
-            switch self {
-            case .applicationSupport:
-                return try FileManager.default.url(
-                    for: .applicationSupportDirectory,
-                    in: .userDomainMask,
-                    appropriateFor: nil,
-                    create: true
-                )
-            case .documents:
-                return try FileManager.default.url(
-                    for: .documentDirectory,
-                    in: .userDomainMask,
-                    appropriateFor: nil,
-                    create: true
-                )
-            case .cache:
-                return try FileManager.default.url(
-                    for: .cachesDirectory,
-                    in: .userDomainMask,
-                    appropriateFor: nil,
-                    create: true
-                )
-            case .temporary:
-                return FileManager.default.temporaryDirectory
-            case .custom(let url):
-                return url
-            }
-        }
-    }
-
-    /// Storage configuration
-    public struct Configuration {
-        /// Base location
-        public let location: StorageLocation
-
-        /// Directory name
-        public let directory: String
-
-        /// File extension
-        public let fileExtension: String
-
-        /// Whether to use encryption
-        public let useEncryption: Bool
-
-        /// Whether to use compression
-        public let useCompression: Bool
-
-        /// Initialize with values
-        public init(
-            location: StorageLocation = .applicationSupport,
-            directory: String,
-            fileExtension: String = "data",
-            useEncryption: Bool = false,
-            useCompression: Bool = false
-        ) {
-            self.location = location
-            self.directory = directory
-            self.fileExtension = fileExtension
-            self.useEncryption = useEncryption
-            self.useCompression = useCompression
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Storage configuration
-    private let configuration: Configuration
-
-    /// Security service
-    private let security: SecurityService
-
-    /// Crypto service
-    private let crypto: SecurityCrypto
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.persistence",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Base directory URL
-    private var baseURL: URL?
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -136,6 +26,94 @@ public final class PersistenceService: BaseSandboxedService {
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
         setupDirectory()
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Storage location
+    public enum StorageLocation {
+        /// Application support directory
+        case applicationSupport
+        /// Documents directory
+        case documents
+        /// Cache directory
+        case cache
+        /// Temporary directory
+        case temporary
+        /// Custom directory
+        case custom(URL)
+
+        // MARK: Internal
+
+        /// Get URL for location
+        func getURL() throws -> URL {
+            switch self {
+            case .applicationSupport:
+                try FileManager.default.url(
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: true
+                )
+            case .documents:
+                try FileManager.default.url(
+                    for: .documentDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: true
+                )
+            case .cache:
+                try FileManager.default.url(
+                    for: .cachesDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: true
+                )
+            case .temporary:
+                FileManager.default.temporaryDirectory
+            case let .custom(url):
+                url
+            }
+        }
+    }
+
+    /// Storage configuration
+    public struct Configuration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            location: StorageLocation = .applicationSupport,
+            directory: String,
+            fileExtension: String = "data",
+            useEncryption: Bool = false,
+            useCompression: Bool = false
+        ) {
+            self.location = location
+            self.directory = directory
+            self.fileExtension = fileExtension
+            self.useEncryption = useEncryption
+            self.useCompression = useCompression
+        }
+
+        // MARK: Public
+
+        /// Base location
+        public let location: StorageLocation
+
+        /// Directory name
+        public let directory: String
+
+        /// File extension
+        public let fileExtension: String
+
+        /// Whether to use encryption
+        public let useEncryption: Bool
+
+        /// Whether to use compression
+        public let useCompression: Bool
     }
 
     // MARK: - Public Methods
@@ -219,9 +197,9 @@ public final class PersistenceService: BaseSandboxedService {
                     throw PersistenceError.decryptionFailed("Key not found")
                 }
 
-                let encrypted = EncryptedData(
+                let encrypted = try EncryptedData(
                     ciphertext: data,
-                    nonce: try .init(),
+                    nonce: .init(),
                     tag: Data(),
                     keyIdentifier: "persistence"
                 )
@@ -285,7 +263,7 @@ public final class PersistenceService: BaseSandboxedService {
         try validateUsable(for: "clearAll")
 
         try await performanceMonitor.trackDuration("persistence.clear") {
-            guard let baseURL = baseURL else {
+            guard let baseURL else {
                 throw PersistenceError.directoryNotFound
             }
 
@@ -310,6 +288,30 @@ public final class PersistenceService: BaseSandboxedService {
             )
         }
     }
+
+    // MARK: Private
+
+    /// Storage configuration
+    private let configuration: Configuration
+
+    /// Security service
+    private let security: SecurityService
+
+    /// Crypto service
+    private let crypto: SecurityCrypto
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.persistence",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Base directory URL
+    private var baseURL: URL?
 
     // MARK: - Private Methods
 
@@ -347,7 +349,7 @@ public final class PersistenceService: BaseSandboxedService {
 
     /// Get file URL for key
     private func getFileURL(for key: String) throws -> URL {
-        guard let baseURL = baseURL else {
+        guard let baseURL else {
             throw PersistenceError.directoryNotFound
         }
 
@@ -359,12 +361,12 @@ public final class PersistenceService: BaseSandboxedService {
     /// Compress data
     private func compress(_ data: Data) throws -> Data {
         // TODO: Implement compression
-        return data
+        data
     }
 
     /// Decompress data
     private func decompress(_ data: Data) throws -> Data {
         // TODO: Implement decompression
-        return data
+        data
     }
 }

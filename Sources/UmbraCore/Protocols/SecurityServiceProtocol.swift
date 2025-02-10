@@ -1,14 +1,7 @@
-//
-// SecurityServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
-/// A protocol that defines the interface for security-related operations in a sandboxed environment.
+/// A protocol that defines the interface for security-related operations in a sandboxed
+/// environment.
 ///
 /// The `SecurityServiceProtocol` provides a standardised interface for:
 /// - Managing security-scoped bookmarks
@@ -42,14 +35,14 @@ import Foundation
     /// - Returns: Whether permission was granted
     /// - Throws: SecurityError if permission request fails
     @objc func requestPermission(for url: URL) async throws -> Bool
-    
+
     /// Create a security-scoped bookmark for a URL
     ///
     /// - Parameter url: URL for which to create a bookmark
     /// - Returns: Bookmark data
     /// - Throws: SecurityError if bookmark creation fails
     @objc func createBookmark(for url: URL) throws -> Data
-    
+
     /// Validate a security-scoped bookmark
     ///
     /// - Parameters:
@@ -58,13 +51,13 @@ import Foundation
     /// - Returns: Whether the bookmark is valid
     /// - Throws: SecurityError if validation fails
     @objc func validateBookmark(_ bookmark: Data, for url: URL) throws -> Bool
-    
+
     /// Start accessing a URL
     ///
     /// - Parameter url: URL to access
     /// - Throws: SecurityError if access fails
     @objc func startAccessing(_ url: URL) throws
-    
+
     /// Stop accessing a URL
     ///
     /// - Parameter url: URL to stop accessing

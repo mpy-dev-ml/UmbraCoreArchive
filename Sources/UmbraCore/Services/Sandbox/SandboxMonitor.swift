@@ -1,15 +1,25 @@
-//
-// SandboxMonitor.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Monitor for sandbox operations and diagnostics
 public final class SandboxMonitor: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Monitor state
@@ -26,14 +36,7 @@ public final class SandboxMonitor: BaseSandboxedService {
 
     /// Monitor event
     public struct MonitorEvent {
-        /// Event type
-        public let type: EventType
-        /// Event timestamp
-        public let timestamp: Date
-        /// Event data
-        public let data: [String: Any]
-        /// Event severity
-        public let severity: EventSeverity
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -47,6 +50,17 @@ public final class SandboxMonitor: BaseSandboxedService {
             self.data = data
             self.severity = severity
         }
+
+        // MARK: Public
+
+        /// Event type
+        public let type: EventType
+        /// Event timestamp
+        public let timestamp: Date
+        /// Event data
+        public let data: [String: Any]
+        /// Event severity
+        public let severity: EventSeverity
     }
 
     /// Event type
@@ -79,38 +93,6 @@ public final class SandboxMonitor: BaseSandboxedService {
         case error
         /// Critical
         case critical
-    }
-
-    // MARK: - Properties
-
-    /// Current state
-    private var state: MonitorState = .stopped
-
-    /// Event handlers
-    private var eventHandlers: [UUID: (MonitorEvent) -> Void] = [:]
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.sandbox.monitor",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
     }
 
     // MARK: - Public Methods
@@ -206,8 +188,26 @@ public final class SandboxMonitor: BaseSandboxedService {
     /// Get current state
     /// - Returns: Monitor state
     public func getState() -> MonitorState {
-        return queue.sync { state }
+        queue.sync { state }
     }
+
+    // MARK: Private
+
+    /// Current state
+    private var state: MonitorState = .stopped
+
+    /// Event handlers
+    private var eventHandlers: [UUID: (MonitorEvent) -> Void] = [:]
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.sandbox.monitor",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 
     // MARK: - Private Methods
 

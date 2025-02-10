@@ -1,11 +1,3 @@
-//
-// SecurityService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import AppKit
 import Foundation
 
@@ -41,19 +33,7 @@ import Foundation
 /// 3. Comprehensive error handling
 /// 4. Detailed logging
 public final class SecurityService: SecurityServiceProtocol {
-    // MARK: - Properties
-
-    /// Logger for tracking operations
-    let logger: LoggerProtocol
-
-    /// XPC service for secure operations
-    let xpcService: ResticXPCServiceProtocol
-
-    /// Active bookmarks mapped by URL
-    var activeBookmarks: [URL: Data] = [:]
-
-    /// Queue for thread-safe bookmark operations
-    let bookmarkQueue = DispatchQueue(label: "dev.mpy.rBUM.security.bookmarks", attributes: .concurrent)
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -66,6 +46,25 @@ public final class SecurityService: SecurityServiceProtocol {
         self.xpcService = xpcService
         setupNotifications()
     }
+
+    // MARK: Internal
+
+    /// Logger for tracking operations
+    let logger: LoggerProtocol
+
+    /// XPC service for secure operations
+    let xpcService: ResticXPCServiceProtocol
+
+    /// Active bookmarks mapped by URL
+    var activeBookmarks: [URL: Data] = [:]
+
+    /// Queue for thread-safe bookmark operations
+    let bookmarkQueue: DispatchQueue = .init(
+        label: "dev.mpy.rBUM.security.bookmarks",
+        attributes: .concurrent
+    )
+
+    // MARK: Private
 
     // MARK: - Notifications
 

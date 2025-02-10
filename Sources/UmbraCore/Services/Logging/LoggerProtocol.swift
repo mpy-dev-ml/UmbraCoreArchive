@@ -1,27 +1,12 @@
-//
-// LoggerProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - LoggerProtocol
 
 /// Protocol for logging services
 public protocol LoggerProtocol {
     /// Log message configuration
     public struct LogConfig {
-        /// File where the log was called
-        public let file: String
-        /// Function where the log was called
-        public let function: String
-        /// Line where the log was called
-        public let line: Int
-        /// Additional metadata
-        public let metadata: [String: String]?
-        /// Whether to synchronize log
-        public let synchronous: Bool
+        // MARK: Lifecycle
 
         public init(
             file: String = #file,
@@ -36,6 +21,19 @@ public protocol LoggerProtocol {
             self.metadata = metadata
             self.synchronous = synchronous
         }
+
+        // MARK: Public
+
+        /// File where the log was called
+        public let file: String
+        /// Function where the log was called
+        public let function: String
+        /// Line where the log was called
+        public let line: Int
+        /// Additional metadata
+        public let metadata: [String: String]?
+        /// Whether to synchronize log
+        public let synchronous: Bool
     }
 
     /// Log levels

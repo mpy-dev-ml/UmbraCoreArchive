@@ -1,12 +1,6 @@
-//
-// SecurityService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - SecurityService
 
 /// Service implementing security operations with sandbox compliance
 ///
@@ -32,20 +26,7 @@ import Foundation
 /// defer { security.stopAccessing(url) }
 /// ```
 public final class SecurityService: BaseSandboxedService, SecurityServiceProtocol {
-    // MARK: - Properties
-
-    /// Queue for synchronizing bookmark operations
-    let bookmarkQueue = DispatchQueue(
-        label: "dev.mpy.umbracore.security.bookmarks",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Active bookmarks by URL
-    var activeBookmarks: [URL: Data] = [:]
-
-    /// Currently accessed URLs
-    var accessedUrls: Set<URL> = []
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -55,13 +36,28 @@ public final class SecurityService: BaseSandboxedService, SecurityServiceProtoco
         super.init(logger: logger)
     }
 
-    // MARK: - Lifecycle
-
     /// Clean up resources
     deinit {
         cleanupAccess()
     }
+
+    // MARK: Internal
+
+    /// Queue for synchronizing bookmark operations
+    let bookmarkQueue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.security.bookmarks",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Active bookmarks by URL
+    var activeBookmarks: [URL: Data] = [:]
+
+    /// Currently accessed URLs
+    var accessedURLs: Set<URL> = []
 }
+
+// MARK: - SecurityError
 
 /// Security-related errors
 public enum SecurityError: LocalizedError {
@@ -78,31 +74,33 @@ public enum SecurityError: LocalizedError {
     /// Operation not permitted
     case operationNotPermitted(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .bookmarkCreationFailed(let reason):
-            return "Failed to create bookmark: \(reason)"
-        case .bookmarkResolutionFailed(let reason):
-            return "Failed to resolve bookmark: \(reason)"
+        case let .bookmarkCreationFailed(reason):
+            "Failed to create bookmark: \(reason)"
+        case let .bookmarkResolutionFailed(reason):
+            "Failed to resolve bookmark: \(reason)"
         case .bookmarkStale:
-            return "Bookmark is stale and needs to be recreated"
-        case .permissionDenied(let reason):
-            return "Permission denied: \(reason)"
-        case .accessValidationFailed(let reason):
-            return "Access validation failed: \(reason)"
-        case .operationNotPermitted(let reason):
-            return "Operation not permitted: \(reason)"
+            "Bookmark is stale and needs to be recreated"
+        case let .permissionDenied(reason):
+            "Permission denied: \(reason)"
+        case let .accessValidationFailed(reason):
+            "Access validation failed: \(reason)"
+        case let .operationNotPermitted(reason):
+            "Operation not permitted: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .bookmarkStale:
-            return "Request permission again to create a new bookmark"
+            "Request permission again to create a new bookmark"
         case .permissionDenied:
-            return "Try requesting permission again or select a different file"
+            "Try requesting permission again or select a different file"
         default:
-            return nil
+            nil
         }
     }
 }

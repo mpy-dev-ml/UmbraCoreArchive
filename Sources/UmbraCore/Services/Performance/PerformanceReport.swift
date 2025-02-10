@@ -1,15 +1,25 @@
-//
-// PerformanceReport.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for generating performance reports
 public final class PerformanceReport: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - metrics: Performance metrics
+    ///   - logger: Logger for tracking operations
+    public init(
+        metrics: PerformanceMetrics,
+        logger: LoggerProtocol
+    ) {
+        self.metrics = metrics
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Report format
@@ -24,20 +34,7 @@ public final class PerformanceReport: BaseSandboxedService {
 
     /// Report configuration
     public struct Configuration {
-        /// Report format
-        public let format: Format
-
-        /// Metric types to include
-        public let metricTypes: [PerformanceMonitor.MetricType]
-
-        /// Time window
-        public let window: PerformanceMetrics.TimeWindow
-
-        /// Include trends
-        public let includeTrends: Bool
-
-        /// Include anomalies
-        public let includeAnomalies: Bool
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -53,32 +50,23 @@ public final class PerformanceReport: BaseSandboxedService {
             self.includeTrends = includeTrends
             self.includeAnomalies = includeAnomalies
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Performance metrics
-    private let metrics: PerformanceMetrics
+        /// Report format
+        public let format: Format
 
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.performance.report",
-        qos: .utility,
-        attributes: .concurrent
-    )
+        /// Metric types to include
+        public let metricTypes: [PerformanceMonitor.MetricType]
 
-    // MARK: - Initialization
+        /// Time window
+        public let window: PerformanceMetrics.TimeWindow
 
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - metrics: Performance metrics
-    ///   - logger: Logger for tracking operations
-    public init(
-        metrics: PerformanceMetrics,
-        logger: LoggerProtocol
-    ) {
-        self.metrics = metrics
-        super.init(logger: logger)
+        /// Include trends
+        public let includeTrends: Bool
+
+        /// Include anomalies
+        public let includeAnomalies: Bool
     }
 
     // MARK: - Public Methods
@@ -99,8 +87,8 @@ public final class PerformanceReport: BaseSandboxedService {
             "timestamp": Date(),
             "window": [
                 "start": configuration.window.startDate,
-                "end": configuration.window.endDate
-            ]
+                "end": configuration.window.endDate,
+            ],
         ]
 
         // Add metrics for each type
@@ -121,8 +109,8 @@ public final class PerformanceReport: BaseSandboxedService {
                     "maximum": analysis.maximum,
                     "standardDeviation": analysis.standardDeviation,
                     "percentiles": analysis.percentiles,
-                    "sampleCount": analysis.sampleCount
-                ]
+                    "sampleCount": analysis.sampleCount,
+                ],
             ]
 
             // Add trends
@@ -146,7 +134,7 @@ public final class PerformanceReport: BaseSandboxedService {
                         "operation": metric.operation,
                         "value": metric.value,
                         "timestamp": metric.timestamp,
-                        "context": metric.context
+                        "context": metric.context,
                     ]
                 }
             }
@@ -167,7 +155,7 @@ public final class PerformanceReport: BaseSandboxedService {
             output = String(data: data, encoding: .utf8) ?? ""
 
         case .csv:
-            var lines: [String] = ["Type,Operation,Value,Timestamp"]
+            var lines = ["Type,Operation,Value,Timestamp"]
 
             for (type, data) in metricsData {
                 if let metricData = data as? [String: Any] {
@@ -188,7 +176,7 @@ public final class PerformanceReport: BaseSandboxedService {
             output = lines.joined(separator: "\n")
 
         case .text:
-            var lines: [String] = ["Performance Report"]
+            var lines = ["Performance Report"]
             lines.append("Generated: \(Date())")
             lines.append("")
 
@@ -196,7 +184,8 @@ public final class PerformanceReport: BaseSandboxedService {
                 lines.append("Type: \(type)")
 
                 if let metricData = data as? [String: Any],
-                   let analysis = metricData["analysis"] as? [String: Any] {
+                   let analysis = metricData["analysis"] as? [String: Any]
+                {
                     lines.append("  Average: \(analysis["average"] ?? 0)")
                     lines.append("  Minimum: \(analysis["minimum"] ?? 0)")
                     lines.append("  Maximum: \(analysis["maximum"] ?? 0)")
@@ -221,7 +210,7 @@ public final class PerformanceReport: BaseSandboxedService {
             """
             Generated performance report:
             Format: \(configuration.format)
-            Types: \(configuration.metricTypes.map { $0.rawValue })
+            Types: \(configuration.metricTypes.map(\.rawValue))
             Window: \(configuration.window)
             Size: \(output.count) bytes
             """,
@@ -230,4 +219,16 @@ public final class PerformanceReport: BaseSandboxedService {
             line: #line
         )
     }
+
+    // MARK: Private
+
+    /// Performance metrics
+    private let metrics: PerformanceMetrics
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.performance.report",
+        qos: .utility,
+        attributes: .concurrent
+    )
 }

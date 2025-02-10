@@ -1,13 +1,7 @@
-//
-// NotificationDelegate.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import UserNotifications
+
+// MARK: - NotificationResponding
 
 /// Protocol for handling notification responses
 public protocol NotificationResponding: AnyObject {
@@ -33,34 +27,27 @@ public protocol NotificationResponding: AnyObject {
 /// Default implementations for NotificationResponding
 public extension NotificationResponding {
     func notificationService(
-        _ service: NotificationService,
-        didReceiveResponse response: UNNotificationResponse
+        _: NotificationService,
+        didReceiveResponse _: UNNotificationResponse
     ) {}
 
     func notificationService(
-        _ service: NotificationService,
-        willPresentNotification notification: UNNotification
+        _: NotificationService,
+        willPresentNotification _: UNNotification
     ) async -> UNNotificationPresentationOptions {
         if #available(macOS 12.0, *) {
-            return [.banner, .sound, .badge]
+            [.banner, .sound, .badge]
         } else {
-            return [.alert, .sound, .badge]
+            [.alert, .sound, .badge]
         }
     }
 }
 
+// MARK: - NotificationDelegate
+
 /// Delegate for handling notification events
 public final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-    // MARK: - Properties
-
-    /// Notification service
-    private weak var service: NotificationService?
-
-    /// Notification responder
-    private weak var responder: NotificationResponding?
-
-    /// Logger for tracking operations
-    private let logger: LoggerProtocol
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -83,14 +70,17 @@ public final class NotificationDelegate: NSObject, UNUserNotificationCenterDeleg
         UNUserNotificationCenter.current().delegate = self
     }
 
+    // MARK: Public
+
     // MARK: - UNUserNotificationCenterDelegate Implementation
 
     public func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
+        _: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        guard let service = service,
-              let responder = responder else {
+        guard let service,
+              let responder
+        else {
             return []
         }
 
@@ -112,11 +102,12 @@ public final class NotificationDelegate: NSObject, UNUserNotificationCenterDeleg
     }
 
     public func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
+        _: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        guard let service = service,
-              let responder = responder else {
+        guard let service,
+              let responder
+        else {
             return
         }
 
@@ -133,21 +124,24 @@ public final class NotificationDelegate: NSObject, UNUserNotificationCenterDeleg
 
         responder.notificationService(service, didReceiveResponse: response)
     }
+
+    // MARK: Private
+
+    /// Notification service
+    private weak var service: NotificationService?
+
+    /// Notification responder
+    private weak var responder: NotificationResponding?
+
+    /// Logger for tracking operations
+    private let logger: LoggerProtocol
 }
+
+// MARK: - NotificationDelegateService
 
 /// Service for managing notification delegates
 public final class NotificationDelegateService: BaseSandboxedService {
-    // MARK: - Properties
-
-    /// Active delegates
-    private var delegates: [NotificationDelegate] = []
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.notification.delegate",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -156,6 +150,8 @@ public final class NotificationDelegateService: BaseSandboxedService {
     public override init(logger: LoggerProtocol) {
         super.init(logger: logger)
     }
+
+    // MARK: Public
 
     // MARK: - Public Methods
 
@@ -216,4 +212,16 @@ public final class NotificationDelegateService: BaseSandboxedService {
             )
         }
     }
+
+    // MARK: Private
+
+    /// Active delegates
+    private var delegates: [NotificationDelegate] = []
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.notification.delegate",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
 }

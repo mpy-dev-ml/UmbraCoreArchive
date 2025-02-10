@@ -1,27 +1,28 @@
-//
-// BaseSandboxedService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - BaseSandboxedService
 
 /// Base class for services that operate within the sandbox
 public class BaseSandboxedService: BaseService {
-    /// Queue for synchronizing sandbox operations
-    private let sandboxQueue = DispatchQueue(
-        label: "dev.mpy.umbracore.sandbox",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
+    // MARK: Lifecycle
 
     /// Initialize with a logger
     /// - Parameter logger: Logger for tracking operations
     public override init(logger: LoggerProtocol) {
         super.init(logger: logger)
     }
+
+    /// Clean up any resources when the service is being deallocated
+    deinit {
+        logger.debug(
+            "Cleaning up sandboxed service resources",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    // MARK: Public
 
     /// Validate that the service is operating within sandbox constraints
     /// - Returns: true if the service is properly sandboxed
@@ -56,16 +57,17 @@ public class BaseSandboxedService: BaseService {
         }
     }
 
-    /// Clean up any resources when the service is being deallocated
-    deinit {
-        logger.debug(
-            "Cleaning up sandboxed service resources",
-            file: #file,
-            function: #function,
-            line: #line
-        )
-    }
+    // MARK: Private
+
+    /// Queue for synchronizing sandbox operations
+    private let sandboxQueue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.sandbox",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
 }
+
+// MARK: - SandboxError
 
 /// Sandbox-related errors
 public enum SandboxError: LocalizedError {
@@ -76,14 +78,16 @@ public enum SandboxError: LocalizedError {
     /// Resource access denied by sandbox
     case resourceAccessDenied(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .complianceValidationFailed(let operation):
-            return "Sandbox compliance validation failed for operation '\(operation)'"
-        case .operationNotPermitted(let operation):
-            return "Operation '\(operation)' is not permitted in sandbox"
-        case .resourceAccessDenied(let resource):
-            return "Sandbox denied access to resource '\(resource)'"
+        case let .complianceValidationFailed(operation):
+            "Sandbox compliance validation failed for operation '\(operation)'"
+        case let .operationNotPermitted(operation):
+            "Operation '\(operation)' is not permitted in sandbox"
+        case let .resourceAccessDenied(resource):
+            "Sandbox denied access to resource '\(resource)'"
         }
     }
 }

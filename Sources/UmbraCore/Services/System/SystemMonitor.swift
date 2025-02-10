@@ -1,15 +1,25 @@
-//
-// SystemMonitor.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Monitor for system operations and resources
 public final class SystemMonitor: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// System resource type
@@ -32,16 +42,7 @@ public final class SystemMonitor: BaseSandboxedService {
 
     /// Resource metrics
     public struct ResourceMetrics {
-        /// Resource type
-        public let type: ResourceType
-        /// Usage percentage
-        public let usagePercentage: Double
-        /// Available capacity
-        public let availableCapacity: Int64
-        /// Total capacity
-        public let totalCapacity: Int64
-        /// Timestamp
-        public let timestamp: Date
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -57,6 +58,19 @@ public final class SystemMonitor: BaseSandboxedService {
             self.totalCapacity = totalCapacity
             self.timestamp = timestamp
         }
+
+        // MARK: Public
+
+        /// Resource type
+        public let type: ResourceType
+        /// Usage percentage
+        public let usagePercentage: Double
+        /// Available capacity
+        public let availableCapacity: Int64
+        /// Total capacity
+        public let totalCapacity: Int64
+        /// Timestamp
+        public let timestamp: Date
     }
 
     /// Monitor state
@@ -69,41 +83,6 @@ public final class SystemMonitor: BaseSandboxedService {
         case stopped
         /// Monitoring failed
         case failed(Error)
-    }
-
-    // MARK: - Properties
-
-    /// Current state
-    private var state: MonitorState = .stopped
-
-    /// Resource handlers
-    private var resourceHandlers: [UUID: (ResourceMetrics) -> Void] = [:]
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.system.monitor",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Timer for resource monitoring
-    private var monitorTimer: DispatchSourceTimer?
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
     }
 
     // MARK: - Public Methods
@@ -182,7 +161,7 @@ public final class SystemMonitor: BaseSandboxedService {
     /// Get current state
     /// - Returns: Monitor state
     public func getState() -> MonitorState {
-        return queue.sync { state }
+        queue.sync { state }
     }
 
     /// Get resource metrics
@@ -210,11 +189,32 @@ public final class SystemMonitor: BaseSandboxedService {
                 return try await getBatteryMetrics()
             case .thermal:
                 return try await getThermalMetrics()
-            case .custom(let resource):
+            case let .custom(resource):
                 throw SystemError.unsupportedResource(resource)
             }
         }
     }
+
+    // MARK: Private
+
+    /// Current state
+    private var state: MonitorState = .stopped
+
+    /// Resource handlers
+    private var resourceHandlers: [UUID: (ResourceMetrics) -> Void] = [:]
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.system.monitor",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Timer for resource monitoring
+    private var monitorTimer: DispatchSourceTimer?
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 
     // MARK: - Private Methods
 
@@ -234,7 +234,9 @@ public final class SystemMonitor: BaseSandboxedService {
         )
 
         timer.setEventHandler { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
             Task {
                 await self.collectMetrics()
             }

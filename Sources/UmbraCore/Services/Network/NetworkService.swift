@@ -1,36 +1,35 @@
-//
-// NetworkService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - NetworkService
 
 /// Service for managing network operations
 public final class NetworkService: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - configuration: URL session configuration
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        configuration: URLSessionConfiguration = .default,
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        session = URLSession(configuration: configuration)
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Network request configuration
     public struct RequestConfiguration {
-        /// Request URL
-        public let url: URL
-
-        /// HTTP method
-        public let method: String
-
-        /// Request headers
-        public let headers: [String: String]
-
-        /// Request body
-        public let body: Data?
-
-        /// Cache policy
-        public let cachePolicy: URLRequest.CachePolicy
-
-        /// Timeout interval
-        public let timeoutInterval: TimeInterval
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -48,18 +47,31 @@ public final class NetworkService: BaseSandboxedService {
             self.cachePolicy = cachePolicy
             self.timeoutInterval = timeoutInterval
         }
+
+        // MARK: Public
+
+        /// Request URL
+        public let url: URL
+
+        /// HTTP method
+        public let method: String
+
+        /// Request headers
+        public let headers: [String: String]
+
+        /// Request body
+        public let body: Data?
+
+        /// Cache policy
+        public let cachePolicy: URLRequest.CachePolicy
+
+        /// Timeout interval
+        public let timeoutInterval: TimeInterval
     }
 
     /// Network response
     public struct Response {
-        /// Response data
-        public let data: Data
-
-        /// Response metadata
-        public let metadata: ResponseMetadata
-
-        /// Response metrics
-        public let metrics: URLSessionTaskMetrics?
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -71,24 +83,22 @@ public final class NetworkService: BaseSandboxedService {
             self.metadata = metadata
             self.metrics = metrics
         }
+
+        // MARK: Public
+
+        /// Response data
+        public let data: Data
+
+        /// Response metadata
+        public let metadata: ResponseMetadata
+
+        /// Response metrics
+        public let metrics: URLSessionTaskMetrics?
     }
 
     /// Response metadata
     public struct ResponseMetadata {
-        /// HTTP status code
-        public let statusCode: Int
-
-        /// Response headers
-        public let headers: [AnyHashable: Any]
-
-        /// Response size in bytes
-        public let size: Int64
-
-        /// Response MIME type
-        public let mimeType: String?
-
-        /// Response text encoding
-        public let textEncoding: String?
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -104,38 +114,23 @@ public final class NetworkService: BaseSandboxedService {
             self.mimeType = mimeType
             self.textEncoding = textEncoding
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// URL session
-    private let session: URLSession
+        /// HTTP status code
+        public let statusCode: Int
 
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+        /// Response headers
+        public let headers: [AnyHashable: Any]
 
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.network",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
+        /// Response size in bytes
+        public let size: Int64
 
-    // MARK: - Initialization
+        /// Response MIME type
+        public let mimeType: String?
 
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - configuration: URL session configuration
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        configuration: URLSessionConfiguration = .default,
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.session = URLSession(configuration: configuration)
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
+        /// Response text encoding
+        public let textEncoding: String?
     }
 
     // MARK: - Public Methods
@@ -221,7 +216,7 @@ public final class NetworkService: BaseSandboxedService {
             )
 
             // Validate status code
-            guard (200...299).contains(metadata.statusCode) else {
+            guard (200 ... 299).contains(metadata.statusCode) else {
                 throw NetworkError.httpError(metadata.statusCode)
             }
 
@@ -311,7 +306,7 @@ public final class NetworkService: BaseSandboxedService {
             )
 
             // Validate status code
-            guard (200...299).contains(metadata.statusCode) else {
+            guard (200 ... 299).contains(metadata.statusCode) else {
                 throw NetworkError.httpError(metadata.statusCode)
             }
 
@@ -391,14 +386,31 @@ public final class NetworkService: BaseSandboxedService {
             )
 
             // Validate status code
-            guard (200...299).contains(metadata.statusCode) else {
+            guard (200 ... 299).contains(metadata.statusCode) else {
                 throw NetworkError.httpError(metadata.statusCode)
             }
 
             return networkResponse
         }
     }
+
+    // MARK: Private
+
+    /// URL session
+    private let session: URLSession
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.network",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
 }
+
+// MARK: - NetworkError
 
 /// Errors that can occur during network operations
 public enum NetworkError: LocalizedError {
@@ -411,29 +423,31 @@ public enum NetworkError: LocalizedError {
     /// Upload error
     case uploadError(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Invalid network response"
-        case .httpError(let code):
-            return "HTTP error: \(code)"
-        case .downloadError(let reason):
-            return "Download error: \(reason)"
-        case .uploadError(let reason):
-            return "Upload error: \(reason)"
+            "Invalid network response"
+        case let .httpError(code):
+            "HTTP error: \(code)"
+        case let .downloadError(reason):
+            "Download error: \(reason)"
+        case let .uploadError(reason):
+            "Upload error: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .invalidResponse:
-            return "Check network connection"
+            "Check network connection"
         case .httpError:
-            return "Check server status"
+            "Check server status"
         case .downloadError:
-            return "Check file permissions and disk space"
+            "Check file permissions and disk space"
         case .uploadError:
-            return "Check file permissions and server status"
+            "Check file permissions and server status"
         }
     }
 }

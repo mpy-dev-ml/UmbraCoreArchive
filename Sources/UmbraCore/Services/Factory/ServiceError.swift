@@ -1,11 +1,3 @@
-//
-// ServiceError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Errors that can occur during service operations
@@ -27,66 +19,68 @@ public enum ServiceError: LocalizedError {
     /// Operation failed
     case operationFailed(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .serviceNotFound(let service):
-            return "Service not found: \(service)"
-        case .invalidServiceType(let type):
-            return "Invalid service type: \(type)"
-        case .serviceCreationFailed(let reason):
-            return "Failed to create service: \(reason)"
-        case .serviceConfigurationFailed(let reason):
-            return "Failed to configure service: \(reason)"
-        case .serviceInitializationFailed(let reason):
-            return "Failed to initialize service: \(reason)"
-        case .serviceRegistrationFailed(let reason):
-            return "Failed to register service: \(reason)"
-        case .invalidConfiguration(let reason):
-            return "Invalid service configuration: \(reason)"
-        case .operationFailed(let reason):
-            return "Service operation failed: \(reason)"
+        case let .serviceNotFound(service):
+            "Service not found: \(service)"
+        case let .invalidServiceType(type):
+            "Invalid service type: \(type)"
+        case let .serviceCreationFailed(reason):
+            "Failed to create service: \(reason)"
+        case let .serviceConfigurationFailed(reason):
+            "Failed to configure service: \(reason)"
+        case let .serviceInitializationFailed(reason):
+            "Failed to initialize service: \(reason)"
+        case let .serviceRegistrationFailed(reason):
+            "Failed to register service: \(reason)"
+        case let .invalidConfiguration(reason):
+            "Invalid service configuration: \(reason)"
+        case let .operationFailed(reason):
+            "Service operation failed: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .serviceNotFound:
-            return "Check service name and registration"
+            "Check service name and registration"
         case .invalidServiceType:
-            return "Check service type and protocol"
+            "Check service type and protocol"
         case .serviceCreationFailed:
-            return "Check service dependencies"
+            "Check service dependencies"
         case .serviceConfigurationFailed:
-            return "Check service configuration"
+            "Check service configuration"
         case .serviceInitializationFailed:
-            return "Check service initialization"
+            "Check service initialization"
         case .serviceRegistrationFailed:
-            return "Check service registration"
+            "Check service registration"
         case .invalidConfiguration:
-            return "Check factory configuration"
+            "Check factory configuration"
         case .operationFailed:
-            return "Try the operation again"
+            "Try the operation again"
         }
     }
 
     public var helpAnchor: String? {
         switch self {
         case .serviceNotFound:
-            return "service_lookup"
+            "service_lookup"
         case .invalidServiceType:
-            return "service_types"
+            "service_types"
         case .serviceCreationFailed:
-            return "service_creation"
+            "service_creation"
         case .serviceConfigurationFailed:
-            return "service_configuration"
+            "service_configuration"
         case .serviceInitializationFailed:
-            return "service_initialization"
+            "service_initialization"
         case .serviceRegistrationFailed:
-            return "service_registration"
+            "service_registration"
         case .invalidConfiguration:
-            return "factory_configuration"
+            "factory_configuration"
         case .operationFailed:
-            return "service_troubleshooting"
+            "service_troubleshooting"
         }
     }
 }

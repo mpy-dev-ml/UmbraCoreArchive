@@ -1,61 +1,10 @@
-//
-// MaintenanceService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - MaintenanceService
 
 /// Service for performing maintenance tasks
 public final class MaintenanceService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Result of a maintenance task
-    public struct TaskResult {
-        /// Whether the task succeeded
-        public let succeeded: Bool
-        /// Duration of the task
-        public let duration: TimeInterval
-        /// Any error that occurred
-        public let error: Error?
-        /// Additional details
-        public let details: [String: String]
-
-        /// Initialize with values
-        public init(
-            succeeded: Bool,
-            duration: TimeInterval,
-            error: Error? = nil,
-            details: [String: String] = [:]
-        ) {
-            self.succeeded = succeeded
-            self.duration = duration
-            self.error = error
-            self.details = details
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Configuration store
-    private let configurationStore: MaintenanceConfigurationStore
-
-    /// Security service
-    private let security: SecurityServiceProtocol
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Queue for running tasks
-    private let taskQueue = DispatchQueue(
-        label: "dev.mpy.umbracore.maintenance.tasks",
-        qos: .utility
-    )
-
-    /// Currently running tasks
-    private var runningTasks: Set<MaintenanceConfigurationStore.MaintenanceTask> = []
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -75,6 +24,39 @@ public final class MaintenanceService: BaseSandboxedService {
         self.security = security
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Result of a maintenance task
+    public struct TaskResult {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            succeeded: Bool,
+            duration: TimeInterval,
+            error: Error? = nil,
+            details: [String: String] = [:]
+        ) {
+            self.succeeded = succeeded
+            self.duration = duration
+            self.error = error
+            self.details = details
+        }
+
+        // MARK: Public
+
+        /// Whether the task succeeded
+        public let succeeded: Bool
+        /// Duration of the task
+        public let duration: TimeInterval
+        /// Any error that occurred
+        public let error: Error?
+        /// Additional details
+        public let details: [String: String]
     }
 
     // MARK: - Public Methods
@@ -97,7 +79,7 @@ public final class MaintenanceService: BaseSandboxedService {
         var results: [MaintenanceConfigurationStore.MaintenanceTask: TaskResult] = [:]
 
         logger.info(
-            "Starting maintenance tasks: \(tasksToRun.map { $0.rawValue })",
+            "Starting maintenance tasks: \(tasksToRun.map(\.rawValue))",
             file: #file,
             function: #function,
             line: #line
@@ -137,7 +119,9 @@ public final class MaintenanceService: BaseSandboxedService {
     /// - Returns: true if maintenance is due
     public func isMaintenanceDue() -> Bool {
         let configuration = configurationStore.getConfiguration()
-        guard configuration.isEnabled else { return false }
+        guard configuration.isEnabled else {
+            return false
+        }
 
         let now = Date()
         let calendar = Calendar.current
@@ -153,8 +137,28 @@ public final class MaintenanceService: BaseSandboxedService {
         let minute = calendar.component(.minute, from: now)
 
         return hour == configuration.schedule.hour &&
-               minute == configuration.schedule.minute
+            minute == configuration.schedule.minute
     }
+
+    // MARK: Private
+
+    /// Configuration store
+    private let configurationStore: MaintenanceConfigurationStore
+
+    /// Security service
+    private let security: SecurityServiceProtocol
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Queue for running tasks
+    private let taskQueue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.maintenance.tasks",
+        qos: .utility
+    )
+
+    /// Currently running tasks
+    private var runningTasks: Set<MaintenanceConfigurationStore.MaintenanceTask> = []
 
     // MARK: - Private Methods
 
@@ -233,6 +237,8 @@ public final class MaintenanceService: BaseSandboxedService {
     }
 }
 
+// MARK: - MaintenanceError
+
 /// Errors that can occur during maintenance
 public enum MaintenanceError: LocalizedError {
     /// Maintenance is disabled
@@ -242,14 +248,16 @@ public enum MaintenanceError: LocalizedError {
     /// Task failed
     case taskFailed(MaintenanceConfigurationStore.MaintenanceTask, String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
         case .maintenanceDisabled:
-            return "Maintenance is disabled"
-        case .taskAlreadyRunning(let task):
-            return "Task is already running: \(task.rawValue)"
-        case .taskFailed(let task, let reason):
-            return "Task failed - \(task.rawValue): \(reason)"
+            "Maintenance is disabled"
+        case let .taskAlreadyRunning(task):
+            "Task is already running: \(task.rawValue)"
+        case let .taskFailed(task, reason):
+            "Task failed - \(task.rawValue): \(reason)"
         }
     }
 }

@@ -1,31 +1,39 @@
-//
-// NetworkMonitor.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import Network
 
 /// Service for monitoring network connectivity
 public final class NetworkMonitor: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        monitor = NWPathMonitor()
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+        setupMonitor()
+    }
+
+    // MARK: - Deinitializer
+
+    deinit {
+        stopMonitoring()
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Network status
     public struct NetworkStatus {
-        /// Whether network is available
-        public let isAvailable: Bool
-
-        /// Whether network is expensive
-        public let isExpensive: Bool
-
-        /// Whether network is constrained
-        public let isConstrained: Bool
-
-        /// Network interface type
-        public let interfaceType: InterfaceType
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -39,6 +47,20 @@ public final class NetworkMonitor: BaseSandboxedService {
             self.isConstrained = isConstrained
             self.interfaceType = interfaceType
         }
+
+        // MARK: Public
+
+        /// Whether network is available
+        public let isAvailable: Bool
+
+        /// Whether network is expensive
+        public let isExpensive: Bool
+
+        /// Whether network is constrained
+        public let isConstrained: Bool
+
+        /// Network interface type
+        public let interfaceType: InterfaceType
     }
 
     /// Network interface type
@@ -48,49 +70,6 @@ public final class NetworkMonitor: BaseSandboxedService {
         case wired
         case loopback
         case other
-    }
-
-    // MARK: - Properties
-
-    /// Network path monitor
-    private let monitor: NWPathMonitor
-
-    /// Queue for monitor callbacks
-    private let monitorQueue = DispatchQueue(
-        label: "dev.mpy.umbracore.network.monitor",
-        qos: .utility
-    )
-
-    /// Current network status
-    private var currentStatus: NetworkStatus?
-
-    /// Status change handlers
-    private var statusHandlers: [(NetworkStatus) -> Void] = []
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.network.status",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.monitor = NWPathMonitor()
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
-        setupMonitor()
     }
 
     // MARK: - Public Methods
@@ -145,23 +124,52 @@ public final class NetworkMonitor: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    /// Network path monitor
+    private let monitor: NWPathMonitor
+
+    /// Queue for monitor callbacks
+    private let monitorQueue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.network.monitor",
+        qos: .utility
+    )
+
+    /// Current network status
+    private var currentStatus: NetworkStatus?
+
+    /// Status change handlers
+    private var statusHandlers: [(NetworkStatus) -> Void] = []
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.network.status",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
     // MARK: - Private Methods
 
     /// Set up network monitor
     private func setupMonitor() {
         monitor.pathUpdateHandler = { [weak self] path in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
             // Create status
             let status = NetworkStatus(
                 isAvailable: path.status == .satisfied,
                 isExpensive: path.isExpensive,
                 isConstrained: path.isConstrained,
-                interfaceType: self.getInterfaceType(from: path)
+                interfaceType: getInterfaceType(from: path)
             )
 
             // Update status
-            self.queue.async(flags: .barrier) {
+            queue.async(flags: .barrier) {
                 self.currentStatus = status
 
                 // Notify handlers
@@ -171,7 +179,7 @@ public final class NetworkMonitor: BaseSandboxedService {
             }
 
             // Log status change
-            self.logger.info(
+            logger.info(
                 """
                 Network status changed:
                 Available: \(status.isAvailable)
@@ -207,21 +215,15 @@ public final class NetworkMonitor: BaseSandboxedService {
     /// - Returns: Interface type
     private func getInterfaceType(from path: NWPath) -> InterfaceType {
         if path.usesInterfaceType(.wifi) {
-            return .wifi
+            .wifi
         } else if path.usesInterfaceType(.cellular) {
-            return .cellular
+            .cellular
         } else if path.usesInterfaceType(.wiredEthernet) {
-            return .wired
+            .wired
         } else if path.usesInterfaceType(.loopback) {
-            return .loopback
+            .loopback
         } else {
-            return .other
+            .other
         }
-    }
-
-    // MARK: - Deinitializer
-
-    deinit {
-        stopMonitoring()
     }
 }

@@ -1,33 +1,32 @@
-//
-// DevelopmentTestService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - DevelopmentTestService
 
 /// Service for development testing utilities
 public final class DevelopmentTestService: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with configuration and logger
+    /// - Parameters:
+    ///   - configuration: Test configuration
+    ///   - logger: Logger for tracking operations
+    public init(
+        configuration: TestConfiguration = TestConfiguration(),
+        logger: LoggerProtocol
+    ) {
+        self.configuration = configuration
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Test configuration
     public struct TestConfiguration: Codable {
-        /// Whether to use mock data
-        public var useMockData: Bool
-
-        /// Whether to record test interactions
-        public var recordInteractions: Bool
-
-        /// Whether to verify interactions
-        public var verifyInteractions: Bool
-
-        /// Whether to simulate failures
-        public var simulateFailures: Bool
-
-        /// Failure rate (0-1)
-        public var failureRate: Double
+        // MARK: Lifecycle
 
         /// Initialize with default values
         public init(
@@ -43,24 +42,28 @@ public final class DevelopmentTestService: BaseSandboxedService {
             self.simulateFailures = simulateFailures
             self.failureRate = failureRate
         }
+
+        // MARK: Public
+
+        /// Whether to use mock data
+        public var useMockData: Bool
+
+        /// Whether to record test interactions
+        public var recordInteractions: Bool
+
+        /// Whether to verify interactions
+        public var verifyInteractions: Bool
+
+        /// Whether to simulate failures
+        public var simulateFailures: Bool
+
+        /// Failure rate (0-1)
+        public var failureRate: Double
     }
 
     /// Test interaction
     public struct TestInteraction: Codable {
-        /// Name of interaction
-        public let name: String
-
-        /// Input parameters
-        public let input: [String: Any]
-
-        /// Output result
-        public let output: Any?
-
-        /// Error if any
-        public let error: Error?
-
-        /// Timestamp
-        public let timestamp: Date
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -77,6 +80,23 @@ public final class DevelopmentTestService: BaseSandboxedService {
             self.timestamp = timestamp
         }
 
+        // MARK: Public
+
+        /// Name of interaction
+        public let name: String
+
+        /// Input parameters
+        public let input: [String: Any]
+
+        /// Output result
+        public let output: Any?
+
+        /// Error if any
+        public let error: Error?
+
+        /// Timestamp
+        public let timestamp: Date
+
         /// Encode interaction
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
@@ -91,7 +111,7 @@ public final class DevelopmentTestService: BaseSandboxedService {
             try container.encode(inputData, forKey: .input)
 
             // Encode output if present
-            if let output = output {
+            if let output {
                 let outputData = try JSONSerialization.data(
                     withJSONObject: output,
                     options: []
@@ -100,50 +120,13 @@ public final class DevelopmentTestService: BaseSandboxedService {
             }
 
             // Encode error if present
-            if let error = error {
+            if let error {
                 try container.encode(
                     error.localizedDescription,
                     forKey: .error
                 )
             }
         }
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case name
-        case input
-        case output
-        case error
-        case timestamp
-    }
-
-    // MARK: - Properties
-
-    /// Test configuration
-    private var configuration: TestConfiguration
-
-    /// Recorded interactions
-    private var interactions: [TestInteraction] = []
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.development.test",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    // MARK: - Initialization
-
-    /// Initialize with configuration and logger
-    /// - Parameters:
-    ///   - configuration: Test configuration
-    ///   - logger: Logger for tracking operations
-    public init(
-        configuration: TestConfiguration = TestConfiguration(),
-        logger: LoggerProtocol
-    ) {
-        self.configuration = configuration
-        super.init(logger: logger)
     }
 
     // MARK: - Public Methods
@@ -163,8 +146,9 @@ public final class DevelopmentTestService: BaseSandboxedService {
         try validateUsable(for: "runTest")
 
         // Check if we should simulate failure
-        if configuration.simulateFailures &&
-           Double.random(in: 0...1) < configuration.failureRate {
+        if configuration.simulateFailures,
+           Double.random(in: 0 ... 1) < configuration.failureRate
+        {
             let error = DevelopmentError.simulatedFailure(name)
 
             if configuration.recordInteractions {
@@ -253,6 +237,29 @@ public final class DevelopmentTestService: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case input
+        case output
+        case error
+        case timestamp
+    }
+
+    /// Test configuration
+    private var configuration: TestConfiguration
+
+    /// Recorded interactions
+    private var interactions: [TestInteraction] = []
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.development.test",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
     // MARK: - Private Methods
 
     /// Record a test interaction
@@ -276,6 +283,8 @@ public final class DevelopmentTestService: BaseSandboxedService {
     }
 }
 
+// MARK: - DevelopmentError
+
 /// Errors that can occur during development operations
 public enum DevelopmentError: LocalizedError {
     /// Simulated failure
@@ -285,25 +294,27 @@ public enum DevelopmentError: LocalizedError {
     /// Mock data not found
     case mockDataNotFound(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .simulatedFailure(let operation):
-            return "Simulated failure in operation: \(operation)"
-        case .invalidTestOperation(let reason):
-            return "Invalid test operation: \(reason)"
-        case .mockDataNotFound(let type):
-            return "Mock data not found for type: \(type)"
+        case let .simulatedFailure(operation):
+            "Simulated failure in operation: \(operation)"
+        case let .invalidTestOperation(reason):
+            "Invalid test operation: \(reason)"
+        case let .mockDataNotFound(type):
+            "Mock data not found for type: \(type)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .simulatedFailure:
-            return "This is a simulated failure for testing purposes"
+            "This is a simulated failure for testing purposes"
         case .invalidTestOperation:
-            return "Check test configuration and parameters"
+            "Check test configuration and parameters"
         case .mockDataNotFound:
-            return "Ensure mock data is properly configured"
+            "Ensure mock data is properly configured"
         }
     }
 }

@@ -1,85 +1,9 @@
-//
-// NotificationService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import UserNotifications
 
 /// Service for managing notifications
 public final class NotificationService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Notification priority
-    public enum Priority: Int, Comparable {
-        case low = 0
-        case normal = 1
-        case high = 2
-        case critical = 3
-
-        public static func < (lhs: Priority, rhs: Priority) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-    }
-
-    /// Notification category
-    public struct Category {
-        /// Category identifier
-        public let identifier: String
-
-        /// Category actions
-        public let actions: [Action]
-
-        /// Initialize with values
-        public init(identifier: String, actions: [Action]) {
-            self.identifier = identifier
-            self.actions = actions
-        }
-    }
-
-    /// Notification action
-    public struct Action {
-        /// Action identifier
-        public let identifier: String
-
-        /// Action title
-        public let title: String
-
-        /// Action options
-        public let options: UNNotificationActionOptions
-
-        /// Initialize with values
-        public init(
-            identifier: String,
-            title: String,
-            options: UNNotificationActionOptions = []
-        ) {
-            self.identifier = identifier
-            self.title = title
-            self.options = options
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Notification center
-    private let center = UNUserNotificationCenter.current()
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.notification",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Registered categories
-    private var categories: Set<UNNotificationCategory> = []
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -94,6 +18,70 @@ public final class NotificationService: BaseSandboxedService {
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
         requestAuthorization()
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Notification priority
+    public enum Priority: Int, Comparable {
+        case low = 0
+        case normal = 1
+        case high = 2
+        case critical = 3
+
+        // MARK: Public
+
+        public static func < (lhs: Priority, rhs: Priority) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+    }
+
+    /// Notification category
+    public struct Category {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(identifier: String, actions: [Action]) {
+            self.identifier = identifier
+            self.actions = actions
+        }
+
+        // MARK: Public
+
+        /// Category identifier
+        public let identifier: String
+
+        /// Category actions
+        public let actions: [Action]
+    }
+
+    /// Notification action
+    public struct Action {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            identifier: String,
+            title: String,
+            options: UNNotificationActionOptions = []
+        ) {
+            self.identifier = identifier
+            self.title = title
+            self.options = options
+        }
+
+        // MARK: Public
+
+        /// Action identifier
+        public let identifier: String
+
+        /// Action title
+        public let title: String
+
+        /// Action options
+        public let options: UNNotificationActionOptions
     }
 
     // MARK: - Public Methods
@@ -129,7 +117,7 @@ public final class NotificationService: BaseSandboxedService {
             content.userInfo = userInfo
             content.sound = .default
 
-            if let categoryIdentifier = categoryIdentifier {
+            if let categoryIdentifier {
                 content.categoryIdentifier = categoryIdentifier
             }
 
@@ -273,6 +261,24 @@ public final class NotificationService: BaseSandboxedService {
             await center.pendingNotificationRequests()
         } ?? []
     }
+
+    // MARK: Private
+
+    /// Notification center
+    private let center: UNUserNotificationCenter = .current()
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.notification",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Registered categories
+    private var categories: Set<UNNotificationCategory> = []
 
     // MARK: - Private Methods
 

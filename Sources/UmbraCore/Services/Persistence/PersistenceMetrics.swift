@@ -1,91 +1,8 @@
-//
-// PersistenceMetrics.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for tracking persistence metrics
 public final class PersistenceMetrics: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Storage metrics
-    public struct StorageMetrics {
-        /// Total size in bytes
-        public let totalSize: Int64
-
-        /// Number of files
-        public let fileCount: Int
-
-        /// Average file size
-        public let averageFileSize: Double
-
-        /// Space usage by directory
-        public let directoryUsage: [String: Int64]
-
-        /// Initialize with values
-        public init(
-            totalSize: Int64,
-            fileCount: Int,
-            averageFileSize: Double,
-            directoryUsage: [String: Int64]
-        ) {
-            self.totalSize = totalSize
-            self.fileCount = fileCount
-            self.averageFileSize = averageFileSize
-            self.directoryUsage = directoryUsage
-        }
-    }
-
-    /// Operation metrics
-    public struct OperationMetrics {
-        /// Operation counts
-        public let operationCounts: [String: Int]
-
-        /// Average operation durations
-        public let averageDurations: [String: TimeInterval]
-
-        /// Error counts
-        public let errorCounts: [String: Int]
-
-        /// Initialize with values
-        public init(
-            operationCounts: [String: Int],
-            averageDurations: [String: TimeInterval],
-            errorCounts: [String: Int]
-        ) {
-            self.operationCounts = operationCounts
-            self.averageDurations = averageDurations
-            self.errorCounts = errorCounts
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Base directory URL
-    private let baseURL: URL
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.persistence.metrics",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Operation counts
-    private var operationCounts: [String: Int] = [:]
-
-    /// Operation durations
-    private var operationDurations: [String: [TimeInterval]] = [:]
-
-    /// Error counts
-    private var errorCounts: [String: Int] = [:]
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -102,6 +19,69 @@ public final class PersistenceMetrics: BaseSandboxedService {
         self.baseURL = baseURL
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Storage metrics
+    public struct StorageMetrics {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            totalSize: Int64,
+            fileCount: Int,
+            averageFileSize: Double,
+            directoryUsage: [String: Int64]
+        ) {
+            self.totalSize = totalSize
+            self.fileCount = fileCount
+            self.averageFileSize = averageFileSize
+            self.directoryUsage = directoryUsage
+        }
+
+        // MARK: Public
+
+        /// Total size in bytes
+        public let totalSize: Int64
+
+        /// Number of files
+        public let fileCount: Int
+
+        /// Average file size
+        public let averageFileSize: Double
+
+        /// Space usage by directory
+        public let directoryUsage: [String: Int64]
+    }
+
+    /// Operation metrics
+    public struct OperationMetrics {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            operationCounts: [String: Int],
+            averageDurations: [String: TimeInterval],
+            errorCounts: [String: Int]
+        ) {
+            self.operationCounts = operationCounts
+            self.averageDurations = averageDurations
+            self.errorCounts = errorCounts
+        }
+
+        // MARK: Public
+
+        /// Operation counts
+        public let operationCounts: [String: Int]
+
+        /// Average operation durations
+        public let averageDurations: [String: TimeInterval]
+
+        /// Error counts
+        public let errorCounts: [String: Int]
     }
 
     // MARK: - Public Methods
@@ -240,4 +220,28 @@ public final class PersistenceMetrics: BaseSandboxedService {
             )
         }
     }
+
+    // MARK: Private
+
+    /// Base directory URL
+    private let baseURL: URL
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.persistence.metrics",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Operation counts
+    private var operationCounts: [String: Int] = [:]
+
+    /// Operation durations
+    private var operationDurations: [String: [TimeInterval]] = [:]
+
+    /// Error counts
+    private var errorCounts: [String: Int] = [:]
 }

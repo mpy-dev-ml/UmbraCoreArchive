@@ -1,68 +1,10 @@
-//
-// ResourceLimiter.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - ResourceLimiter
 
 /// Service for enforcing resource limits
 public final class ResourceLimiter: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Resource limits configuration
-    public struct ResourceLimits {
-        /// Memory limit in bytes
-        public var memoryLimit: UInt64
-        /// CPU usage limit percentage (0-100)
-        public var cpuLimit: Double
-        /// Disk space limit in bytes
-        public var diskLimit: UInt64
-        /// Network throughput limit in bytes/second
-        public var networkLimit: Double
-
-        /// Initialize with default values
-        public init(
-            memoryLimit: UInt64 = 2_000_000_000,  // 2 GB
-            cpuLimit: Double = 90.0,              // 90%
-            diskLimit: UInt64 = 10_000_000_000,   // 10 GB
-            networkLimit: Double = 10_000_000      // 10 MB/s
-        ) {
-            self.memoryLimit = memoryLimit
-            self.cpuLimit = cpuLimit
-            self.diskLimit = diskLimit
-            self.networkLimit = networkLimit
-        }
-    }
-
-    /// Action to take when limit is exceeded
-    public enum LimitAction {
-        /// Log warning only
-        case warn
-        /// Throttle resource usage
-        case throttle
-        /// Terminate operation
-        case terminate
-    }
-
-    // MARK: - Properties
-
-    /// Resource monitor
-    private let monitor: ResourceMonitor
-
-    /// Resource limits
-    private var limits: ResourceLimits
-
-    /// Action to take when limit is exceeded
-    private var limitAction: LimitAction
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.resources.limiter",
-        qos: .userInitiated
-    )
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -84,6 +26,49 @@ public final class ResourceLimiter: BaseSandboxedService {
         super.init(logger: logger)
     }
 
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Resource limits configuration
+    public struct ResourceLimits {
+        // MARK: Lifecycle
+
+        /// Initialize with default values
+        public init(
+            memoryLimit: UInt64 = 2_000_000_000, // 2 GB
+            cpuLimit: Double = 90.0, // 90%
+            diskLimit: UInt64 = 10_000_000_000, // 10 GB
+            networkLimit: Double = 10_000_000 // 10 MB/s
+        ) {
+            self.memoryLimit = memoryLimit
+            self.cpuLimit = cpuLimit
+            self.diskLimit = diskLimit
+            self.networkLimit = networkLimit
+        }
+
+        // MARK: Public
+
+        /// Memory limit in bytes
+        public var memoryLimit: UInt64
+        /// CPU usage limit percentage (0-100)
+        public var cpuLimit: Double
+        /// Disk space limit in bytes
+        public var diskLimit: UInt64
+        /// Network throughput limit in bytes/second
+        public var networkLimit: Double
+    }
+
+    /// Action to take when limit is exceeded
+    public enum LimitAction {
+        /// Log warning only
+        case warn
+        /// Throttle resource usage
+        case throttle
+        /// Terminate operation
+        case terminate
+    }
+
     // MARK: - Public Methods
 
     /// Run an operation with resource limits
@@ -101,7 +86,7 @@ public final class ResourceLimiter: BaseSandboxedService {
                 do {
                     let snapshot = try await monitor.takeSnapshot()
                     try checkLimits(snapshot)
-                    try await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                 } catch {
                     logger.error(
                         """
@@ -160,6 +145,23 @@ public final class ResourceLimiter: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    /// Resource monitor
+    private let monitor: ResourceMonitor
+
+    /// Resource limits
+    private var limits: ResourceLimits
+
+    /// Action to take when limit is exceeded
+    private var limitAction: LimitAction
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.resources.limiter",
+        qos: .userInitiated
+    )
+
     // MARK: - Private Methods
 
     /// Check if resource limits are exceeded
@@ -200,7 +202,7 @@ public final class ResourceLimiter: BaseSandboxedService {
                     function: #function,
                     line: #line
                 )
-                try await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
             case .terminate:
                 logger.error(
                     "\(message) - Terminating",
@@ -214,6 +216,8 @@ public final class ResourceLimiter: BaseSandboxedService {
     }
 }
 
+// MARK: - ResourceError
+
 /// Errors that can occur during resource operations
 public enum ResourceError: LocalizedError {
     /// Resource limits exceeded
@@ -223,25 +227,27 @@ public enum ResourceError: LocalizedError {
     /// Invalid resource operation
     case invalidOperation(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .limitsExceeded(let resources):
-            return "Resource limits exceeded: \(resources.joined(separator: ", "))"
-        case .monitoringFailed(let reason):
-            return "Resource monitoring failed: \(reason)"
-        case .invalidOperation(let reason):
-            return "Invalid resource operation: \(reason)"
+        case let .limitsExceeded(resources):
+            "Resource limits exceeded: \(resources.joined(separator: ", "))"
+        case let .monitoringFailed(reason):
+            "Resource monitoring failed: \(reason)"
+        case let .invalidOperation(reason):
+            "Invalid resource operation: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .limitsExceeded:
-            return "Try reducing resource usage or increasing limits"
+            "Try reducing resource usage or increasing limits"
         case .monitoringFailed:
-            return "Check system resources and try again"
+            "Check system resources and try again"
         case .invalidOperation:
-            return "Check operation parameters and try again"
+            "Check operation parameters and try again"
         }
     }
 }

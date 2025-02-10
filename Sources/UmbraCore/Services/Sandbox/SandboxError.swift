@@ -1,11 +1,3 @@
-//
-// SandboxError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Errors that can occur during sandbox operations
@@ -29,72 +21,74 @@ public enum SandboxError: LocalizedError {
     /// Resource unavailable
     case resourceUnavailable(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .monitorStartFailed(let reason):
-            return "Monitor failed to start: \(reason)"
-        case .monitorStopFailed(let reason):
-            return "Monitor failed to stop: \(reason)"
-        case .invalidMonitorState(let state):
-            return "Invalid monitor state: \(state)"
-        case .eventHandlingFailed(let reason):
-            return "Event handling failed: \(reason)"
-        case .resourceAccessDenied(let resource):
-            return "Resource access denied: \(resource)"
-        case .invalidConfiguration(let reason):
-            return "Invalid configuration: \(reason)"
-        case .operationFailed(let reason):
-            return "Operation failed: \(reason)"
-        case .securityViolation(let reason):
-            return "Security violation: \(reason)"
-        case .resourceUnavailable(let resource):
-            return "Resource unavailable: \(resource)"
+        case let .monitorStartFailed(reason):
+            "Monitor failed to start: \(reason)"
+        case let .monitorStopFailed(reason):
+            "Monitor failed to stop: \(reason)"
+        case let .invalidMonitorState(state):
+            "Invalid monitor state: \(state)"
+        case let .eventHandlingFailed(reason):
+            "Event handling failed: \(reason)"
+        case let .resourceAccessDenied(resource):
+            "Resource access denied: \(resource)"
+        case let .invalidConfiguration(reason):
+            "Invalid configuration: \(reason)"
+        case let .operationFailed(reason):
+            "Operation failed: \(reason)"
+        case let .securityViolation(reason):
+            "Security violation: \(reason)"
+        case let .resourceUnavailable(resource):
+            "Resource unavailable: \(resource)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .monitorStartFailed:
-            return "Check monitor configuration and try again"
+            "Check monitor configuration and try again"
         case .monitorStopFailed:
-            return "Force stop monitor and clean up resources"
+            "Force stop monitor and clean up resources"
         case .invalidMonitorState:
-            return "Reset monitor to a valid state"
+            "Reset monitor to a valid state"
         case .eventHandlingFailed:
-            return "Check event handler configuration"
+            "Check event handler configuration"
         case .resourceAccessDenied:
-            return "Request necessary permissions"
+            "Request necessary permissions"
         case .invalidConfiguration:
-            return "Check configuration settings"
+            "Check configuration settings"
         case .operationFailed:
-            return "Try the operation again"
+            "Try the operation again"
         case .securityViolation:
-            return "Review security policies"
+            "Review security policies"
         case .resourceUnavailable:
-            return "Check resource availability"
+            "Check resource availability"
         }
     }
 
     public var helpAnchor: String? {
         switch self {
         case .monitorStartFailed:
-            return "monitor_start"
+            "monitor_start"
         case .monitorStopFailed:
-            return "monitor_stop"
+            "monitor_stop"
         case .invalidMonitorState:
-            return "monitor_state"
+            "monitor_state"
         case .eventHandlingFailed:
-            return "event_handling"
+            "event_handling"
         case .resourceAccessDenied:
-            return "resource_access"
+            "resource_access"
         case .invalidConfiguration:
-            return "configuration"
+            "configuration"
         case .operationFailed:
-            return "operation_troubleshooting"
+            "operation_troubleshooting"
         case .securityViolation:
-            return "security_policies"
+            "security_policies"
         case .resourceUnavailable:
-            return "resource_availability"
+            "resource_availability"
         }
     }
 }

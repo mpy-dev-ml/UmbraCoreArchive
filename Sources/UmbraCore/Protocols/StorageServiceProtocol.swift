@@ -1,12 +1,6 @@
-//
-// StorageServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - StorageServiceProtocol
 
 /// Protocol for managing persistent storage operations
 public protocol StorageServiceProtocol {
@@ -29,12 +23,16 @@ public protocol StorageServiceProtocol {
     func delete(forKey key: String) throws
 }
 
+// MARK: - StorageError
+
 /// Error types for storage operations
 public enum StorageError: LocalizedError {
     case fileOperationFailed(String)
     case invalidData
     case accessDenied
     case notFound
+
+    // MARK: Public
 
     public var errorDescription: String? {
         switch self {

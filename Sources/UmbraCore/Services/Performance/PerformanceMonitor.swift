@@ -1,18 +1,24 @@
 /// Service for monitoring performance metrics
 @objc
 public class PerformanceMonitor: NSObject {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize performance monitor
+    /// - Parameter logger: Logger for performance events
+    public init(logger: Logger) {
+        self.logger = logger
+        super.init()
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Performance metric
     public struct Metric {
-        /// Metric identifier
-        public let id: String
-        /// Start time
-        public let startTime: Date
-        /// Duration in seconds
-        public let duration: TimeInterval
-        /// Additional metadata
-        public let metadata: [String: String]
+        // MARK: Lifecycle
 
         /// Initialize with values
         /// - Parameters:
@@ -31,20 +37,22 @@ public class PerformanceMonitor: NSObject {
             self.duration = duration
             self.metadata = metadata
         }
+
+        // MARK: Public
+
+        /// Metric identifier
+        public let id: String
+        /// Start time
+        public let startTime: Date
+        /// Duration in seconds
+        public let duration: TimeInterval
+        /// Additional metadata
+        public let metadata: [String: String]
     }
 
     /// Performance statistics
     public struct Statistics {
-        /// Total duration in seconds
-        public let totalDuration: TimeInterval
-        /// Average duration in seconds
-        public let averageDuration: TimeInterval
-        /// Minimum duration in seconds
-        public let minDuration: TimeInterval
-        /// Maximum duration in seconds
-        public let maxDuration: TimeInterval
-        /// Number of samples
-        public let sampleCount: Int
+        // MARK: Lifecycle
 
         /// Initialize with values
         /// - Parameters:
@@ -66,29 +74,19 @@ public class PerformanceMonitor: NSObject {
             self.maxDuration = maxDuration
             self.sampleCount = sampleCount
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.rBUM.PerformanceMonitor",
-        attributes: .concurrent
-    )
-
-    /// Active metrics
-    private var metrics: [String: [Metric]] = [:]
-
-    /// Logger for performance events
-    private let logger: Logger
-
-    // MARK: - Initialization
-
-    /// Initialize performance monitor
-    /// - Parameter logger: Logger for performance events
-    public init(logger: Logger) {
-        self.logger = logger
-        super.init()
+        /// Total duration in seconds
+        public let totalDuration: TimeInterval
+        /// Average duration in seconds
+        public let averageDuration: TimeInterval
+        /// Minimum duration in seconds
+        public let minDuration: TimeInterval
+        /// Maximum duration in seconds
+        public let maxDuration: TimeInterval
+        /// Number of samples
+        public let sampleCount: Int
     }
 
     // MARK: - Public Methods
@@ -150,12 +148,14 @@ public class PerformanceMonitor: NSObject {
         for id: String
     ) -> Statistics? {
         queue.sync { [weak self] in
-            guard let self = self,
-                  let metrics = self.metrics[id],
+            guard let self,
+                  let metrics = metrics[id],
                   !metrics.isEmpty
-            else { return nil }
+            else {
+                return nil
+            }
 
-            let durations = metrics.map { $0.duration }
+            let durations = metrics.map(\.duration)
             let total = durations.reduce(0, +)
             let count = durations.count
 
@@ -171,7 +171,7 @@ public class PerformanceMonitor: NSObject {
                 "id": id,
                 "total": String(format: "%.3f", stats.totalDuration),
                 "average": String(format: "%.3f", stats.averageDuration),
-                "samples": String(stats.sampleCount)
+                "samples": String(stats.sampleCount),
             ]
             let config = LogConfig(metadata: metadata)
             logger.debug("Retrieved performance statistics", config: config)
@@ -186,23 +186,39 @@ public class PerformanceMonitor: NSObject {
         for id: String
     ) {
         queue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
             let metadata: [String: String] = [
                 "id": id,
                 "metrics_count": String(
-                    self.metrics[id]?.count ?? 0
-                )
+                    metrics[id]?.count ?? 0
+                ),
             ]
             let config = LogConfig(metadata: metadata)
 
-            self.metrics.removeValue(forKey: id)
-            self.logger.debug(
+            metrics.removeValue(forKey: id)
+            logger.debug(
                 "Reset performance statistics",
                 config: config
             )
         }
     }
+
+    // MARK: Private
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.rBUM.PerformanceMonitor",
+        attributes: .concurrent
+    )
+
+    /// Active metrics
+    private var metrics: [String: [Metric]] = [:]
+
+    /// Logger for performance events
+    private let logger: Logger
 
     // MARK: - Private Methods
 
@@ -210,9 +226,11 @@ public class PerformanceMonitor: NSObject {
     /// - Parameter metric: Metric to record
     private func recordMetric(_ metric: Metric) {
         queue.async(flags: .barrier) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
-            var metrics = self.metrics[metric.id] ?? []
+            var metrics = metrics[metric.id] ?? []
             metrics.append(metric)
             self.metrics[metric.id] = metrics
 
@@ -224,7 +242,7 @@ public class PerformanceMonitor: NSObject {
             )
 
             let config = LogConfig(metadata: metadata)
-            self.logger.debug(
+            logger.debug(
                 "Recorded performance metric",
                 config: config
             )

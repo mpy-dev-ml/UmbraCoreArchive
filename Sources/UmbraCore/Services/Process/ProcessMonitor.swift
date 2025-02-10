@@ -1,24 +1,31 @@
+// MARK: - ProcessMonitor
+
 /// Service for monitoring process execution and performance
 @objc
 public class ProcessMonitor: NSObject {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    @objc
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        self.logger = logger
+        super.init()
+        setupUpdateTimer()
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Process information
     public struct ProcessInfo {
-        /// Process identifier
-        public let pid: Int32
-        /// Process name
-        public let name: String
-        /// Start time
-        public let startTime: Date
-        /// CPU usage
-        public let cpuUsage: Double
-        /// Memory usage in bytes
-        public let memoryUsage: UInt64
-        /// Thread count
-        public let threadCount: Int
-        /// File descriptor count
-        public let fileDescriptorCount: Int
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -38,26 +45,28 @@ public class ProcessMonitor: NSObject {
             self.threadCount = threadCount
             self.fileDescriptorCount = fileDescriptorCount
         }
+
+        // MARK: Public
+
+        /// Process identifier
+        public let pid: Int32
+        /// Process name
+        public let name: String
+        /// Start time
+        public let startTime: Date
+        /// CPU usage
+        public let cpuUsage: Double
+        /// Memory usage in bytes
+        public let memoryUsage: UInt64
+        /// Thread count
+        public let threadCount: Int
+        /// File descriptor count
+        public let fileDescriptorCount: Int
     }
 
     /// Process statistics
     public struct ProcessStats {
-        /// Average CPU usage
-        public let averageCPU: Double
-        /// Peak CPU usage
-        public let peakCPU: Double
-        /// Average memory usage
-        public let averageMemory: UInt64
-        /// Peak memory usage
-        public let peakMemory: UInt64
-        /// Average thread count
-        public let averageThreads: Double
-        /// Peak thread count
-        public let peakThreads: Int
-        /// Sample count
-        public let sampleCount: Int
-        /// Duration in seconds
-        public let duration: TimeInterval
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -79,40 +88,25 @@ public class ProcessMonitor: NSObject {
             self.sampleCount = sampleCount
             self.duration = duration
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Logger for tracking operations
-    private let logger: LoggerProtocol
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbra.process-monitor",
-        qos: .userInitiated
-    )
-
-    /// Active process monitors
-    private var monitors: [Int32: ProcessMonitorInfo] = [:]
-
-    /// Timer for updating process info
-    private var updateTimer: DispatchSourceTimer?
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    @objc
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        self.logger = logger
-        super.init()
-        setupUpdateTimer()
+        /// Average CPU usage
+        public let averageCPU: Double
+        /// Peak CPU usage
+        public let peakCPU: Double
+        /// Average memory usage
+        public let averageMemory: UInt64
+        /// Peak memory usage
+        public let peakMemory: UInt64
+        /// Average thread count
+        public let averageThreads: Double
+        /// Peak thread count
+        public let peakThreads: Int
+        /// Sample count
+        public let sampleCount: Int
+        /// Duration in seconds
+        public let duration: TimeInterval
     }
 
     // MARK: - Public Methods
@@ -124,13 +118,15 @@ public class ProcessMonitor: NSObject {
     ) throws {
         try queue.sync { [weak self] in
             // Check if already monitoring
-            guard let self = self else { return }
-            guard self.monitors[pid] == nil else {
+            guard let self else {
+                return
+            }
+            guard monitors[pid] == nil else {
                 throw ProcessError.alreadyMonitoring(pid)
             }
 
             // Get initial process info
-            let info = try self.getProcessInfo(pid)
+            let info = try getProcessInfo(pid)
 
             // Create monitor info
             let monitor = ProcessMonitorInfo(
@@ -140,15 +136,15 @@ public class ProcessMonitor: NSObject {
             )
 
             // Store monitor
-            self.monitors[pid] = monitor
+            monitors[pid] = monitor
 
             // Log monitoring start
             let metadata: [String: String] = [
                 "pid": String(pid),
-                "name": info.name
+                "name": info.name,
             ]
             let config = LogConfig(metadata: metadata)
-            self.logger.info("Started monitoring process", config: config)
+            logger.info("Started monitoring process", config: config)
         }
     }
 
@@ -159,16 +155,18 @@ public class ProcessMonitor: NSObject {
     ) throws -> ProcessStats {
         try queue.sync { [weak self] in
             // Get monitor info
-            guard let self = self else { return }
-            guard let monitor = self.monitors[pid] else {
+            guard let self else {
+                return
+            }
+            guard let monitor = monitors[pid] else {
                 throw ProcessError.notMonitoring(pid)
             }
 
             // Remove monitor
-            self.monitors.removeValue(forKey: pid)
+            monitors.removeValue(forKey: pid)
 
             // Calculate stats
-            let stats = self.calculateStats(
+            let stats = calculateStats(
                 from: monitor.samples,
                 startTime: monitor.startTime
             )
@@ -177,10 +175,10 @@ public class ProcessMonitor: NSObject {
             let metadata: [String: String] = [
                 "pid": String(pid),
                 "name": monitor.info.name,
-                "duration": String(stats.duration)
+                "duration": String(stats.duration),
             ]
             let config = LogConfig(metadata: metadata)
-            self.logger.info("Stopped monitoring process", config: config)
+            logger.info("Stopped monitoring process", config: config)
 
             return stats
         }
@@ -194,7 +192,9 @@ public class ProcessMonitor: NSObject {
         try performanceMonitor.trackDuration(
             "process.info"
         ) { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
 
             // Get process task info
             var taskInfo = proc_taskinfo()
@@ -210,7 +210,7 @@ public class ProcessMonitor: NSObject {
 
             guard result == taskInfoSize else {
                 let error = ProcessError.infoPidFailed(pid)
-                self.logProcessError(error, pid: pid)
+                logProcessError(error, pid: pid)
                 throw error
             }
 
@@ -218,7 +218,7 @@ public class ProcessMonitor: NSObject {
             var name = [CChar](repeating: 0, count: MAXPATHLEN)
             guard proc_name(pid, &name, UInt32(MAXPATHLEN)) != -1 else {
                 let error = ProcessError.namePidFailed(pid)
-                self.logProcessError(error, pid: pid)
+                logProcessError(error, pid: pid)
                 throw error
             }
 
@@ -228,7 +228,7 @@ public class ProcessMonitor: NSObject {
                 encoding: .utf8
             ) else {
                 let error = ProcessError.nameEncodingFailed(pid)
-                self.logProcessError(error, pid: pid)
+                logProcessError(error, pid: pid)
                 throw error
             }
 
@@ -250,21 +250,7 @@ public class ProcessMonitor: NSObject {
         }
     }
 
-    /// Log a process error with metadata
-    private func logProcessError(
-        _ error: ProcessError,
-        pid: Int32
-    ) {
-        let metadata: [String: String] = [
-            "pid": String(pid),
-            "error": String(describing: error)
-        ]
-        let config = LogConfig(metadata: metadata)
-        logger.error(
-            "Process monitoring error",
-            config: config
-        )
-    }
+    // MARK: Private
 
     /// Base value for CPU time calculations
     private static let cpuTimeBase: Double = {
@@ -272,6 +258,40 @@ public class ProcessMonitor: NSObject {
         mach_timebase_info(&timebase)
         return Double(timebase.denom) / Double(timebase.numer) * 1e9
     }()
+
+    /// Logger for tracking operations
+    private let logger: LoggerProtocol
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbra.process-monitor",
+        qos: .userInitiated
+    )
+
+    /// Active process monitors
+    private var monitors: [Int32: ProcessMonitorInfo] = [:]
+
+    /// Timer for updating process info
+    private var updateTimer: DispatchSourceTimer?
+
+    /// Log a process error with metadata
+    private func logProcessError(
+        _ error: ProcessError,
+        pid: Int32
+    ) {
+        let metadata: [String: String] = [
+            "pid": String(pid),
+            "error": String(describing: error),
+        ]
+        let config = LogConfig(metadata: metadata)
+        logger.error(
+            "Process monitoring error",
+            config: config
+        )
+    }
 
     // MARK: - Private Methods
 
@@ -310,7 +330,7 @@ public class ProcessMonitor: NSObject {
                 // Log error
                 let metadata: [String: String] = [
                     "pid": String(pid),
-                    "error": String(describing: error)
+                    "error": String(describing: error),
                 ]
                 let config = LogConfig(metadata: metadata)
                 logger.error("Failed to update process info", config: config)
@@ -323,9 +343,9 @@ public class ProcessMonitor: NSObject {
         from samples: [ProcessInfo],
         startTime: Date
     ) -> ProcessStats {
-        let cpuValues = samples.map { $0.cpuUsage }
-        let memoryValues = samples.map { $0.memoryUsage }
-        let threadValues = samples.map { $0.threadCount }
+        let cpuValues = samples.map(\.cpuUsage)
+        let memoryValues = samples.map(\.memoryUsage)
+        let threadValues = samples.map(\.threadCount)
 
         return ProcessStats(
             averageCPU: cpuValues.reduce(0, +) / Double(cpuValues.count),
@@ -339,6 +359,8 @@ public class ProcessMonitor: NSObject {
         )
     }
 }
+
+// MARK: - ProcessMonitorInfo
 
 /// Process monitor information
 private struct ProcessMonitorInfo {

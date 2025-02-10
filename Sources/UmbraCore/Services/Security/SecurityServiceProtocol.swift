@@ -1,12 +1,6 @@
-//
-// SecurityServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - SecurityServiceProtocol
 
 /// Protocol defining security service operations
 @objc public protocol SecurityServiceProtocol: SandboxCompliant {
@@ -59,6 +53,8 @@ import Foundation
     /// Clean up all access
     func cleanupAccess()
 }
+
+// MARK: - SandboxCompliant
 
 /// Protocol for sandbox compliance
 @objc public protocol SandboxCompliant {

@@ -1,94 +1,10 @@
-//
-// ValidationService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - ValidationService
 
 /// Service for validating data and operations
 public final class ValidationService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Validation rule
-    public struct ValidationRule {
-        /// Rule identifier
-        public let id: String
-
-        /// Rule description
-        public let description: String
-
-        /// Priority level
-        public let priority: Priority
-
-        /// Validation function
-        public let validate: (Any) async throws -> ValidationResult
-
-        /// Initialize with values
-        public init(
-            id: String,
-            description: String,
-            priority: Priority = .normal,
-            validate: @escaping (Any) async throws -> ValidationResult
-        ) {
-            self.id = id
-            self.description = description
-            self.priority = priority
-            self.validate = validate
-        }
-    }
-
-    /// Validation result
-    public struct ValidationResult {
-        /// Whether validation passed
-        public let passed: Bool
-
-        /// Validation message
-        public let message: String
-
-        /// Additional details
-        public let details: [String: Any]
-
-        /// Initialize with values
-        public init(
-            passed: Bool,
-            message: String,
-            details: [String: Any] = [:]
-        ) {
-            self.passed = passed
-            self.message = message
-            self.details = details
-        }
-    }
-
-    /// Priority level
-    public enum Priority: Int, Comparable {
-        case low = 0
-        case normal = 1
-        case high = 2
-        case critical = 3
-
-        public static func < (lhs: Priority, rhs: Priority) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Validation rules by type
-    private var rules: [String: [ValidationRule]] = [:]
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.validation",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -102,6 +18,83 @@ public final class ValidationService: BaseSandboxedService {
     ) {
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Validation rule
+    public struct ValidationRule {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            id: String,
+            description: String,
+            priority: Priority = .normal,
+            validate: @escaping (Any) async throws -> ValidationResult
+        ) {
+            self.id = id
+            self.description = description
+            self.priority = priority
+            self.validate = validate
+        }
+
+        // MARK: Public
+
+        /// Rule identifier
+        public let id: String
+
+        /// Rule description
+        public let description: String
+
+        /// Priority level
+        public let priority: Priority
+
+        /// Validation function
+        public let validate: (Any) async throws -> ValidationResult
+    }
+
+    /// Validation result
+    public struct ValidationResult {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            passed: Bool,
+            message: String,
+            details: [String: Any] = [:]
+        ) {
+            self.passed = passed
+            self.message = message
+            self.details = details
+        }
+
+        // MARK: Public
+
+        /// Whether validation passed
+        public let passed: Bool
+
+        /// Validation message
+        public let message: String
+
+        /// Additional details
+        public let details: [String: Any]
+    }
+
+    /// Priority level
+    public enum Priority: Int, Comparable {
+        case low = 0
+        case normal = 1
+        case high = 2
+        case critical = 3
+
+        // MARK: Public
+
+        public static func < (lhs: Priority, rhs: Priority) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
     }
 
     // MARK: - Public Methods
@@ -154,7 +147,7 @@ public final class ValidationService: BaseSandboxedService {
                     let result = try await rule.validate(data)
                     results.append(result)
 
-                    if !result.passed && rule.priority == .critical {
+                    if !result.passed, rule.priority == .critical {
                         throw ValidationError.criticalValidationFailed(
                             rule.id,
                             result.message
@@ -187,7 +180,7 @@ public final class ValidationService: BaseSandboxedService {
         forType type: String? = nil
     ) -> [String: [ValidationRule]] {
         queue.sync {
-            if let type = type {
+            if let type {
                 return [type: rules[type] ?? []]
             }
             return rules
@@ -198,15 +191,15 @@ public final class ValidationService: BaseSandboxedService {
     /// - Parameters:
     ///   - ruleId: ID of rule to remove
     ///   - type: Type identifier
-    public func removeRule(withId ruleId: String, forType type: String) {
+    public func removeRule(withID ruleID: String, forType type: String) {
         queue.async(flags: .barrier) {
-            self.rules[type]?.removeAll { $0.id == ruleId }
+            self.rules[type]?.removeAll { $0.id == ruleID }
 
             self.logger.debug(
                 """
                 Removed validation rule:
                 Type: \(type)
-                ID: \(ruleId)
+                ID: \(ruleID)
                 """,
                 file: #file,
                 function: #function,
@@ -219,7 +212,7 @@ public final class ValidationService: BaseSandboxedService {
     /// - Parameter type: Optional type filter
     public func clearRules(forType type: String? = nil) {
         queue.async(flags: .barrier) {
-            if let type = type {
+            if let type {
                 self.rules[type]?.removeAll()
 
                 self.logger.debug(
@@ -240,7 +233,24 @@ public final class ValidationService: BaseSandboxedService {
             }
         }
     }
+
+    // MARK: Private
+
+    /// Validation rules by type
+    private var rules: [String: [ValidationRule]] = [:]
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.validation",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 }
+
+// MARK: - ValidationError
 
 /// Errors that can occur during validation
 public enum ValidationError: LocalizedError {
@@ -251,25 +261,27 @@ public enum ValidationError: LocalizedError {
     /// Validation type not found
     case validationTypeNotFound(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .criticalValidationFailed(let rule, let message):
-            return "Critical validation failed - Rule \(rule): \(message)"
-        case .invalidValidationRule(let reason):
-            return "Invalid validation rule: \(reason)"
-        case .validationTypeNotFound(let type):
-            return "Validation type not found: \(type)"
+        case let .criticalValidationFailed(rule, message):
+            "Critical validation failed - Rule \(rule): \(message)"
+        case let .invalidValidationRule(reason):
+            "Invalid validation rule: \(reason)"
+        case let .validationTypeNotFound(type):
+            "Validation type not found: \(type)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .criticalValidationFailed:
-            return "Fix the validation issues and try again"
+            "Fix the validation issues and try again"
         case .invalidValidationRule:
-            return "Check the validation rule configuration"
+            "Check the validation rule configuration"
         case .validationTypeNotFound:
-            return "Register validation rules for this type"
+            "Register validation rules for this type"
         }
     }
 }

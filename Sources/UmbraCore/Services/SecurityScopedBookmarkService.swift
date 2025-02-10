@@ -1,34 +1,53 @@
-//
-// SecurityScopedBookmarkService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for managing security-scoped bookmarks
 @objc
 public class SecurityScopedBookmarkService: NSObject {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    @objc
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        self.logger = logger
+        super.init()
+    }
+
+    deinit {
+        // Stop accessing any remaining active bookmarks
+        queue.sync {
+            for bookmarkID in activeAccess {
+                if let bookmark = bookmarks[bookmarkID] {
+                    do {
+                        try stopAccessing(bookmarkID)
+                    } catch {
+                        logger.error(
+                            "Failed to stop accessing bookmark on deinit",
+                            config: LogConfig(
+                                metadata: [
+                                    "id": bookmarkID,
+                                    "error": error.localizedDescription,
+                                ]
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Bookmark data with metadata
     public struct BookmarkData: Codable {
-        /// Bookmark identifier
-        public let id: String
-        /// Bookmark data
-        public let data: Data
-        /// URL path when created
-        public let path: String
-        /// Creation date
-        public let createdAt: Date
-        /// Last access date
-        public var lastAccessedAt: Date
-        /// Access count
-        public var accessCount: Int
-        /// Is read only
-        public let isReadOnly: Bool
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -48,39 +67,23 @@ public class SecurityScopedBookmarkService: NSObject {
             self.accessCount = accessCount
             self.isReadOnly = isReadOnly
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Logger for tracking operations
-    private let logger: LoggerProtocol
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Bookmark storage
-    private var bookmarks: [String: BookmarkData] = [:]
-
-    /// Active access
-    private var activeAccess: Set<String> = []
-
-    /// Queue for synchronizing access
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbra.bookmark-service",
-        attributes: .concurrent
-    )
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    @objc
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        self.logger = logger
-        super.init()
+        /// Bookmark identifier
+        public let id: String
+        /// Bookmark data
+        public let data: Data
+        /// URL path when created
+        public let path: String
+        /// Creation date
+        public let createdAt: Date
+        /// Last access date
+        public var lastAccessedAt: Date
+        /// Access count
+        public var accessCount: Int
+        /// Is read only
+        public let isReadOnly: Bool
     }
 
     // MARK: - Public Methods
@@ -91,13 +94,13 @@ public class SecurityScopedBookmarkService: NSObject {
         for url: URL,
         isReadOnly: Bool = true
     ) throws -> BookmarkData {
-        return try performanceMonitor.trackDuration(
+        try performanceMonitor.trackDuration(
             "bookmark.create"
         ) {
             let data = try url.bookmarkData(
                 options: [
                     .withSecurityScope,
-                    .securityScopeAllowOnlyReadAccess
+                    .securityScopeAllowOnlyReadAccess,
                 ],
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
@@ -119,12 +122,12 @@ public class SecurityScopedBookmarkService: NSObject {
     /// Start accessing URL with bookmark
     @objc
     public func startAccessing(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) throws -> URL {
-        return try performanceMonitor.trackDuration(
+        try performanceMonitor.trackDuration(
             "bookmark.start_access"
         ) {
-            let bookmark = try getBookmark(bookmarkId)
+            let bookmark = try getBookmark(bookmarkID)
 
             var isStale = false
             let url = try URL(
@@ -135,15 +138,15 @@ public class SecurityScopedBookmarkService: NSObject {
             )
 
             if isStale {
-                throw BookmarkError.staleBookmark(bookmarkId)
+                throw BookmarkError.staleBookmark(bookmarkID)
             }
 
             guard url.startAccessingSecurityScopedResource() else {
                 throw BookmarkError.accessDenied(url.path)
             }
 
-            try updateBookmarkAccess(bookmarkId)
-            markActiveAccess(bookmarkId)
+            try updateBookmarkAccess(bookmarkID)
+            markActiveAccess(bookmarkID)
             logBookmarkAccessed(bookmark)
 
             return url
@@ -153,12 +156,12 @@ public class SecurityScopedBookmarkService: NSObject {
     /// Stop accessing URL with bookmark
     @objc
     public func stopAccessing(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) throws {
         try performanceMonitor.trackDuration(
             "bookmark.stop_access"
         ) {
-            let bookmark = try getBookmark(bookmarkId)
+            let bookmark = try getBookmark(bookmarkID)
 
             var isStale = false
             let url = try URL(
@@ -169,7 +172,7 @@ public class SecurityScopedBookmarkService: NSObject {
             )
 
             url.stopAccessingSecurityScopedResource()
-            clearActiveAccess(bookmarkId)
+            clearActiveAccess(bookmarkID)
             logBookmarkStopped(bookmark)
         }
     }
@@ -177,18 +180,18 @@ public class SecurityScopedBookmarkService: NSObject {
     /// Remove bookmark
     @objc
     public func removeBookmark(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) throws {
         try performanceMonitor.trackDuration(
             "bookmark.remove"
         ) {
-            let bookmark = try getBookmark(bookmarkId)
+            let bookmark = try getBookmark(bookmarkID)
 
-            if isAccessActive(bookmarkId) {
-                throw BookmarkError.activeAccess(bookmarkId)
+            if isAccessActive(bookmarkID) {
+                throw BookmarkError.activeAccess(bookmarkID)
             }
 
-            try deleteBookmark(bookmarkId)
+            try deleteBookmark(bookmarkID)
             logBookmarkRemoved(bookmark)
         }
     }
@@ -196,20 +199,40 @@ public class SecurityScopedBookmarkService: NSObject {
     /// Get all bookmarks
     @objc
     public func getAllBookmarks() -> [BookmarkData] {
-        return queue.sync {
+        queue.sync {
             Array(bookmarks.values)
         }
     }
+
+    // MARK: Private
+
+    /// Logger for tracking operations
+    private let logger: LoggerProtocol
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Bookmark storage
+    private var bookmarks: [String: BookmarkData] = [:]
+
+    /// Active access
+    private var activeAccess: Set<String> = []
+
+    /// Queue for synchronizing access
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbra.bookmark-service",
+        attributes: .concurrent
+    )
 
     // MARK: - Private Methods
 
     /// Get bookmark by ID
     private func getBookmark(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) throws -> BookmarkData {
-        return try queue.sync {
-            guard let bookmark = bookmarks[bookmarkId] else {
-                throw BookmarkError.notFound(bookmarkId)
+        try queue.sync {
+            guard let bookmark = bookmarks[bookmarkID] else {
+                throw BookmarkError.notFound(bookmarkID)
             }
             return bookmark
         }
@@ -226,52 +249,52 @@ public class SecurityScopedBookmarkService: NSObject {
 
     /// Delete bookmark
     private func deleteBookmark(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) throws {
         queue.async(flags: .barrier) {
-            self.bookmarks.removeValue(forKey: bookmarkId)
+            self.bookmarks.removeValue(forKey: bookmarkID)
         }
     }
 
     /// Update bookmark access
     private func updateBookmarkAccess(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) throws {
         queue.async(flags: .barrier) {
-            guard var bookmark = self.bookmarks[bookmarkId] else {
+            guard var bookmark = self.bookmarks[bookmarkID] else {
                 return
             }
 
             bookmark.lastAccessedAt = Date()
             bookmark.accessCount += 1
-            self.bookmarks[bookmarkId] = bookmark
+            self.bookmarks[bookmarkID] = bookmark
         }
     }
 
     /// Mark active access
     private func markActiveAccess(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) {
         queue.async(flags: .barrier) {
-            self.activeAccess.insert(bookmarkId)
+            self.activeAccess.insert(bookmarkID)
         }
     }
 
     /// Clear active access
     private func clearActiveAccess(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) {
         queue.async(flags: .barrier) {
-            self.activeAccess.remove(bookmarkId)
+            self.activeAccess.remove(bookmarkID)
         }
     }
 
     /// Check if access is active
     private func isAccessActive(
-        _ bookmarkId: String
+        _ bookmarkID: String
     ) -> Bool {
-        return queue.sync {
-            activeAccess.contains(bookmarkId)
+        queue.sync {
+            activeAccess.contains(bookmarkID)
         }
     }
 
@@ -285,7 +308,7 @@ public class SecurityScopedBookmarkService: NSObject {
                 metadata: [
                     "id": bookmark.id,
                     "path": bookmark.path,
-                    "readOnly": String(bookmark.isReadOnly)
+                    "readOnly": String(bookmark.isReadOnly),
                 ]
             )
         )
@@ -301,7 +324,7 @@ public class SecurityScopedBookmarkService: NSObject {
                 metadata: [
                     "id": bookmark.id,
                     "path": bookmark.path,
-                    "accessCount": String(bookmark.accessCount)
+                    "accessCount": String(bookmark.accessCount),
                 ]
             )
         )
@@ -316,7 +339,7 @@ public class SecurityScopedBookmarkService: NSObject {
             config: LogConfig(
                 metadata: [
                     "id": bookmark.id,
-                    "path": bookmark.path
+                    "path": bookmark.path,
                 ]
             )
         )
@@ -331,32 +354,9 @@ public class SecurityScopedBookmarkService: NSObject {
             config: LogConfig(
                 metadata: [
                     "id": bookmark.id,
-                    "path": bookmark.path
+                    "path": bookmark.path,
                 ]
             )
         )
-    }
-
-    deinit {
-        // Stop accessing any remaining active bookmarks
-        queue.sync {
-            for bookmarkId in activeAccess {
-                if let bookmark = bookmarks[bookmarkId] {
-                    do {
-                        try stopAccessing(bookmarkId)
-                    } catch {
-                        logger.error(
-                            "Failed to stop accessing bookmark on deinit",
-                            config: LogConfig(
-                                metadata: [
-                                    "id": bookmarkId,
-                                    "error": error.localizedDescription
-                                ]
-                            )
-                        )
-                    }
-                }
-            }
-        }
     }
 }

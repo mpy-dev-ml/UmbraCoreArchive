@@ -1,15 +1,58 @@
-//
-// BackupConfiguration.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Configuration for backup operations
 public struct BackupConfiguration: Codable {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with values
+    /// - Parameters:
+    ///   - id: Configuration identifier
+    ///   - name: Configuration name
+    ///   - backupType: Backup type
+    ///   - compressionType: Compression type
+    ///   - encryptionType: Encryption type
+    ///   - scheduleType: Schedule type
+    ///   - sourcePaths: Source paths
+    ///   - exclusionPatterns: Exclusion patterns
+    ///   - storageLocations: Storage locations
+    ///   - retentionPolicy: Retention policy
+    ///   - verificationEnabled: Whether verification is enabled
+    ///   - notificationsEnabled: Whether notifications are enabled
+    ///   - metadata: Custom metadata
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        backupType: BackupType = .full,
+        compressionType: CompressionType = .zip,
+        encryptionType: EncryptionType = .none,
+        scheduleType: ScheduleType = .manual,
+        sourcePaths: [URL],
+        exclusionPatterns: [String] = [],
+        storageLocations: [StorageLocation],
+        retentionPolicy: RetentionPolicy = RetentionPolicy(),
+        verificationEnabled: Bool = true,
+        notificationsEnabled: Bool = true,
+        metadata: [String: String] = [:]
+    ) {
+        self.id = id
+        self.name = name
+        self.backupType = backupType
+        self.compressionType = compressionType
+        self.encryptionType = encryptionType
+        self.scheduleType = scheduleType
+        self.sourcePaths = sourcePaths
+        self.exclusionPatterns = exclusionPatterns
+        self.storageLocations = storageLocations
+        self.retentionPolicy = retentionPolicy
+        self.verificationEnabled = verificationEnabled
+        self.notificationsEnabled = notificationsEnabled
+        self.metadata = metadata
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Backup type
@@ -62,12 +105,7 @@ public struct BackupConfiguration: Codable {
 
     /// Retention policy
     public struct RetentionPolicy: Codable {
-        /// Maximum number of backups
-        public let maxBackups: Int
-        /// Maximum age in days
-        public let maxAgeDays: Int
-        /// Minimum required backups
-        public let minRequiredBackups: Int
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -79,16 +117,20 @@ public struct BackupConfiguration: Codable {
             self.maxAgeDays = maxAgeDays
             self.minRequiredBackups = minRequiredBackups
         }
+
+        // MARK: Public
+
+        /// Maximum number of backups
+        public let maxBackups: Int
+        /// Maximum age in days
+        public let maxAgeDays: Int
+        /// Minimum required backups
+        public let minRequiredBackups: Int
     }
 
     /// Storage location
     public struct StorageLocation: Codable {
-        /// Location URL
-        public let url: URL
-        /// Access credentials
-        public let credentials: Credentials?
-        /// Storage quota in bytes
-        public let quota: Int64?
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -100,16 +142,20 @@ public struct BackupConfiguration: Codable {
             self.credentials = credentials
             self.quota = quota
         }
+
+        // MARK: Public
+
+        /// Location URL
+        public let url: URL
+        /// Access credentials
+        public let credentials: Credentials?
+        /// Storage quota in bytes
+        public let quota: Int64?
     }
 
     /// Access credentials
     public struct Credentials: Codable {
-        /// Username if any
-        public let username: String?
-        /// Password if any
-        public let password: String?
-        /// Access token if any
-        public let accessToken: String?
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -121,9 +167,16 @@ public struct BackupConfiguration: Codable {
             self.password = password
             self.accessToken = accessToken
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
+
+        /// Username if any
+        public let username: String?
+        /// Password if any
+        public let password: String?
+        /// Access token if any
+        public let accessToken: String?
+    }
 
     /// Configuration identifier
     public let id: UUID
@@ -163,53 +216,6 @@ public struct BackupConfiguration: Codable {
 
     /// Custom metadata
     public let metadata: [String: String]
-
-    // MARK: - Initialization
-
-    /// Initialize with values
-    /// - Parameters:
-    ///   - id: Configuration identifier
-    ///   - name: Configuration name
-    ///   - backupType: Backup type
-    ///   - compressionType: Compression type
-    ///   - encryptionType: Encryption type
-    ///   - scheduleType: Schedule type
-    ///   - sourcePaths: Source paths
-    ///   - exclusionPatterns: Exclusion patterns
-    ///   - storageLocations: Storage locations
-    ///   - retentionPolicy: Retention policy
-    ///   - verificationEnabled: Whether verification is enabled
-    ///   - notificationsEnabled: Whether notifications are enabled
-    ///   - metadata: Custom metadata
-    public init(
-        id: UUID = UUID(),
-        name: String,
-        backupType: BackupType = .full,
-        compressionType: CompressionType = .zip,
-        encryptionType: EncryptionType = .none,
-        scheduleType: ScheduleType = .manual,
-        sourcePaths: [URL],
-        exclusionPatterns: [String] = [],
-        storageLocations: [StorageLocation],
-        retentionPolicy: RetentionPolicy = RetentionPolicy(),
-        verificationEnabled: Bool = true,
-        notificationsEnabled: Bool = true,
-        metadata: [String: String] = [:]
-    ) {
-        self.id = id
-        self.name = name
-        self.backupType = backupType
-        self.compressionType = compressionType
-        self.encryptionType = encryptionType
-        self.scheduleType = scheduleType
-        self.sourcePaths = sourcePaths
-        self.exclusionPatterns = exclusionPatterns
-        self.storageLocations = storageLocations
-        self.retentionPolicy = retentionPolicy
-        self.verificationEnabled = verificationEnabled
-        self.notificationsEnabled = notificationsEnabled
-        self.metadata = metadata
-    }
 
     // MARK: - Public Methods
 
@@ -254,14 +260,14 @@ public struct BackupConfiguration: Codable {
     public func getStorageLocation(
         for url: URL
     ) -> StorageLocation? {
-        return storageLocations.first { $0.url == url }
+        storageLocations.first { $0.url == url }
     }
 
     /// Check if path is excluded
     /// - Parameter path: Path to check
     /// - Returns: Whether path is excluded
     public func isPathExcluded(_ path: String) -> Bool {
-        return exclusionPatterns.contains { pattern in
+        exclusionPatterns.contains { pattern in
             path.range(
                 of: pattern,
                 options: [.regularExpression]

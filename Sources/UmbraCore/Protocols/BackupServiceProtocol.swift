@@ -1,12 +1,6 @@
-//
-// BackupServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - BackupServiceProtocol
 
 /// Protocol defining the core backup service functionality
 public protocol BackupServiceProtocol: Sendable {
@@ -90,6 +84,8 @@ public protocol BackupServiceProtocol: Sendable {
     func applyRetentionPolicy() async throws -> Int
 }
 
+// MARK: - BackupServiceDelegate
+
 /// Delegate protocol for receiving backup operation updates and status changes
 public protocol BackupServiceDelegate: AnyObject {
     /// Called when a backup operation starts
@@ -117,24 +113,11 @@ public protocol BackupServiceDelegate: AnyObject {
     func backupStatusDidChange(_ status: BackupStatus)
 }
 
+// MARK: - BackupConfiguration
+
 /// Configuration for backup operations
 public struct BackupConfiguration: Codable, Hashable {
-    /// Source paths to backup
-    public let sourcePaths: [URL]
-    /// Target repository URL
-    public let targetURL: URL
-    /// Backup type (full, incremental, etc.)
-    public let type: BackupType
-    /// Compression level (0-9)
-    public let compressionLevel: Int
-    /// Maximum upload speed in bytes per second (0 for unlimited)
-    public let maxUploadSpeed: Int64
-    /// Whether to verify data after backup
-    public let verifyAfterBackup: Bool
-    /// Tags to apply to the backup
-    public let tags: [String]
-    /// Exclude patterns
-    public let excludePatterns: [String]
+    // MARK: Lifecycle
 
     public init(
         sourcePaths: [URL],
@@ -155,38 +138,54 @@ public struct BackupConfiguration: Codable, Hashable {
         self.tags = tags
         self.excludePatterns = excludePatterns
     }
+
+    // MARK: Public
+
+    /// Source paths to backup
+    public let sourcePaths: [URL]
+    /// Target repository URL
+    public let targetURL: URL
+    /// Backup type (full, incremental, etc.)
+    public let type: BackupType
+    /// Compression level (0-9)
+    public let compressionLevel: Int
+    /// Maximum upload speed in bytes per second (0 for unlimited)
+    public let maxUploadSpeed: Int64
+    /// Whether to verify data after backup
+    public let verifyAfterBackup: Bool
+    /// Tags to apply to the backup
+    public let tags: [String]
+    /// Exclude patterns
+    public let excludePatterns: [String]
 }
+
+// MARK: - BackupSchedule
 
 /// Schedule for automated backups
 public struct BackupSchedule: Codable, Hashable {
-    /// Days of the week to run backups
-    public let days: Set<DayOfWeek>
-    /// Time of day to start backups
-    public let startTime: Date
-    /// Whether the schedule is enabled
-    public let isEnabled: Bool
+    // MARK: Lifecycle
 
     public init(days: Set<DayOfWeek>, startTime: Date, isEnabled: Bool = true) {
         self.days = days
         self.startTime = startTime
         self.isEnabled = isEnabled
     }
+
+    // MARK: Public
+
+    /// Days of the week to run backups
+    public let days: Set<DayOfWeek>
+    /// Time of day to start backups
+    public let startTime: Date
+    /// Whether the schedule is enabled
+    public let isEnabled: Bool
 }
+
+// MARK: - RetentionPolicy
 
 /// Policy for retaining backups
 public struct RetentionPolicy: Codable, Hashable {
-    /// Keep last n snapshots
-    public let keepLast: Int?
-    /// Keep hourly snapshots for n hours
-    public let keepHourly: Int?
-    /// Keep daily snapshots for n days
-    public let keepDaily: Int?
-    /// Keep weekly snapshots for n weeks
-    public let keepWeekly: Int?
-    /// Keep monthly snapshots for n months
-    public let keepMonthly: Int?
-    /// Keep yearly snapshots for n years
-    public let keepYearly: Int?
+    // MARK: Lifecycle
 
     public init(
         keepLast: Int? = nil,
@@ -203,22 +202,28 @@ public struct RetentionPolicy: Codable, Hashable {
         self.keepMonthly = keepMonthly
         self.keepYearly = keepYearly
     }
+
+    // MARK: Public
+
+    /// Keep last n snapshots
+    public let keepLast: Int?
+    /// Keep hourly snapshots for n hours
+    public let keepHourly: Int?
+    /// Keep daily snapshots for n days
+    public let keepDaily: Int?
+    /// Keep weekly snapshots for n weeks
+    public let keepWeekly: Int?
+    /// Keep monthly snapshots for n months
+    public let keepMonthly: Int?
+    /// Keep yearly snapshots for n years
+    public let keepYearly: Int?
 }
+
+// MARK: - BackupProgress
 
 /// Progress information for a backup operation
 public struct BackupProgress: Codable, Hashable {
-    /// Total number of files to backup
-    public let totalFiles: Int
-    /// Number of files processed
-    public let processedFiles: Int
-    /// Total bytes to backup
-    public let totalBytes: Int64
-    /// Bytes processed
-    public let processedBytes: Int64
-    /// Current transfer speed in bytes per second
-    public let currentSpeed: Int64
-    /// Estimated time remaining in seconds
-    public let estimatedTimeRemaining: TimeInterval
+    // MARK: Lifecycle
 
     public init(
         totalFiles: Int,
@@ -235,26 +240,28 @@ public struct BackupProgress: Codable, Hashable {
         self.currentSpeed = currentSpeed
         self.estimatedTimeRemaining = estimatedTimeRemaining
     }
+
+    // MARK: Public
+
+    /// Total number of files to backup
+    public let totalFiles: Int
+    /// Number of files processed
+    public let processedFiles: Int
+    /// Total bytes to backup
+    public let totalBytes: Int64
+    /// Bytes processed
+    public let processedBytes: Int64
+    /// Current transfer speed in bytes per second
+    public let currentSpeed: Int64
+    /// Estimated time remaining in seconds
+    public let estimatedTimeRemaining: TimeInterval
 }
+
+// MARK: - BackupHistoryEntry
 
 /// Entry in the backup history
 public struct BackupHistoryEntry: Codable, Hashable {
-    /// Unique identifier for the backup
-    public let id: String
-    /// When the backup started
-    public let startTime: Date
-    /// When the backup completed
-    public let endTime: Date
-    /// Type of backup performed
-    public let type: BackupType
-    /// Status of the backup
-    public let status: BackupStatus
-    /// Number of files backed up
-    public let fileCount: Int
-    /// Total bytes backed up
-    public let totalBytes: Int64
-    /// Any error that occurred
-    public let error: String?
+    // MARK: Lifecycle
 
     public init(
         id: String,
@@ -275,20 +282,32 @@ public struct BackupHistoryEntry: Codable, Hashable {
         self.totalBytes = totalBytes
         self.error = error
     }
+
+    // MARK: Public
+
+    /// Unique identifier for the backup
+    public let id: String
+    /// When the backup started
+    public let startTime: Date
+    /// When the backup completed
+    public let endTime: Date
+    /// Type of backup performed
+    public let type: BackupType
+    /// Status of the backup
+    public let status: BackupStatus
+    /// Number of files backed up
+    public let fileCount: Int
+    /// Total bytes backed up
+    public let totalBytes: Int64
+    /// Any error that occurred
+    public let error: String?
 }
+
+// MARK: - BackupMetrics
 
 /// Metrics for backup operations
 public struct BackupMetrics: Codable, Hashable {
-    /// Total number of successful backups
-    public let successfulBackups: Int
-    /// Total number of failed backups
-    public let failedBackups: Int
-    /// Total bytes backed up
-    public let totalBytesBackedUp: Int64
-    /// Average backup duration in seconds
-    public let averageBackupDuration: TimeInterval
-    /// Average backup size in bytes
-    public let averageBackupSize: Int64
+    // MARK: Lifecycle
 
     public init(
         successfulBackups: Int,
@@ -303,7 +322,22 @@ public struct BackupMetrics: Codable, Hashable {
         self.averageBackupDuration = averageBackupDuration
         self.averageBackupSize = averageBackupSize
     }
+
+    // MARK: Public
+
+    /// Total number of successful backups
+    public let successfulBackups: Int
+    /// Total number of failed backups
+    public let failedBackups: Int
+    /// Total bytes backed up
+    public let totalBytesBackedUp: Int64
+    /// Average backup duration in seconds
+    public let averageBackupDuration: TimeInterval
+    /// Average backup size in bytes
+    public let averageBackupSize: Int64
 }
+
+// MARK: - BackupType
 
 /// Type of backup operation
 public enum BackupType: String, Codable, Hashable {
@@ -311,6 +345,8 @@ public enum BackupType: String, Codable, Hashable {
     case incremental
     case differential
 }
+
+// MARK: - BackupStatus
 
 /// Status of a backup operation
 public enum BackupStatus: String, Codable, Hashable {
@@ -323,6 +359,8 @@ public enum BackupStatus: String, Codable, Hashable {
     case failed
 }
 
+// MARK: - DayOfWeek
+
 /// Day of the week for scheduling
 public enum DayOfWeek: String, Codable, Hashable, CaseIterable {
     case sunday
@@ -334,15 +372,21 @@ public enum DayOfWeek: String, Codable, Hashable, CaseIterable {
     case saturday
 }
 
+// MARK: - TimePeriod
+
 /// Time period for querying backup history and metrics
 public struct TimePeriod: Codable, Hashable {
-    /// Start of the time period
-    public let start: Date
-    /// End of the time period
-    public let end: Date
+    // MARK: Lifecycle
 
     public init(start: Date, end: Date) {
         self.start = start
         self.end = end
     }
+
+    // MARK: Public
+
+    /// Start of the time period
+    public let start: Date
+    /// End of the time period
+    public let end: Date
 }

@@ -1,21 +1,13 @@
-//
-// SecurityService+AccessControl.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
-extension SecurityService {
+public extension SecurityService {
     // MARK: - Access Control
 
     /// Request permission to access a URL
     /// - Parameter url: URL to request permission for
     /// - Returns: true if permission was granted
     /// - Throws: SecurityError if permission request fails
-    public func requestPermission(for url: URL) async throws -> Bool {
+    func requestPermission(for url: URL) async throws -> Bool {
         try validateUsable(for: "requestPermission")
 
         logger.debug(
@@ -60,7 +52,7 @@ extension SecurityService {
     /// - Parameter url: URL to validate
     /// - Returns: true if access is valid
     /// - Throws: SecurityError if validation fails
-    public func validateAccess(to url: URL) throws -> Bool {
+    func validateAccess(to url: URL) throws -> Bool {
         try validateUsable(for: "validateAccess")
 
         guard let bookmark = getActiveBookmark(for: url) else {
@@ -101,7 +93,7 @@ extension SecurityService {
 
     /// Revoke access to a URL
     /// - Parameter url: URL to revoke access from
-    public func revokeAccess(to url: URL) {
+    func revokeAccess(to url: URL) {
         logger.debug(
             "Revoking access to: \(url.path)",
             file: #file,
@@ -114,10 +106,10 @@ extension SecurityService {
     }
 
     /// Clean up all access
-    public func cleanupAccess() {
+    func cleanupAccess() {
         bookmarkQueue.sync(flags: .barrier) {
             // Stop accessing all URLs
-            for url in accessedUrls {
+            for url in accessedURLs {
                 url.stopAccessingSecurityScopedResource()
                 logger.debug(
                     "Stopped accessing: \(url.path)",
@@ -126,7 +118,7 @@ extension SecurityService {
                     line: #line
                 )
             }
-            accessedUrls.removeAll()
+            accessedURLs.removeAll()
 
             // Clear all bookmarks
             activeBookmarks.removeAll()

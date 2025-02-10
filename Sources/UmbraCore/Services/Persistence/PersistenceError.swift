@@ -1,11 +1,3 @@
-//
-// PersistenceError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Errors that can occur during persistence operations
@@ -33,53 +25,57 @@ public enum PersistenceError: LocalizedError {
     /// Invalid data
     case invalidData(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
         case .directoryNotFound:
-            return "Storage directory not found"
-        case .fileNotFound(let key):
-            return "File not found for key: \(key)"
-        case .saveFailed(let reason):
-            return "Failed to save data: \(reason)"
-        case .loadFailed(let reason):
-            return "Failed to load data: \(reason)"
-        case .removeFailed(let reason):
-            return "Failed to remove data: \(reason)"
-        case .compressionFailed(let reason):
-            return "Failed to compress data: \(reason)"
-        case .decompressionFailed(let reason):
-            return "Failed to decompress data: \(reason)"
-        case .encryptionFailed(let reason):
-            return "Failed to encrypt data: \(reason)"
-        case .decryptionFailed(let reason):
-            return "Failed to decrypt data: \(reason)"
-        case .invalidKey(let reason):
-            return "Invalid storage key: \(reason)"
-        case .invalidData(let reason):
-            return "Invalid data: \(reason)"
+            "Storage directory not found"
+        case let .fileNotFound(key):
+            "File not found for key: \(key)"
+        case let .saveFailed(reason):
+            "Failed to save data: \(reason)"
+        case let .loadFailed(reason):
+            "Failed to load data: \(reason)"
+        case let .removeFailed(reason):
+            "Failed to remove data: \(reason)"
+        case let .compressionFailed(reason):
+            "Failed to compress data: \(reason)"
+        case let .decompressionFailed(reason):
+            "Failed to decompress data: \(reason)"
+        case let .encryptionFailed(reason):
+            "Failed to encrypt data: \(reason)"
+        case let .decryptionFailed(reason):
+            "Failed to decrypt data: \(reason)"
+        case let .invalidKey(reason):
+            "Invalid storage key: \(reason)"
+        case let .invalidData(reason):
+            "Invalid data: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .directoryNotFound:
-            return "Try reinitialising the persistence service"
+            "Try reinitialising the persistence service"
         case .fileNotFound:
-            return "Check if the data was previously saved"
+            "Check if the data was previously saved"
         case .saveFailed:
-            return "Check disk space and permissions"
+            "Check disk space and permissions"
         case .loadFailed:
-            return "Check if the file exists and is accessible"
+            "Check if the file exists and is accessible"
         case .removeFailed:
-            return "Check file permissions"
-        case .compressionFailed, .decompressionFailed:
-            return "Check data format and try again"
-        case .encryptionFailed, .decryptionFailed:
-            return "Check encryption key and try again"
+            "Check file permissions"
+        case .compressionFailed,
+             .decompressionFailed:
+            "Check data format and try again"
+        case .encryptionFailed,
+             .decryptionFailed:
+            "Check encryption key and try again"
         case .invalidKey:
-            return "Use a valid storage key"
+            "Use a valid storage key"
         case .invalidData:
-            return "Check data format and try again"
+            "Check data format and try again"
         }
     }
 }

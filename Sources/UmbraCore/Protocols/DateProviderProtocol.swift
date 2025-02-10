@@ -1,12 +1,6 @@
-//
-// DateProviderProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - DateProviderProtocol
 
 /// Protocol for providing dates, allowing for easier testing of time-dependent code.
 ///
@@ -39,11 +33,17 @@ public protocol DateProviderProtocol {
     func now() -> Date
 }
 
+// MARK: - DateProvider
+
 /// Default implementation of DateProviderProtocol using system time
 public struct DateProvider: DateProviderProtocol {
+    // MARK: Lifecycle
+
     /// Initialize a new DateProvider
     /// - Note: This provider uses the system clock and respects the system time zone
     public init() {}
+
+    // MARK: Public
 
     /// Get the current system date and time
     /// - Returns: The current system `Date`

@@ -1,114 +1,8 @@
-//
-// ResourceService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for managing application resources
 public final class ResourceService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Resource type
-    public enum ResourceType {
-        /// Image resource
-        case image
-        /// Audio resource
-        case audio
-        /// Video resource
-        case video
-        /// Document resource
-        case document
-        /// Data resource
-        case data
-        /// Custom resource
-        case custom(String)
-
-        /// Get file extension for type
-        var fileExtension: String {
-            switch self {
-            case .image:
-                return "image"
-            case .audio:
-                return "audio"
-            case .video:
-                return "video"
-            case .document:
-                return "document"
-            case .data:
-                return "data"
-            case .custom(let ext):
-                return ext
-            }
-        }
-    }
-
-    /// Resource metadata
-    public struct ResourceMetadata: Codable {
-        /// Resource identifier
-        public let identifier: String
-
-        /// Resource type
-        public let type: String
-
-        /// Creation date
-        public let creationDate: Date
-
-        /// Last modified date
-        public let modificationDate: Date
-
-        /// Resource size in bytes
-        public let size: Int64
-
-        /// Content type
-        public let contentType: String
-
-        /// Additional attributes
-        public let attributes: [String: String]
-
-        /// Initialize with values
-        public init(
-            identifier: String,
-            type: String,
-            creationDate: Date = Date(),
-            modificationDate: Date = Date(),
-            size: Int64,
-            contentType: String,
-            attributes: [String: String] = [:]
-        ) {
-            self.identifier = identifier
-            self.type = type
-            self.creationDate = creationDate
-            self.modificationDate = modificationDate
-            self.size = size
-            self.contentType = contentType
-            self.attributes = attributes
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Persistence service
-    private let persistence: PersistenceService
-
-    /// Security service
-    private let security: SecurityService
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.resource",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Resource cache
-    private var resourceCache: [String: ResourceMetadata] = [:]
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -129,6 +23,93 @@ public final class ResourceService: BaseSandboxedService {
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
         loadResourceCache()
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Resource type
+    public enum ResourceType {
+        /// Image resource
+        case image
+        /// Audio resource
+        case audio
+        /// Video resource
+        case video
+        /// Document resource
+        case document
+        /// Data resource
+        case data
+        /// Custom resource
+        case custom(String)
+
+        // MARK: Internal
+
+        /// Get file extension for type
+        var fileExtension: String {
+            switch self {
+            case .image:
+                "image"
+            case .audio:
+                "audio"
+            case .video:
+                "video"
+            case .document:
+                "document"
+            case .data:
+                "data"
+            case let .custom(ext):
+                ext
+            }
+        }
+    }
+
+    /// Resource metadata
+    public struct ResourceMetadata: Codable {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            identifier: String,
+            type: String,
+            creationDate: Date = Date(),
+            modificationDate: Date = Date(),
+            size: Int64,
+            contentType: String,
+            attributes: [String: String] = [:]
+        ) {
+            self.identifier = identifier
+            self.type = type
+            self.creationDate = creationDate
+            self.modificationDate = modificationDate
+            self.size = size
+            self.contentType = contentType
+            self.attributes = attributes
+        }
+
+        // MARK: Public
+
+        /// Resource identifier
+        public let identifier: String
+
+        /// Resource type
+        public let type: String
+
+        /// Creation date
+        public let creationDate: Date
+
+        /// Last modified date
+        public let modificationDate: Date
+
+        /// Resource size in bytes
+        public let size: Int64
+
+        /// Content type
+        public let contentType: String
+
+        /// Additional attributes
+        public let attributes: [String: String]
     }
 
     // MARK: - Public Methods
@@ -153,11 +134,11 @@ public final class ResourceService: BaseSandboxedService {
 
         return try await performanceMonitor.trackDuration("resource.store") {
             // Generate identifier if needed
-            let resourceId = identifier ?? UUID().uuidString
+            let resourceID = identifier ?? UUID().uuidString
 
             // Create metadata
             let metadata = ResourceMetadata(
-                identifier: resourceId,
+                identifier: resourceID,
                 type: type.fileExtension,
                 size: Int64(data.count),
                 contentType: contentType,
@@ -167,19 +148,19 @@ public final class ResourceService: BaseSandboxedService {
             // Store data
             try await persistence.save(
                 data,
-                forKey: getStorageKey(for: resourceId, type: type)
+                forKey: getStorageKey(for: resourceID, type: type)
             )
 
             // Update cache
             queue.async(flags: .barrier) {
-                self.resourceCache[resourceId] = metadata
+                self.resourceCache[resourceID] = metadata
             }
 
             // Log operation
             logger.debug(
                 """
                 Stored resource:
-                ID: \(resourceId)
+                ID: \(resourceID)
                 Type: \(type)
                 Size: \(data.count) bytes
                 """,
@@ -296,6 +277,27 @@ public final class ResourceService: BaseSandboxedService {
             resourceCache.values.filter { $0.type == type.fileExtension }
         }
     }
+
+    // MARK: Private
+
+    /// Persistence service
+    private let persistence: PersistenceService
+
+    /// Security service
+    private let security: SecurityService
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.resource",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Resource cache
+    private var resourceCache: [String: ResourceMetadata] = [:]
 
     // MARK: - Private Methods
 

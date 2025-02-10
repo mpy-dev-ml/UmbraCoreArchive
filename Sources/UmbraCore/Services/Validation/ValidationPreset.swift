@@ -1,11 +1,3 @@
-//
-// ValidationPreset.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Preset validation rules
@@ -20,14 +12,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("email")
+            .withID("email")
             .withDescription("Validate email format")
             .withPriority(priority)
             .withCondition(
                 name: "emailFormat",
                 errorMessage: "Invalid email format"
             ) { data in
-                guard let email = data as? String else { return false }
+                guard let email = data as? String else {
+                    return false
+                }
                 let pattern = #"^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
                 return email.range(of: pattern, options: .regularExpression) != nil
             }
@@ -42,14 +36,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("url")
+            .withID("url")
             .withDescription("Validate URL format")
             .withPriority(priority)
             .withCondition(
                 name: "urlFormat",
                 errorMessage: "Invalid URL format"
             ) { data in
-                guard let urlString = data as? String else { return false }
+                guard let urlString = data as? String else {
+                    return false
+                }
                 return URL(string: urlString) != nil
             }
             .build()
@@ -63,14 +59,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("phoneNumber")
+            .withID("phoneNumber")
             .withDescription("Validate phone number format")
             .withPriority(priority)
             .withCondition(
                 name: "phoneFormat",
                 errorMessage: "Invalid phone number format"
             ) { data in
-                guard let phone = data as? String else { return false }
+                guard let phone = data as? String else {
+                    return false
+                }
                 let pattern = #"^\+?[1-9]\d{1,14}$"#
                 return phone.range(of: pattern, options: .regularExpression) != nil
             }
@@ -92,14 +90,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("range")
+            .withID("range")
             .withDescription("Validate value range")
             .withPriority(priority)
             .withCondition(
                 name: "rangeCheck",
                 errorMessage: "Value must be between \(min) and \(max)"
             ) { data in
-                guard let value = data as? T else { return false }
+                guard let value = data as? T else {
+                    return false
+                }
                 return value >= min && value <= max
             }
             .build()
@@ -113,7 +113,7 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("positiveNumber")
+            .withID("positiveNumber")
             .withDescription("Validate positive number")
             .withPriority(priority)
             .withCondition(
@@ -121,7 +121,8 @@ public enum ValidationPreset {
                 errorMessage: "Value must be positive"
             ) { data in
                 guard let number = data as? (any Numeric),
-                      let comparable = number as? (any Comparable) else {
+                      let comparable = number as? (any Comparable)
+                else {
                     return false
                 }
                 return comparable > 0
@@ -139,14 +140,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("nonEmptyCollection")
+            .withID("nonEmptyCollection")
             .withDescription("Validate non-empty collection")
             .withPriority(priority)
             .withCondition(
                 name: "nonEmptyCheck",
                 errorMessage: "Collection must not be empty"
             ) { data in
-                guard let collection = data as? any Collection else { return false }
+                guard let collection = data as? any Collection else {
+                    return false
+                }
                 return !collection.isEmpty
             }
             .build()
@@ -165,14 +168,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("collectionSize")
+            .withID("collectionSize")
             .withDescription("Validate collection size")
             .withPriority(priority)
             .withCondition(
                 name: "sizeCheck",
                 errorMessage: "Collection size must be between \(minSize) and \(maxSize)"
             ) { data in
-                guard let collection = data as? any Collection else { return false }
+                guard let collection = data as? any Collection else {
+                    return false
+                }
                 return collection.count >= minSize && collection.count <= maxSize
             }
             .build()
@@ -188,14 +193,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("futureDate")
+            .withID("futureDate")
             .withDescription("Validate future date")
             .withPriority(priority)
             .withCondition(
                 name: "futureCheck",
                 errorMessage: "Date must be in the future"
             ) { data in
-                guard let date = data as? Date else { return false }
+                guard let date = data as? Date else {
+                    return false
+                }
                 return date > Date()
             }
             .build()
@@ -214,14 +221,16 @@ public enum ValidationPreset {
         priority: ValidationService.Priority = .normal
     ) throws -> ValidationService.ValidationRule {
         try ValidationRuleBuilder()
-            .withId("dateRange")
+            .withID("dateRange")
             .withDescription("Validate date range")
             .withPriority(priority)
             .withCondition(
                 name: "rangeCheck",
                 errorMessage: "Date must be between \(start) and \(end)"
             ) { data in
-                guard let date = data as? Date else { return false }
+                guard let date = data as? Date else {
+                    return false
+                }
                 return date >= start && date <= end
             }
             .build()

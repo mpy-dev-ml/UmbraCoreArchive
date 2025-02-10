@@ -1,106 +1,8 @@
-//
-// SystemDiagnostics.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Diagnostics for system operations
 public struct SystemDiagnostics {
-    // MARK: - Types
-
-    /// Diagnostic report
-    public struct Report {
-        /// Report identifier
-        public let id: UUID
-        /// Report timestamp
-        public let timestamp: Date
-        /// Report sections
-        public let sections: [Section]
-        /// Report summary
-        public let summary: String
-
-        /// Initialize with values
-        public init(
-            id: UUID = UUID(),
-            timestamp: Date = Date(),
-            sections: [Section],
-            summary: String
-        ) {
-            self.id = id
-            self.timestamp = timestamp
-            self.sections = sections
-            self.summary = summary
-        }
-    }
-
-    /// Report section
-    public struct Section {
-        /// Section title
-        public let title: String
-        /// Section items
-        public let items: [Item]
-        /// Section status
-        public let status: Status
-
-        /// Initialize with values
-        public init(
-            title: String,
-            items: [Item],
-            status: Status
-        ) {
-            self.title = title
-            self.items = items
-            self.status = status
-        }
-    }
-
-    /// Section item
-    public struct Item {
-        /// Item key
-        public let key: String
-        /// Item value
-        public let value: String
-        /// Item status
-        public let status: Status
-
-        /// Initialize with values
-        public init(
-            key: String,
-            value: String,
-            status: Status
-        ) {
-            self.key = key
-            self.value = value
-            self.status = status
-        }
-    }
-
-    /// Status
-    public enum Status {
-        /// OK
-        case ok
-        /// Warning
-        case warning
-        /// Error
-        case error
-        /// Unknown
-        case unknown
-    }
-
-    // MARK: - Properties
-
-    /// System monitor
-    private let monitor: SystemMonitor
-
-    /// Logger for tracking operations
-    private let logger: LoggerProtocol
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -119,45 +21,140 @@ public struct SystemDiagnostics {
         self.logger = logger
     }
 
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Diagnostic report
+    public struct Report {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            id: UUID = UUID(),
+            timestamp: Date = Date(),
+            sections: [Section],
+            summary: String
+        ) {
+            self.id = id
+            self.timestamp = timestamp
+            self.sections = sections
+            self.summary = summary
+        }
+
+        // MARK: Public
+
+        /// Report identifier
+        public let id: UUID
+        /// Report timestamp
+        public let timestamp: Date
+        /// Report sections
+        public let sections: [Section]
+        /// Report summary
+        public let summary: String
+    }
+
+    /// Report section
+    public struct Section {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            title: String,
+            items: [Item],
+            status: Status
+        ) {
+            self.title = title
+            self.items = items
+            self.status = status
+        }
+
+        // MARK: Public
+
+        /// Section title
+        public let title: String
+        /// Section items
+        public let items: [Item]
+        /// Section status
+        public let status: Status
+    }
+
+    /// Section item
+    public struct Item {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            key: String,
+            value: String,
+            status: Status
+        ) {
+            self.key = key
+            self.value = value
+            self.status = status
+        }
+
+        // MARK: Public
+
+        /// Item key
+        public let key: String
+        /// Item value
+        public let value: String
+        /// Item status
+        public let status: Status
+    }
+
+    /// Status
+    public enum Status {
+        /// OK
+        case ok
+        /// Warning
+        case warning
+        /// Error
+        case error
+        /// Unknown
+        case unknown
+    }
+
     // MARK: - Public Methods
 
     /// Generate diagnostic report
     /// - Returns: Diagnostic report
     /// - Throws: Error if report generation fails
     public func generateReport() async throws -> Report {
-        return try await performanceMonitor.trackDuration(
+        try await performanceMonitor.trackDuration(
             "system.diagnostics.report"
         ) {
             var sections: [Section] = []
 
             // Check CPU metrics
-            sections.append(
-                try await checkResource(.cpu, title: "CPU Usage")
+            try await sections.append(
+                checkResource(.cpu, title: "CPU Usage")
             )
 
             // Check memory metrics
-            sections.append(
-                try await checkResource(.memory, title: "Memory Usage")
+            try await sections.append(
+                checkResource(.memory, title: "Memory Usage")
             )
 
             // Check disk metrics
-            sections.append(
-                try await checkResource(.disk, title: "Disk Usage")
+            try await sections.append(
+                checkResource(.disk, title: "Disk Usage")
             )
 
             // Check network metrics
-            sections.append(
-                try await checkResource(.network, title: "Network Usage")
+            try await sections.append(
+                checkResource(.network, title: "Network Usage")
             )
 
             // Check battery metrics
-            sections.append(
-                try await checkResource(.battery, title: "Battery Status")
+            try await sections.append(
+                checkResource(.battery, title: "Battery Status")
             )
 
             // Check thermal metrics
-            sections.append(
-                try await checkResource(.thermal, title: "Thermal State")
+            try await sections.append(
+                checkResource(.thermal, title: "Thermal State")
             )
 
             // Generate summary
@@ -180,6 +177,17 @@ public struct SystemDiagnostics {
             )
         }
     }
+
+    // MARK: Private
+
+    /// System monitor
+    private let monitor: SystemMonitor
+
+    /// Logger for tracking operations
+    private let logger: LoggerProtocol
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 
     // MARK: - Private Methods
 
@@ -223,7 +231,7 @@ public struct SystemDiagnostics {
                 title: title,
                 items: items,
                 status: items.contains { $0.status == .error } ? .error :
-                       items.contains { $0.status == .warning } ? .warning : .ok
+                    items.contains { $0.status == .warning } ? .warning : .ok
             )
         } catch {
             return Section(
@@ -233,7 +241,7 @@ public struct SystemDiagnostics {
                         key: "Error",
                         value: error.localizedDescription,
                         status: .error
-                    )
+                    ),
                 ],
                 status: .error
             )
@@ -243,12 +251,12 @@ public struct SystemDiagnostics {
     /// Get usage status
     private func getUsageStatus(_ percentage: Double) -> Status {
         switch percentage {
-        case 0..<70:
-            return .ok
-        case 70..<90:
-            return .warning
+        case 0 ..< 70:
+            .ok
+        case 70 ..< 90:
+            .warning
         default:
-            return .error
+            .error
         }
     }
 
@@ -258,7 +266,7 @@ public struct SystemDiagnostics {
         var value = Double(bytes)
         var unitIndex = 0
 
-        while value > 1024 && unitIndex < units.count - 1 {
+        while value > 1024, unitIndex < units.count - 1 {
             value /= 1024
             unitIndex += 1
         }
@@ -273,10 +281,10 @@ public struct SystemDiagnostics {
         let okCount = sections.filter { $0.status == .ok }.count
 
         return """
-            System Diagnostics Summary:
-            - \(errorCount) errors
-            - \(warningCount) warnings
-            - \(okCount) ok
-            """
+        System Diagnostics Summary:
+        - \(errorCount) errors
+        - \(warningCount) warnings
+        - \(okCount) ok
+        """
     }
 }

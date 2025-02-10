@@ -1,15 +1,28 @@
-//
-// NotificationScheduler.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for scheduling notifications with advanced patterns
 public final class NotificationScheduler: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - notificationService: Notification service
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        notificationService: NotificationService,
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.notificationService = notificationService
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Schedule pattern
@@ -25,15 +38,17 @@ public final class NotificationScheduler: BaseSandboxedService {
         /// Custom interval schedule
         case interval(TimeInterval)
 
+        // MARK: Internal
+
         /// Get next trigger date
         func nextTriggerDate(after date: Date = Date()) -> Date? {
             let calendar = Calendar.current
 
             switch self {
-            case .oneTime(let triggerDate):
+            case let .oneTime(triggerDate):
                 return triggerDate > date ? triggerDate : nil
 
-            case .daily(let hour, let minute):
+            case let .daily(hour, minute):
                 var components = calendar.dateComponents(
                     [.year, .month, .day],
                     from: date
@@ -49,7 +64,7 @@ public final class NotificationScheduler: BaseSandboxedService {
                     ? triggerDate
                     : calendar.date(byAdding: .day, value: 1, to: triggerDate)
 
-            case .weekly(let weekday, let hour, let minute):
+            case let .weekly(weekday, hour, minute):
                 var components = calendar.dateComponents(
                     [.yearForWeekOfYear, .weekOfYear],
                     from: date
@@ -66,7 +81,7 @@ public final class NotificationScheduler: BaseSandboxedService {
                     ? triggerDate
                     : calendar.date(byAdding: .weekOfYear, value: 1, to: triggerDate)
 
-            case .monthly(let day, let hour, let minute):
+            case let .monthly(day, hour, minute):
                 var components = calendar.dateComponents(
                     [.year, .month],
                     from: date
@@ -83,7 +98,7 @@ public final class NotificationScheduler: BaseSandboxedService {
                     ? triggerDate
                     : calendar.date(byAdding: .month, value: 1, to: triggerDate)
 
-            case .interval(let interval):
+            case let .interval(interval):
                 return date.addingTimeInterval(interval)
             }
         }
@@ -91,6 +106,29 @@ public final class NotificationScheduler: BaseSandboxedService {
 
     /// Schedule configuration
     public struct Configuration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            identifier: String,
+            title: String,
+            body: String,
+            pattern: Pattern,
+            categoryIdentifier: String? = nil,
+            userInfo: [AnyHashable: Any] = [:],
+            priority: NotificationService.Priority = .normal
+        ) {
+            self.identifier = identifier
+            self.title = title
+            self.body = body
+            self.pattern = pattern
+            self.categoryIdentifier = categoryIdentifier
+            self.userInfo = userInfo
+            self.priority = priority
+        }
+
+        // MARK: Public
+
         /// Schedule identifier
         public let identifier: String
 
@@ -111,60 +149,6 @@ public final class NotificationScheduler: BaseSandboxedService {
 
         /// Priority level
         public let priority: NotificationService.Priority
-
-        /// Initialize with values
-        public init(
-            identifier: String,
-            title: String,
-            body: String,
-            pattern: Pattern,
-            categoryIdentifier: String? = nil,
-            userInfo: [AnyHashable: Any] = [:],
-            priority: NotificationService.Priority = .normal
-        ) {
-            self.identifier = identifier
-            self.title = title
-            self.body = body
-            self.pattern = pattern
-            self.categoryIdentifier = categoryIdentifier
-            self.userInfo = userInfo
-            self.priority = priority
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Notification service
-    private let notificationService: NotificationService
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.notification.scheduler",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Active schedules
-    private var schedules: [String: Configuration] = [:]
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - notificationService: Notification service
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        notificationService: NotificationService,
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.notificationService = notificationService
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
     }
 
     // MARK: - Public Methods
@@ -188,7 +172,7 @@ public final class NotificationScheduler: BaseSandboxedService {
             }
 
             // Schedule notification
-            let notificationId = try await notificationService.scheduleNotification(
+            let notificationID = try await notificationService.scheduleNotification(
                 title: configuration.title,
                 body: configuration.body,
                 categoryIdentifier: configuration.categoryIdentifier,
@@ -209,7 +193,7 @@ public final class NotificationScheduler: BaseSandboxedService {
                 Title: \(configuration.title)
                 Pattern: \(String(describing: configuration.pattern))
                 Next: \(triggerDate)
-                NotificationID: \(notificationId)
+                NotificationID: \(notificationID)
                 """,
                 file: #file,
                 function: #function,
@@ -267,4 +251,22 @@ public final class NotificationScheduler: BaseSandboxedService {
             }
         }
     }
+
+    // MARK: Private
+
+    /// Notification service
+    private let notificationService: NotificationService
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.notification.scheduler",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Active schedules
+    private var schedules: [String: Configuration] = [:]
 }

@@ -1,36 +1,32 @@
-//
-// DevelopmentEnvironmentService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for managing development environment
 public final class DevelopmentEnvironmentService: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with configuration and logger
+    /// - Parameters:
+    ///   - configuration: Development configuration
+    ///   - logger: Logger for tracking operations
+    public init(
+        configuration: Configuration = Configuration(),
+        logger: LoggerProtocol
+    ) {
+        self.configuration = configuration
+        super.init(logger: logger)
+
+        setupEnvironment()
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Development environment configuration
     public struct Configuration: Codable {
-        /// Whether development mode is enabled
-        public var isDevelopmentMode: Bool
-
-        /// Whether to use in-memory storage
-        public var useInMemoryStorage: Bool
-
-        /// Whether to enable debug logging
-        public var enableDebugLogging: Bool
-
-        /// Whether to bypass security checks
-        public var bypassSecurity: Bool
-
-        /// Whether to simulate network latency
-        public var simulateNetworkLatency: Bool
-
-        /// Simulated network latency in seconds
-        public var networkLatency: TimeInterval
+        // MARK: Lifecycle
 
         /// Initialize with default values
         public init(
@@ -48,21 +44,31 @@ public final class DevelopmentEnvironmentService: BaseSandboxedService {
             self.simulateNetworkLatency = simulateNetworkLatency
             self.networkLatency = networkLatency
         }
+
+        // MARK: Public
+
+        /// Whether development mode is enabled
+        public var isDevelopmentMode: Bool
+
+        /// Whether to use in-memory storage
+        public var useInMemoryStorage: Bool
+
+        /// Whether to enable debug logging
+        public var enableDebugLogging: Bool
+
+        /// Whether to bypass security checks
+        public var bypassSecurity: Bool
+
+        /// Whether to simulate network latency
+        public var simulateNetworkLatency: Bool
+
+        /// Simulated network latency in seconds
+        public var networkLatency: TimeInterval
     }
 
     /// Development environment state
     public struct EnvironmentState {
-        /// Current configuration
-        public let configuration: Configuration
-
-        /// Active services
-        public let activeServices: Set<String>
-
-        /// Memory usage
-        public let memoryUsage: UInt64
-
-        /// Active connections
-        public let activeConnections: Int
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -76,37 +82,20 @@ public final class DevelopmentEnvironmentService: BaseSandboxedService {
             self.memoryUsage = memoryUsage
             self.activeConnections = activeConnections
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Current configuration
-    private var configuration: Configuration
+        /// Current configuration
+        public let configuration: Configuration
 
-    /// Active services
-    private var activeServices: Set<String> = []
+        /// Active services
+        public let activeServices: Set<String>
 
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.development",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
+        /// Memory usage
+        public let memoryUsage: UInt64
 
-    // MARK: - Initialization
-
-    /// Initialize with configuration and logger
-    /// - Parameters:
-    ///   - configuration: Development configuration
-    ///   - logger: Logger for tracking operations
-    public init(
-        configuration: Configuration = Configuration(),
-        logger: LoggerProtocol
-    ) {
-        self.configuration = configuration
-        super.init(logger: logger)
-
-        setupEnvironment()
+        /// Active connections
+        public let activeConnections: Int
     }
 
     // MARK: - Public Methods
@@ -207,6 +196,21 @@ public final class DevelopmentEnvironmentService: BaseSandboxedService {
         return try await operation()
     }
 
+    // MARK: Private
+
+    /// Current configuration
+    private var configuration: Configuration
+
+    /// Active services
+    private var activeServices: Set<String> = []
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.development",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
     // MARK: - Private Methods
 
     /// Set up development environment
@@ -246,6 +250,6 @@ public final class DevelopmentEnvironmentService: BaseSandboxedService {
     /// Get current memory usage
     private func getCurrentMemoryUsage() -> UInt64 {
         // Implementation would use platform-specific APIs
-        return 0
+        0
     }
 }

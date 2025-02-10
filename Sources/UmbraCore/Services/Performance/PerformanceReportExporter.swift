@@ -1,15 +1,22 @@
-//
-// PerformanceReportExporter.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for exporting performance reports
 public final class PerformanceReportExporter: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with monitor and logger
+    /// - Parameters:
+    ///   - monitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(monitor: PerformanceMonitor, logger: LoggerProtocol) {
+        self.monitor = monitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Format for exported reports
@@ -24,21 +31,15 @@ public final class PerformanceReportExporter: BaseSandboxedService {
 
     /// Configuration for report export
     public struct ExportConfiguration {
-        /// Format of the report
-        public let format: ReportFormat
-        /// Types of metrics to include
-        public let metricTypes: Set<PerformanceMonitor.MetricType>
-        /// Start date for metrics
-        public let startDate: Date?
-        /// End date for metrics
-        public let endDate: Date?
-        /// Additional metadata
-        public let metadata: [String: String]
+        // MARK: Lifecycle
 
         /// Initialize with default values
         public init(
             format: ReportFormat = .json,
-            metricTypes: Set<PerformanceMonitor.MetricType> = Set(PerformanceMonitor.MetricType.allCases),
+            metricTypes: Set<PerformanceMonitor.MetricType> = Set(
+                PerformanceMonitor.MetricType
+                    .allCases
+            ),
             startDate: Date? = nil,
             endDate: Date? = nil,
             metadata: [String: String] = [:]
@@ -49,22 +50,19 @@ public final class PerformanceReportExporter: BaseSandboxedService {
             self.endDate = endDate
             self.metadata = metadata
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Performance monitor to export from
-    private let monitor: PerformanceMonitor
-
-    // MARK: - Initialization
-
-    /// Initialize with monitor and logger
-    /// - Parameters:
-    ///   - monitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(monitor: PerformanceMonitor, logger: LoggerProtocol) {
-        self.monitor = monitor
-        super.init(logger: logger)
+        /// Format of the report
+        public let format: ReportFormat
+        /// Types of metrics to include
+        public let metricTypes: Set<PerformanceMonitor.MetricType>
+        /// Start date for metrics
+        public let startDate: Date?
+        /// End date for metrics
+        public let endDate: Date?
+        /// Additional metadata
+        public let metadata: [String: String]
     }
 
     // MARK: - Public Methods
@@ -108,24 +106,24 @@ public final class PerformanceReportExporter: BaseSandboxedService {
         }
 
         // Generate report
-        let reportData: Data
-        switch configuration.format {
-        case .json:
-            reportData = try generateJSONReport(
-                metrics: metrics,
-                metadata: configuration.metadata
-            )
-        case .csv:
-            reportData = try generateCSVReport(
-                metrics: metrics,
-                metadata: configuration.metadata
-            )
-        case .text:
-            reportData = try generateTextReport(
-                metrics: metrics,
-                metadata: configuration.metadata
-            )
-        }
+        let reportData: Data =
+            switch configuration.format {
+            case .json:
+                try generateJSONReport(
+                    metrics: metrics,
+                    metadata: configuration.metadata
+                )
+            case .csv:
+                try generateCSVReport(
+                    metrics: metrics,
+                    metadata: configuration.metadata
+                )
+            case .text:
+                try generateTextReport(
+                    metrics: metrics,
+                    metadata: configuration.metadata
+                )
+            }
 
         // Write to file
         try reportData.write(to: url)
@@ -137,6 +135,11 @@ public final class PerformanceReportExporter: BaseSandboxedService {
             line: #line
         )
     }
+
+    // MARK: Private
+
+    /// Performance monitor to export from
+    private let monitor: PerformanceMonitor
 
     // MARK: - Private Methods
 
@@ -155,9 +158,9 @@ public final class PerformanceReportExporter: BaseSandboxedService {
                     "value": metric.value,
                     "unit": metric.unit,
                     "timestamp": metric.timestamp.ISO8601Format(),
-                    "context": metric.context
+                    "context": metric.context,
                 ]
-            }
+            },
         ]
 
         return try JSONSerialization.data(
@@ -169,7 +172,7 @@ public final class PerformanceReportExporter: BaseSandboxedService {
     /// Generate CSV report
     private func generateCSVReport(
         metrics: [PerformanceMonitor.Metric],
-        metadata: [String: String]
+        metadata _: [String: String]
     ) throws -> Data {
         var csv = "Type,Operation,Value,Unit,Timestamp,Context\n"
 
@@ -179,13 +182,13 @@ public final class PerformanceReportExporter: BaseSandboxedService {
                 .joined(separator: ";")
 
             csv += """
-                \(metric.type.rawValue),\
-                \(metric.operation),\
-                \(metric.value),\
-                \(metric.unit),\
-                \(metric.timestamp.ISO8601Format()),\
-                \(context)\n
-                """
+            \(metric.type.rawValue),\
+            \(metric.operation),\
+            \(metric.value),\
+            \(metric.unit),\
+            \(metric.timestamp.ISO8601Format()),\
+            \(context)\n
+            """
         }
 
         return csv.data(using: .utf8) ?? Data()
@@ -210,13 +213,13 @@ public final class PerformanceReportExporter: BaseSandboxedService {
         text += "Metrics:\n"
         for metric in metrics {
             text += """
-                Type: \(metric.type.rawValue)
-                Operation: \(metric.operation)
-                Value: \(metric.value) \(metric.unit)
-                Timestamp: \(metric.timestamp.ISO8601Format())
-                Context: \(metric.context)
+            Type: \(metric.type.rawValue)
+            Operation: \(metric.operation)
+            Value: \(metric.value) \(metric.unit)
+            Timestamp: \(metric.timestamp.ISO8601Format())
+            Context: \(metric.context)
 
-                """
+            """
         }
 
         return text.data(using: .utf8) ?? Data()

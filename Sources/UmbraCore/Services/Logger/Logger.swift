@@ -1,52 +1,12 @@
-//
-// Logger.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
+
+// MARK: - Logger
 
 /// Main logger implementation
 @objc
 public class Logger: NSObject, LoggerProtocol {
-    // MARK: - Types
-
-    /// Log level
-    public enum Level: Int {
-        case debug = 0
-        case info = 1
-        case warning = 2
-        case error = 3
-        case critical = 4
-
-        /// Convert to string
-        var description: String {
-            switch self {
-            case .debug: return "DEBUG"
-            case .info: return "INFO"
-            case .warning: return "WARNING"
-            case .error: return "ERROR"
-            case .critical: return "CRITICAL"
-            }
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Minimum log level
-    private let minimumLevel: Level
-
-    /// Log destination
-    private let destination: LogDestination
-
-    /// Queue for synchronizing logging
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbra.logger",
-        qos: .utility
-    )
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -59,6 +19,32 @@ public class Logger: NSObject, LoggerProtocol {
         self.minimumLevel = minimumLevel
         self.destination = destination
         super.init()
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Log level
+    public enum Level: Int {
+        case debug = 0
+        case info = 1
+        case warning = 2
+        case error = 3
+        case critical = 4
+
+        // MARK: Internal
+
+        /// Convert to string
+        var description: String {
+            switch self {
+            case .debug: "DEBUG"
+            case .info: "INFO"
+            case .warning: "WARNING"
+            case .error: "ERROR"
+            case .critical: "CRITICAL"
+            }
+        }
     }
 
     // MARK: - LoggerProtocol
@@ -128,6 +114,20 @@ public class Logger: NSObject, LoggerProtocol {
         )
     }
 
+    // MARK: Private
+
+    /// Minimum log level
+    private let minimumLevel: Level
+
+    /// Log destination
+    private let destination: LogDestination
+
+    /// Queue for synchronizing logging
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbra.logger",
+        qos: .utility
+    )
+
     // MARK: - Private Methods
 
     /// Log message with level
@@ -164,9 +164,9 @@ public class Logger: NSObject, LoggerProtocol {
         switch destination {
         case .osLog:
             writeToOSLog(formattedMessage, level: level)
-        case .file(let url):
+        case let .file(url):
             writeToFile(formattedMessage, at: url)
-        case .custom(let handler):
+        case let .custom(handler):
             handler(formattedMessage, level)
         }
     }
@@ -181,9 +181,9 @@ public class Logger: NSObject, LoggerProtocol {
         let metadata = formatMetadata(config.metadata)
 
         return """
-            [\(timestamp)] [\(level.description)] \
-            \(message)\(metadata)
-            """
+        [\(timestamp)] [\(level.description)] \
+        \(message)\(metadata)
+        """
     }
 
     /// Format metadata dictionary
@@ -206,19 +206,19 @@ public class Logger: NSObject, LoggerProtocol {
         _ message: String,
         level: Level
     ) {
-        let type: OSLogType
-        switch level {
-        case .debug:
-            type = .debug
-        case .info:
-            type = .info
-        case .warning:
-            type = .default
-        case .error:
-            type = .error
-        case .critical:
-            type = .fault
-        }
+        let type: OSLogType =
+            switch level {
+            case .debug:
+                .debug
+            case .info:
+                .info
+            case .warning:
+                .default
+            case .error:
+                .error
+            case .critical:
+                .fault
+            }
 
         os_log(
             "%{public}@",
@@ -253,7 +253,7 @@ public class Logger: NSObject, LoggerProtocol {
     }
 }
 
-// MARK: - Log Destination
+// MARK: - LogDestination
 
 /// Log destination
 public enum LogDestination {

@@ -1,101 +1,8 @@
-//
-// CacheService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for managing cache operations
 public final class CacheService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Cache entry
-    public struct CacheEntry<T: Codable> {
-        /// Entry value
-        public let value: T
-
-        /// Creation date
-        public let creationDate: Date
-
-        /// Expiration date
-        public let expirationDate: Date?
-
-        /// Entry size in bytes
-        public let size: Int64
-
-        /// Entry metadata
-        public let metadata: [String: String]
-
-        /// Initialize with values
-        public init(
-            value: T,
-            creationDate: Date = Date(),
-            expirationDate: Date? = nil,
-            size: Int64,
-            metadata: [String: String] = [:]
-        ) {
-            self.value = value
-            self.creationDate = creationDate
-            self.expirationDate = expirationDate
-            self.size = size
-            self.metadata = metadata
-        }
-    }
-
-    /// Cache configuration
-    public struct Configuration {
-        /// Maximum cache size in bytes
-        public let maxSize: Int64
-
-        /// Default entry lifetime
-        public let defaultLifetime: TimeInterval?
-
-        /// Whether to clean up expired entries automatically
-        public let autoCleanup: Bool
-
-        /// Cleanup interval
-        public let cleanupInterval: TimeInterval
-
-        /// Initialize with values
-        public init(
-            maxSize: Int64 = 100 * 1024 * 1024, // 100MB
-            defaultLifetime: TimeInterval? = nil,
-            autoCleanup: Bool = true,
-            cleanupInterval: TimeInterval = 300 // 5 minutes
-        ) {
-            self.maxSize = maxSize
-            self.defaultLifetime = defaultLifetime
-            self.autoCleanup = autoCleanup
-            self.cleanupInterval = cleanupInterval
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Cache directory URL
-    private let directoryURL: URL
-
-    /// Cache configuration
-    private let configuration: Configuration
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.cache",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Cleanup timer
-    private var cleanupTimer: Timer?
-
-    /// Current cache size
-    private var currentSize: Int64 = 0
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -121,6 +28,85 @@ public final class CacheService: BaseSandboxedService {
         }
     }
 
+    // MARK: - Deinitializer
+
+    deinit {
+        cleanupTimer?.invalidate()
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Cache entry
+    public struct CacheEntry<T: Codable> {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            value: T,
+            creationDate: Date = Date(),
+            expirationDate: Date? = nil,
+            size: Int64,
+            metadata: [String: String] = [:]
+        ) {
+            self.value = value
+            self.creationDate = creationDate
+            self.expirationDate = expirationDate
+            self.size = size
+            self.metadata = metadata
+        }
+
+        // MARK: Public
+
+        /// Entry value
+        public let value: T
+
+        /// Creation date
+        public let creationDate: Date
+
+        /// Expiration date
+        public let expirationDate: Date?
+
+        /// Entry size in bytes
+        public let size: Int64
+
+        /// Entry metadata
+        public let metadata: [String: String]
+    }
+
+    /// Cache configuration
+    public struct Configuration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            maxSize: Int64 = 100 * 1024 * 1024, // 100MB
+            defaultLifetime: TimeInterval? = nil,
+            autoCleanup: Bool = true,
+            cleanupInterval: TimeInterval = 300 // 5 minutes
+        ) {
+            self.maxSize = maxSize
+            self.defaultLifetime = defaultLifetime
+            self.autoCleanup = autoCleanup
+            self.cleanupInterval = cleanupInterval
+        }
+
+        // MARK: Public
+
+        /// Maximum cache size in bytes
+        public let maxSize: Int64
+
+        /// Default entry lifetime
+        public let defaultLifetime: TimeInterval?
+
+        /// Whether to clean up expired entries automatically
+        public let autoCleanup: Bool
+
+        /// Cleanup interval
+        public let cleanupInterval: TimeInterval
+    }
+
     // MARK: - Public Methods
 
     /// Set cache entry
@@ -130,8 +116,8 @@ public final class CacheService: BaseSandboxedService {
     ///   - lifetime: Optional entry lifetime
     ///   - metadata: Optional entry metadata
     /// - Throws: Error if operation fails
-    public func setValue<T: Codable>(
-        _ value: T,
+    public func setValue(
+        _ value: some Codable,
         forKey key: String,
         lifetime: TimeInterval? = nil,
         metadata: [String: String] = [:]
@@ -202,7 +188,8 @@ public final class CacheService: BaseSandboxedService {
 
             // Check expiration
             if let expirationDate = entry.expirationDate,
-               expirationDate < Date() {
+               expirationDate < Date()
+            {
                 try? await removeValue(forKey: key)
                 return nil
             }
@@ -292,6 +279,30 @@ public final class CacheService: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    /// Cache directory URL
+    private let directoryURL: URL
+
+    /// Cache configuration
+    private let configuration: Configuration
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.cache",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Cleanup timer
+    private var cleanupTimer: Timer?
+
+    /// Current cache size
+    private var currentSize: Int64 = 0
+
     // MARK: - Private Methods
 
     /// Set up cache directory
@@ -365,7 +376,8 @@ public final class CacheService: BaseSandboxedService {
                 // Check if entry is expired
                 if let entry: CacheEntry<Data> = try? await load(from: url),
                    let expirationDate = entry.expirationDate,
-                   expirationDate < Date() {
+                   expirationDate < Date()
+                {
                     // Remove file
                     try FileManager.default.removeItem(at: url)
                     removedSize += entry.size
@@ -398,8 +410,8 @@ public final class CacheService: BaseSandboxedService {
     }
 
     /// Save entry to file
-    private func save<T: Codable>(
-        _ entry: CacheEntry<T>,
+    private func save(
+        _ entry: CacheEntry<some Codable>,
         to url: URL
     ) async throws {
         let data = try JSONEncoder().encode(entry)
@@ -410,11 +422,5 @@ public final class CacheService: BaseSandboxedService {
     private func load<T: Codable>(from url: URL) async throws -> CacheEntry<T> {
         let data = try Data(contentsOf: url)
         return try JSONDecoder().decode(CacheEntry<T>.self, from: data)
-    }
-
-    // MARK: - Deinitializer
-
-    deinit {
-        cleanupTimer?.invalidate()
     }
 }

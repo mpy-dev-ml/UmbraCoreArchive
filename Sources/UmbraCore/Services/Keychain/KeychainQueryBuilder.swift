@@ -1,23 +1,16 @@
-//
-// KeychainQueryBuilder.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import Security
 
 /// Builder for keychain queries
 public struct QueryBuilder {
-    /// Query dictionary
-    private var query: [String: Any]
+    // MARK: Lifecycle
 
     /// Initialize empty builder
     public init() {
-        self.query = [:]
+        query = [:]
     }
+
+    // MARK: Public
 
     /// Set item class
     /// - Parameter itemClass: Item class
@@ -129,6 +122,11 @@ public struct QueryBuilder {
     /// Build query dictionary
     /// - Returns: Query dictionary
     public func build() -> [String: Any] {
-        return query
+        query
     }
+
+    // MARK: Private
+
+    /// Query dictionary
+    private var query: [String: Any]
 }

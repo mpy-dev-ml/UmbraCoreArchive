@@ -1,12 +1,6 @@
-//
-// PermissionManager.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - PermissionManager
 
 /// A service that manages permission persistence and recovery for sandbox-compliant file access.
 ///
@@ -34,20 +28,7 @@ import Foundation
 /// // Recover permission later
 /// let hasAccess = try await manager.recoverPermission(for: fileURL)
 /// ```
-public actor PermissionManager {: Sendable: Sendable
-    // MARK: - Properties
-
-    let logger: LoggerProtocol
-    let securityService: SecurityServiceProtocol
-    let keychain: KeychainServiceProtocol
-    let fileManager: FileManager
-
-    /// Prefix used for keychain permission entries to avoid naming conflicts
-    let keychainPrefix = "dev.mpy.rBUM.permission."
-
-    /// Access group identifier for sharing permissions with the XPC service
-    let permissionAccessGroup = "dev.mpy.rBUM.permissions"
-
+public actor PermissionManager { // MARK: Lifecycle
     // MARK: - Initialization
 
     /// Creates a new permission manager instance.
@@ -64,7 +45,7 @@ public actor PermissionManager {: Sendable: Sendable
         self.logger = logger
         self.securityService = securityService
         self.keychain = keychain
-        self.fileManager = FileManager.default
+        fileManager = FileManager.default
 
         do {
             try keychain.configureXPCSharing(accessGroup: permissionAccessGroup)
@@ -77,6 +58,8 @@ public actor PermissionManager {: Sendable: Sendable
             )
         }
     }
+
+    // MARK: Public
 
     // MARK: - Public Methods
 
@@ -232,6 +215,27 @@ public actor PermissionManager {: Sendable: Sendable
         }
     }
 
+        // MARK: Internal
+        :
+
+
+        Sendable: Sendable
+
+    // MARK: - Properties
+
+    let logger: LoggerProtocol
+    let securityService: SecurityServiceProtocol
+    let keychain: KeychainServiceProtocol
+    let fileManager: FileManager
+
+    /// Prefix used for keychain permission entries to avoid naming conflicts
+    let keychainPrefix = "dev.mpy.rBUM.permission."
+
+    /// Access group identifier for sharing permissions with the XPC service
+    let permissionAccessGroup = "dev.mpy.rBUM.permissions"
+
+    // MARK: Private
+
     // MARK: - Private Methods
 
     private func persistBookmark(_ bookmark: Data, for url: URL) throws {
@@ -330,6 +334,8 @@ public actor PermissionManager {: Sendable: Sendable
     }
 }
 
+// MARK: - PermissionError
+
 /// Errors that can occur during permission operations
 public enum PermissionError: LocalizedError {
     case persistenceFailed(String)
@@ -341,6 +347,8 @@ public enum PermissionError: LocalizedError {
     case fileEncrypted(URL)
     case sandboxAccessDenied(URL)
     case volumeReadOnly(URL)
+
+    // MARK: Public
 
     public var errorDescription: String? {
         switch self {

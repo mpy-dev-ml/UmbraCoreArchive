@@ -1,79 +1,11 @@
-//
-// EncryptionService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-import Foundation
 import CryptoKit
+import Foundation
 import Security
 
 /// Service for encrypting and decrypting data
 @objc
 public class EncryptionService: NSObject {
-    // MARK: - Types
-
-    /// Encryption options
-    public struct Options {
-        /// Key size in bits
-        public let keySize: Int
-        /// Use Secure Enclave if available
-        public let useSecureEnclave: Bool
-        /// Salt for key derivation
-        public let salt: Data?
-        /// Initialization vector
-        public let iv: Data?
-
-        /// Initialize with values
-        public init(
-            keySize: Int = 256,
-            useSecureEnclave: Bool = true,
-            salt: Data? = nil,
-            iv: Data? = nil
-        ) {
-            self.keySize = keySize
-            self.useSecureEnclave = useSecureEnclave
-            self.salt = salt
-            self.iv = iv
-        }
-    }
-
-    /// Encryption result
-    public struct EncryptionResult {
-        /// Encrypted data
-        public let data: Data
-        /// Initialization vector used
-        public let iv: Data
-        /// Salt used
-        public let salt: Data
-
-        /// Initialize with values
-        public init(
-            data: Data,
-            iv: Data,
-            salt: Data
-        ) {
-            self.data = data
-            self.iv = iv
-            self.salt = salt
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Logger for tracking operations
-    private let logger: LoggerProtocol
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbra.encryption-service",
-        qos: .userInitiated
-    )
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -88,6 +20,64 @@ public class EncryptionService: NSObject {
         super.init()
     }
 
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Encryption options
+    public struct Options {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            keySize: Int = 256,
+            useSecureEnclave: Bool = true,
+            salt: Data? = nil,
+            iv: Data? = nil
+        ) {
+            self.keySize = keySize
+            self.useSecureEnclave = useSecureEnclave
+            self.salt = salt
+            self.iv = iv
+        }
+
+        // MARK: Public
+
+        /// Key size in bits
+        public let keySize: Int
+        /// Use Secure Enclave if available
+        public let useSecureEnclave: Bool
+        /// Salt for key derivation
+        public let salt: Data?
+        /// Initialization vector
+        public let iv: Data?
+    }
+
+    /// Encryption result
+    public struct EncryptionResult {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            data: Data,
+            iv: Data,
+            salt: Data
+        ) {
+            self.data = data
+            self.iv = iv
+            self.salt = salt
+        }
+
+        // MARK: Public
+
+        /// Encrypted data
+        public let data: Data
+        /// Initialization vector used
+        public let iv: Data
+        /// Salt used
+        public let salt: Data
+    }
+
     // MARK: - Public Methods
 
     /// Encrypt data with key
@@ -97,7 +87,7 @@ public class EncryptionService: NSObject {
         withKey key: Data,
         options: Options = Options()
     ) throws -> EncryptionResult {
-        return try performanceMonitor.trackDuration(
+        try performanceMonitor.trackDuration(
             "encryption.encrypt"
         ) {
             // Generate salt and IV if not provided
@@ -121,7 +111,7 @@ public class EncryptionService: NSObject {
             let encryptedData = try AES.GCM.seal(
                 data,
                 using: symmetricKey,
-                nonce: try AES.GCM.Nonce(data: iv)
+                nonce: AES.GCM.Nonce(data: iv)
             ).combined ?? Data()
 
             self.logEncryption(dataSize: data.count)
@@ -139,11 +129,11 @@ public class EncryptionService: NSObject {
     public func decrypt(
         _ encryptedData: Data,
         withKey key: Data,
-        iv: Data,
+        iv _: Data,
         salt: Data,
         options: Options = Options()
     ) throws -> Data {
-        return try performanceMonitor.trackDuration(
+        try performanceMonitor.trackDuration(
             "encryption.decrypt"
         ) {
             // Derive key using PBKDF2
@@ -176,6 +166,20 @@ public class EncryptionService: NSObject {
             return decryptedData
         }
     }
+
+    // MARK: Private
+
+    /// Logger for tracking operations
+    private let logger: LoggerProtocol
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbra.encryption-service",
+        qos: .userInitiated
+    )
 
     // MARK: - Private Methods
 
@@ -238,7 +242,8 @@ public class EncryptionService: NSObject {
         useSecureEnclave: Bool
     ) throws -> SymmetricKey {
         if useSecureEnclave,
-           let key = try? createSecureEnclaveKey(fromData: data) {
+           let key = try? createSecureEnclaveKey(fromData: data)
+        {
             return key
         }
 
@@ -264,8 +269,8 @@ public class EncryptionService: NSObject {
                 kSecAttrTokenID: kSecAttrTokenIDSecureEnclave,
                 kSecPrivateKeyAttrs: [
                     kSecAttrIsPermanent: true,
-                    kSecAttrAccessControl: access as Any
-                ]
+                    kSecAttrAccessControl: access as Any,
+                ],
             ] as CFDictionary,
             &error
         ) else {
@@ -283,7 +288,7 @@ public class EncryptionService: NSObject {
             "Encrypted data",
             config: LogConfig(
                 metadata: [
-                    "size": String(dataSize)
+                    "size": String(dataSize),
                 ]
             )
         )
@@ -297,7 +302,7 @@ public class EncryptionService: NSObject {
             "Decrypted data",
             config: LogConfig(
                 metadata: [
-                    "size": String(dataSize)
+                    "size": String(dataSize),
                 ]
             )
         )

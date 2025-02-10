@@ -1,16 +1,34 @@
-//
-// LoggingService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
+// MARK: - LoggingService
+
 /// Service for logging and monitoring
 public final class LoggingService: BaseSandboxedService, LoggerProtocol {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with configuration
+    /// - Parameters:
+    ///   - subsystem: Subsystem identifier
+    ///   - category: Category identifier
+    ///   - minimumLevel: Minimum log level
+    ///   - maxEntries: Maximum number of entries to keep
+    public init(
+        subsystem: String = "dev.mpy.umbracore",
+        category: String = "default",
+        minimumLevel: LogLevel = .debug,
+        maxEntries: Int = 10000
+    ) {
+        osLogger = OSLog(subsystem: subsystem, category: category)
+        self.minimumLevel = minimumLevel
+        self.maxEntries = maxEntries
+        super.init(logger: DummyLogger())
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Log level
@@ -21,6 +39,8 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
         case error = 3
         case critical = 4
 
+        // MARK: Public
+
         public static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
@@ -28,6 +48,29 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
 
     /// Log entry
     public struct LogEntry: Codable {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            level: LogLevel,
+            message: String,
+            file: String,
+            function: String,
+            line: Int,
+            timestamp: Date = Date(),
+            metadata: [String: String] = [:]
+        ) {
+            self.level = level
+            self.message = message
+            self.file = file
+            self.function = function
+            self.line = line
+            self.timestamp = timestamp
+            self.metadata = metadata
+        }
+
+        // MARK: Public
+
         /// Log level
         public let level: LogLevel
 
@@ -48,66 +91,6 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
 
         /// Additional metadata
         public let metadata: [String: String]
-
-        /// Initialize with values
-        public init(
-            level: LogLevel,
-            message: String,
-            file: String,
-            function: String,
-            line: Int,
-            timestamp: Date = Date(),
-            metadata: [String: String] = [:]
-        ) {
-            self.level = level
-            self.message = message
-            self.file = file
-            self.function = function
-            self.line = line
-            self.timestamp = timestamp
-            self.metadata = metadata
-        }
-    }
-
-    // MARK: - Properties
-
-    /// OS logger
-    private let osLogger: OSLog
-
-    /// Minimum log level
-    private var minimumLevel: LogLevel
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.logging",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Log entries
-    private var entries: [LogEntry] = []
-
-    /// Maximum number of entries to keep
-    private let maxEntries: Int
-
-    // MARK: - Initialization
-
-    /// Initialize with configuration
-    /// - Parameters:
-    ///   - subsystem: Subsystem identifier
-    ///   - category: Category identifier
-    ///   - minimumLevel: Minimum log level
-    ///   - maxEntries: Maximum number of entries to keep
-    public init(
-        subsystem: String = "dev.mpy.umbracore",
-        category: String = "default",
-        minimumLevel: LogLevel = .debug,
-        maxEntries: Int = 10000
-    ) {
-        self.osLogger = OSLog(subsystem: subsystem, category: category)
-        self.minimumLevel = minimumLevel
-        self.maxEntries = maxEntries
-        super.init(logger: DummyLogger())
     }
 
     // MARK: - LoggerProtocol Implementation
@@ -213,15 +196,15 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
         queue.sync {
             var filtered = entries
 
-            if let level = level {
+            if let level {
                 filtered = filtered.filter { $0.level >= level }
             }
 
-            if let startDate = startDate {
+            if let startDate {
                 filtered = filtered.filter { $0.timestamp >= startDate }
             }
 
-            if let endDate = endDate {
+            if let endDate {
                 filtered = filtered.filter { $0.timestamp <= endDate }
             }
 
@@ -236,6 +219,27 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
         }
     }
 
+    // MARK: Private
+
+    /// OS logger
+    private let osLogger: OSLog
+
+    /// Minimum log level
+    private var minimumLevel: LogLevel
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.logging",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Log entries
+    private var entries: [LogEntry] = []
+
+    /// Maximum number of entries to keep
+    private let maxEntries: Int
+
     // MARK: - Private Methods
 
     /// Log a message
@@ -246,7 +250,9 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
         function: String,
         line: Int
     ) {
-        guard level >= minimumLevel else { return }
+        guard level >= minimumLevel else {
+            return
+        }
 
         let entry = LogEntry(
             level: level,
@@ -257,19 +263,19 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
         )
 
         // Log to system
-        let type: OSLogType
-        switch level {
-        case .debug:
-            type = .debug
-        case .info:
-            type = .info
-        case .warning:
-            type = .error
-        case .error:
-            type = .error
-        case .critical:
-            type = .fault
-        }
+        let type: OSLogType =
+            switch level {
+            case .debug:
+                .debug
+            case .info:
+                .info
+            case .warning:
+                .error
+            case .error:
+                .error
+            case .critical:
+                .fault
+            }
 
         os_log(
             "%{public}@",
@@ -296,57 +302,197 @@ public final class LoggingService: BaseSandboxedService, LoggerProtocol {
     }
 }
 
+// MARK: - DummyLogger
+
 /// Dummy logger for initialization
 private struct DummyLogger: LoggerProtocol {
     func debug(
-        _ message: String,
-        file: String,
-        function: String,
-        line: Int
+        _: String,
+        file _: String,
+        function _: String,
+        line _: Int
     ) {}
 
     func info(
-        _ message: String,
-        file: String,
-        function: String,
-        line: Int
+        _: String,
+        file _: String,
+        function _: String,
+        line _: Int
     ) {}
 
     func warning(
-        _ message: String,
-        file: String,
-        function: String,
-        line: Int
+        _: String,
+        file _: String,
+        function _: String,
+        line _: Int
     ) {}
 
     func error(
-        _ message: String,
-        file: String,
-        function: String,
-        line: Int
+        _: String,
+        file _: String,
+        function _: String,
+        line _: Int
     ) {}
 
     func critical(
-        _ message: String,
-        file: String,
-        function: String,
-        line: Int
+        _: String,
+        file _: String,
+        function _: String,
+        line _: Int
     ) {}
 
     func metric(
-        _ name: String,
-        value: Double,
-        unit: String,
-        file: String,
-        function: String,
-        line: Int
+        _: String,
+        value _: Double,
+        unit _: String,
+        file _: String,
+        function _: String,
+        line _: Int
     ) {}
 
     func event(
-        _ name: String,
-        metadata: [String: Any],
-        file: String,
-        function: String,
-        line: Int
+        _: String,
+        metadata _: [String: Any],
+        file _: String,
+        function _: String,
+        line _: Int
     ) {}
+}
+
+// MARK: - LogEntryConfig
+
+/// Configuration for log entries
+public struct LogEntryConfig {
+    let message: String
+    let level: LogLevel
+    let category: String
+    let file: String
+    let function: String
+    let line: Int
+    let metadata: [String: Any]?
+    
+    public init(
+        message: String,
+        level: LogLevel,
+        category: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line,
+        metadata: [String: Any]? = nil
+    ) {
+        self.message = message
+        self.level = level
+        self.category = category
+        self.file = file
+        self.function = function
+        self.line = line
+        self.metadata = metadata
+    }
+}
+
+// MARK: - LoggingService (New)
+
+/// Service responsible for logging system events and messages
+public class LoggingService {
+    private let logger: LoggerProtocol
+    
+    public init(logger: LoggerProtocol) {
+        self.logger = logger
+    }
+    
+    /// Log a message with the specified configuration
+    public func log(_ config: LogEntryConfig) {
+        logger.log(
+            message: config.message,
+            level: config.level,
+            category: config.category,
+            file: config.file,
+            function: config.function,
+            line: config.line,
+            metadata: config.metadata
+        )
+    }
+    
+    /// Log a debug message
+    public func debug(
+        _ message: String,
+        category: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        let config = LogEntryConfig(
+            message: message,
+            level: .debug,
+            category: category,
+            file: file,
+            function: function,
+            line: line
+        )
+        log(config)
+    }
+    
+    /// Log an info message
+    public func info(
+        _ message: String,
+        category: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        let config = LogEntryConfig(
+            message: message,
+            level: .info,
+            category: category,
+            file: file,
+            function: function,
+            line: line
+        )
+        log(config)
+    }
+    
+    /// Log a warning message
+    public func warning(
+        _ message: String,
+        category: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        let config = LogEntryConfig(
+            message: message,
+            level: .warning,
+            category: category,
+            file: file,
+            function: function,
+            line: line
+        )
+        log(config)
+    }
+    
+    /// Log an error message
+    public func error(
+        _ message: String,
+        category: String,
+        file: String = #file,
+        function: String = #function,
+        line: Int = #line,
+        error: Error? = nil
+    ) {
+        var metadata: [String: Any]?
+        if let error = error {
+            metadata = ["error": error]
+        }
+        
+        let config = LogEntryConfig(
+            message: message,
+            level: .error,
+            category: category,
+            file: file,
+            function: function,
+            line: line,
+            metadata: metadata
+        )
+        log(config)
+    }
 }

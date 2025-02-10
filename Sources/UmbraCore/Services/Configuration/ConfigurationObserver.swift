@@ -1,12 +1,6 @@
-//
-// ConfigurationObserver.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - ConfigurationObserving
 
 /// Protocol for observing configuration changes
 public protocol ConfigurationObserving: AnyObject {
@@ -40,54 +34,26 @@ public protocol ConfigurationObserving: AnyObject {
 /// Default implementations for ConfigurationObserving
 public extension ConfigurationObserving {
     func configurationService(
-        _ service: ConfigurationService,
-        didChangeValueForKey key: String,
-        to value: Any
+        _: ConfigurationService,
+        didChangeValueForKey _: String,
+        to _: Any
     ) {}
 
     func configurationService(
-        _ service: ConfigurationService,
-        didRemoveValueForKey key: String
+        _: ConfigurationService,
+        didRemoveValueForKey _: String
     ) {}
 
     func configurationServiceDidClearValues(
-        _ service: ConfigurationService
+        _: ConfigurationService
     ) {}
 }
 
+// MARK: - ConfigurationObserver
+
 /// Service for managing configuration observers
 public final class ConfigurationObserver: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Observer registration
-    private struct ObserverRegistration {
-        /// Observer reference
-        weak var observer: ConfigurationObserving?
-
-        /// Observed keys
-        let keys: Set<String>
-
-        /// Initialize with values
-        init(observer: ConfigurationObserving, keys: Set<String>) {
-            self.observer = observer
-            self.keys = keys
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Observer registrations
-    private var registrations: [ObserverRegistration] = []
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.config.observer",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Configuration service
-    private weak var configurationService: ConfigurationService?
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -102,6 +68,8 @@ public final class ConfigurationObserver: BaseSandboxedService {
         self.configurationService = configurationService
         super.init(logger: logger)
     }
+
+    // MARK: Public
 
     // MARK: - Public Methods
 
@@ -154,7 +122,9 @@ public final class ConfigurationObserver: BaseSandboxedService {
     ///   - key: Configuration key
     ///   - value: New value
     public func notifyValueChanged(forKey key: String, to value: Any) {
-        guard let service = configurationService else { return }
+        guard let service = configurationService else {
+            return
+        }
 
         queue.async {
             // Clean up stale observers
@@ -162,7 +132,9 @@ public final class ConfigurationObserver: BaseSandboxedService {
 
             // Notify observers
             for registration in self.registrations {
-                guard let observer = registration.observer else { continue }
+                guard let observer = registration.observer else {
+                    continue
+                }
 
                 if registration.keys.isEmpty || registration.keys.contains(key) {
                     observer.configurationService(
@@ -178,7 +150,9 @@ public final class ConfigurationObserver: BaseSandboxedService {
     /// Notify observers of value removal
     /// - Parameter key: Configuration key
     public func notifyValueRemoved(forKey key: String) {
-        guard let service = configurationService else { return }
+        guard let service = configurationService else {
+            return
+        }
 
         queue.async {
             // Clean up stale observers
@@ -186,7 +160,9 @@ public final class ConfigurationObserver: BaseSandboxedService {
 
             // Notify observers
             for registration in self.registrations {
-                guard let observer = registration.observer else { continue }
+                guard let observer = registration.observer else {
+                    continue
+                }
 
                 if registration.keys.isEmpty || registration.keys.contains(key) {
                     observer.configurationService(
@@ -200,7 +176,9 @@ public final class ConfigurationObserver: BaseSandboxedService {
 
     /// Notify observers of values cleared
     public func notifyValuesCleared() {
-        guard let service = configurationService else { return }
+        guard let service = configurationService else {
+            return
+        }
 
         queue.async {
             // Clean up stale observers
@@ -208,11 +186,49 @@ public final class ConfigurationObserver: BaseSandboxedService {
 
             // Notify observers
             for registration in self.registrations {
-                guard let observer = registration.observer else { continue }
+                guard let observer = registration.observer else {
+                    continue
+                }
                 observer.configurationServiceDidClearValues(service)
             }
         }
     }
+
+    // MARK: Private
+
+    // MARK: - Types
+
+    /// Observer registration
+    private struct ObserverRegistration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        init(observer: ConfigurationObserving, keys: Set<String>) {
+            self.observer = observer
+            self.keys = keys
+        }
+
+        // MARK: Internal
+
+        /// Observer reference
+        weak var observer: ConfigurationObserving?
+
+        /// Observed keys
+        let keys: Set<String>
+    }
+
+    /// Observer registrations
+    private var registrations: [ObserverRegistration] = []
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.config.observer",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Configuration service
+    private weak var configurationService: ConfigurationService?
 
     // MARK: - Private Methods
 

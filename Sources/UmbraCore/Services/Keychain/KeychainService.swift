@@ -1,16 +1,26 @@
-//
-// KeychainService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import Security
 
 /// Service for managing keychain operations
 public final class KeychainService: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Access level for keychain items
@@ -32,25 +42,27 @@ public final class KeychainService: BaseSandboxedService {
         /// When passcode set this device only
         case whenPasscodeSetThisDeviceOnly
 
+        // MARK: Internal
+
         /// Convert to Security framework constant
         var securityValue: CFString {
             switch self {
             case .whenUnlocked:
-                return kSecAttrAccessibleWhenUnlocked
+                kSecAttrAccessibleWhenUnlocked
             case .afterFirstUnlock:
-                return kSecAttrAccessibleAfterFirstUnlock
+                kSecAttrAccessibleAfterFirstUnlock
             case .always:
-                return kSecAttrAccessibleAlways
+                kSecAttrAccessibleAlways
             case .whenPasscodeSet:
-                return kSecAttrAccessibleWhenPasscodeSet
+                kSecAttrAccessibleWhenPasscodeSet
             case .whenUnlockedThisDeviceOnly:
-                return kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+                kSecAttrAccessibleWhenUnlockedThisDeviceOnly
             case .afterFirstUnlockThisDeviceOnly:
-                return kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+                kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             case .alwaysThisDeviceOnly:
-                return kSecAttrAccessibleAlwaysThisDeviceOnly
+                kSecAttrAccessibleAlwaysThisDeviceOnly
             case .whenPasscodeSetThisDeviceOnly:
-                return kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+                kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
             }
         }
     }
@@ -68,47 +80,23 @@ public final class KeychainService: BaseSandboxedService {
         /// Identity
         case identity
 
+        // MARK: Internal
+
         /// Convert to Security framework constant
         var securityValue: CFString {
             switch self {
             case .genericPassword:
-                return kSecClassGenericPassword
+                kSecClassGenericPassword
             case .internetPassword:
-                return kSecClassInternetPassword
+                kSecClassInternetPassword
             case .certificate:
-                return kSecClassCertificate
+                kSecClassCertificate
             case .key:
-                return kSecClassKey
+                kSecClassKey
             case .identity:
-                return kSecClassIdentity
+                kSecClassIdentity
             }
         }
-    }
-
-    // MARK: - Properties
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.keychain",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
     }
 
     // MARK: - Public Methods
@@ -143,7 +131,7 @@ public final class KeychainService: BaseSandboxedService {
                 .build()
 
             // Add access group if specified
-            if let accessGroup = accessGroup {
+            if let accessGroup {
                 query[kSecAttrAccessGroup as String] = accessGroup
             }
 
@@ -198,13 +186,13 @@ public final class KeychainService: BaseSandboxedService {
                 .build()
 
             // Add access group if specified
-            if let accessGroup = accessGroup {
+            if let accessGroup {
                 query[kSecAttrAccessGroup as String] = accessGroup
             }
 
             // Build attributes
             let attributes = [
-                kSecValueData as String: data
+                kSecValueData as String: data,
             ]
 
             // Update item
@@ -259,7 +247,7 @@ public final class KeychainService: BaseSandboxedService {
                 .build()
 
             // Add access group if specified
-            if let accessGroup = accessGroup {
+            if let accessGroup {
                 query[kSecAttrAccessGroup as String] = accessGroup
             }
 
@@ -313,7 +301,7 @@ public final class KeychainService: BaseSandboxedService {
                 .build()
 
             // Add access group if specified
-            if let accessGroup = accessGroup {
+            if let accessGroup {
                 query[kSecAttrAccessGroup as String] = accessGroup
             }
 
@@ -325,7 +313,8 @@ public final class KeychainService: BaseSandboxedService {
             )
 
             guard status == errSecSuccess,
-                  let data = result as? Data else {
+                  let data = result as? Data
+            else {
                 throw KeychainError.getFailed(
                     account: account,
                     service: service,
@@ -362,7 +351,7 @@ public final class KeychainService: BaseSandboxedService {
                 .build()
 
             // Add access group if specified
-            if let accessGroup = accessGroup {
+            if let accessGroup {
                 query[kSecAttrAccessGroup as String] = accessGroup
             }
 
@@ -384,4 +373,16 @@ public final class KeychainService: BaseSandboxedService {
             }
         }
     }
+
+    // MARK: Private
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.keychain",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 }

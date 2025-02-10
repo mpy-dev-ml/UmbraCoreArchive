@@ -1,13 +1,7 @@
-//
-// LoggerProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
+
+// MARK: - LoggerProtocol
 
 /// Protocol for logging operations
 @objc
@@ -48,10 +42,11 @@ public protocol LoggerProtocol {
     )
 }
 
+// MARK: - LogConfig
+
 /// Configuration for log messages
 public struct LogConfig {
-    /// Metadata key-value pairs
-    public let metadata: [String: String]
+    // MARK: Lifecycle
 
     /// Initialize with values
     public init(
@@ -59,4 +54,9 @@ public struct LogConfig {
     ) {
         self.metadata = metadata
     }
+
+    // MARK: Public
+
+    /// Metadata key-value pairs
+    public let metadata: [String: String]
 }

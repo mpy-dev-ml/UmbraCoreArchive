@@ -1,51 +1,31 @@
-//
-// MaintenanceConfigurationStore.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Store for maintenance configuration settings
 public final class MaintenanceConfigurationStore: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with configuration URL and logger
+    /// - Parameters:
+    ///   - configurationURL: URL for storing configuration
+    ///   - logger: Logger for tracking operations
+    public init(configurationURL: URL, logger: LoggerProtocol) {
+        self.configurationURL = configurationURL
+        configuration = Configuration()
+        super.init(logger: logger)
+
+        // Load configuration
+        loadConfiguration()
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Configuration for maintenance tasks
     public struct Configuration: Codable {
-        /// Schedule for maintenance tasks
-        public struct Schedule: Codable {
-            /// Days of the week to run
-            public var daysOfWeek: Set<Int>
-            /// Hour of the day to run (0-23)
-            public var hour: Int
-            /// Minute of the hour to run (0-59)
-            public var minute: Int
-
-            /// Initialize with default values
-            public init(
-                daysOfWeek: Set<Int> = [1],  // Monday
-                hour: Int = 2,               // 2 AM
-                minute: Int = 0              // On the hour
-            ) {
-                self.daysOfWeek = daysOfWeek
-                self.hour = hour
-                self.minute = minute
-            }
-        }
-
-        /// Whether maintenance is enabled
-        public var isEnabled: Bool
-
-        /// Schedule for maintenance tasks
-        public var schedule: Schedule
-
-        /// Maximum duration in seconds
-        public var maxDuration: TimeInterval
-
-        /// Tasks to perform
-        public var tasks: Set<MaintenanceTask>
+        // MARK: Lifecycle
 
         /// Initialize with default values
         public init(
@@ -59,6 +39,45 @@ public final class MaintenanceConfigurationStore: BaseSandboxedService {
             self.maxDuration = maxDuration
             self.tasks = tasks
         }
+
+        // MARK: Public
+
+        /// Schedule for maintenance tasks
+        public struct Schedule: Codable {
+            // MARK: Lifecycle
+
+            /// Initialize with default values
+            public init(
+                daysOfWeek: Set<Int> = [1], // Monday
+                hour: Int = 2, // 2 AM
+                minute: Int = 0 // On the hour
+            ) {
+                self.daysOfWeek = daysOfWeek
+                self.hour = hour
+                self.minute = minute
+            }
+
+            // MARK: Public
+
+            /// Days of the week to run
+            public var daysOfWeek: Set<Int>
+            /// Hour of the day to run (0-23)
+            public var hour: Int
+            /// Minute of the hour to run (0-59)
+            public var minute: Int
+        }
+
+        /// Whether maintenance is enabled
+        public var isEnabled: Bool
+
+        /// Schedule for maintenance tasks
+        public var schedule: Schedule
+
+        /// Maximum duration in seconds
+        public var maxDuration: TimeInterval
+
+        /// Tasks to perform
+        public var tasks: Set<MaintenanceTask>
     }
 
     /// Types of maintenance tasks
@@ -73,35 +92,6 @@ public final class MaintenanceConfigurationStore: BaseSandboxedService {
         case optimizeDatabase
         /// Validate configuration
         case validateConfiguration
-    }
-
-    // MARK: - Properties
-
-    /// URL for storing configuration
-    private let configurationURL: URL
-
-    /// Queue for synchronizing access
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.maintenance",
-        qos: .utility
-    )
-
-    /// Current configuration
-    private var configuration: Configuration
-
-    // MARK: - Initialization
-
-    /// Initialize with configuration URL and logger
-    /// - Parameters:
-    ///   - configurationURL: URL for storing configuration
-    ///   - logger: Logger for tracking operations
-    public init(configurationURL: URL, logger: LoggerProtocol) {
-        self.configurationURL = configurationURL
-        self.configuration = Configuration()
-        super.init(logger: logger)
-
-        // Load configuration
-        loadConfiguration()
     }
 
     // MARK: - Public Methods
@@ -128,7 +118,7 @@ public final class MaintenanceConfigurationStore: BaseSandboxedService {
                 Enabled: \(configuration.isEnabled)
                 Schedule: \(configuration.schedule.daysOfWeek) at \
                 \(configuration.schedule.hour):\(configuration.schedule.minute)
-                Tasks: \(configuration.tasks.map { $0.rawValue })
+                Tasks: \(configuration.tasks.map(\.rawValue))
                 """,
                 file: #file,
                 function: #function,
@@ -142,6 +132,20 @@ public final class MaintenanceConfigurationStore: BaseSandboxedService {
     public func resetConfiguration() throws {
         try updateConfiguration(Configuration())
     }
+
+    // MARK: Private
+
+    /// URL for storing configuration
+    private let configurationURL: URL
+
+    /// Queue for synchronizing access
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.maintenance",
+        qos: .utility
+    )
+
+    /// Current configuration
+    private var configuration: Configuration
 
     // MARK: - Private Methods
 

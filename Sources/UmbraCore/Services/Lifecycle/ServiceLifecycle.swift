@@ -1,12 +1,6 @@
-//
-// ServiceLifecycle.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - ServiceLifecycle
 
 /// Service lifecycle management framework
 ///
@@ -40,6 +34,8 @@ public protocol ServiceLifecycle: AnyObject {
     func reset() throws
 }
 
+// MARK: - ServiceState
+
 /// Possible states of a service
 public enum ServiceState: String {
     /// Service is uninitialized
@@ -56,6 +52,8 @@ public enum ServiceState: String {
     case stopped
     /// Service encountered an error
     case error
+
+    // MARK: Public
 
     /// Whether the service is in a usable state
     public var isUsable: Bool {
@@ -107,6 +105,8 @@ public extension ServiceLifecycle {
     }
 }
 
+// MARK: - ServiceLifecycleError
+
 /// Errors that can occur in service lifecycle
 public enum ServiceLifecycleError: LocalizedError {
     /// Service is in an invalid state for the requested operation
@@ -120,18 +120,20 @@ public enum ServiceLifecycleError: LocalizedError {
     /// Service reset failed
     case resetFailed(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .invalidState(let reason):
-            return "Invalid service state: \(reason)"
-        case .initializationFailed(let reason):
-            return "Service initialization failed: \(reason)"
-        case .startFailed(let reason):
-            return "Service start failed: \(reason)"
-        case .stopFailed(let reason):
-            return "Service stop failed: \(reason)"
-        case .resetFailed(let reason):
-            return "Service reset failed: \(reason)"
+        case let .invalidState(reason):
+            "Invalid service state: \(reason)"
+        case let .initializationFailed(reason):
+            "Service initialization failed: \(reason)"
+        case let .startFailed(reason):
+            "Service start failed: \(reason)"
+        case let .stopFailed(reason):
+            "Service stop failed: \(reason)"
+        case let .resetFailed(reason):
+            "Service reset failed: \(reason)"
         }
     }
 }

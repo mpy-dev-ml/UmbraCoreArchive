@@ -1,11 +1,3 @@
-//
-// ServiceFactory.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Factory for creating services with appropriate implementations based on build configuration
@@ -31,29 +23,13 @@ import Foundation
 /// )
 /// ```
 public enum ServiceFactory {
-    // MARK: - Properties
-
-    /// Global configuration for the service factory
-    public static var configuration = Configuration()
-
-    /// Development configuration for debug builds
-    static let developmentConfiguration = DevelopmentConfiguration()
-
-    /// Queue for synchronizing service creation
-    private static let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.servicefactory",
-        qos: .userInitiated
-    )
+    // MARK: Public
 
     // MARK: - Types
 
     /// Configuration for the service factory
     public struct Configuration {
-        /// Whether development services should be used
-        public var developmentEnabled: Bool
-
-        /// Whether debug logging is enabled
-        public var debugLoggingEnabled: Bool
+        // MARK: Lifecycle
 
         /// Initialize with default values
         public init(
@@ -63,7 +39,58 @@ public enum ServiceFactory {
             self.developmentEnabled = developmentEnabled
             self.debugLoggingEnabled = debugLoggingEnabled
         }
+
+        // MARK: Public
+
+        /// Whether development services should be used
+        public var developmentEnabled: Bool
+
+        /// Whether debug logging is enabled
+        public var debugLoggingEnabled: Bool
     }
+
+    /// Global configuration for the service factory
+    public static var configuration: Configuration = .init()
+
+    // MARK: - Service Creation
+
+    /// Create a security service
+    /// - Parameter logger: Logger for the service
+    /// - Returns: A security service implementation
+    public static func createSecurityService(
+        logger: LoggerProtocol
+    ) -> SecurityServiceProtocol {
+        queue.sync {
+            if configuration.developmentEnabled {
+                DevelopmentSecurityService(
+                    logger: logger,
+                    configuration: developmentConfiguration
+                )
+            } else {
+                SecurityService(logger: logger)
+            }
+        }
+    }
+
+    /// Create a bookmark service
+    /// - Parameter logger: Logger for the service
+    /// - Returns: A bookmark service implementation
+    public static func createBookmarkService(
+        logger: LoggerProtocol
+    ) -> BookmarkServiceProtocol {
+        queue.sync {
+            if configuration.developmentEnabled {
+                DevelopmentBookmarkService(
+                    logger: logger,
+                    configuration: developmentConfiguration
+                )
+            } else {
+                SecurityScopedBookmarkService(logger: logger)
+            }
+        }
+    }
+
+    // MARK: Internal
 
     /// Development configuration for debug builds
     struct DevelopmentConfiguration {
@@ -77,41 +104,14 @@ public enum ServiceFactory {
         var artificialDelay: TimeInterval = 0
     }
 
-    // MARK: - Service Creation
+    /// Development configuration for debug builds
+    static let developmentConfiguration: DevelopmentConfiguration = .init()
 
-    /// Create a security service
-    /// - Parameter logger: Logger for the service
-    /// - Returns: A security service implementation
-    public static func createSecurityService(
-        logger: LoggerProtocol
-    ) -> SecurityServiceProtocol {
-        queue.sync {
-            if configuration.developmentEnabled {
-                return DevelopmentSecurityService(
-                    logger: logger,
-                    configuration: developmentConfiguration
-                )
-            } else {
-                return SecurityService(logger: logger)
-            }
-        }
-    }
+    // MARK: Private
 
-    /// Create a bookmark service
-    /// - Parameter logger: Logger for the service
-    /// - Returns: A bookmark service implementation
-    public static func createBookmarkService(
-        logger: LoggerProtocol
-    ) -> BookmarkServiceProtocol {
-        queue.sync {
-            if configuration.developmentEnabled {
-                return DevelopmentBookmarkService(
-                    logger: logger,
-                    configuration: developmentConfiguration
-                )
-            } else {
-                return SecurityScopedBookmarkService(logger: logger)
-            }
-        }
-    }
+    /// Queue for synchronizing service creation
+    private static let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.servicefactory",
+        qos: .userInitiated
+    )
 }

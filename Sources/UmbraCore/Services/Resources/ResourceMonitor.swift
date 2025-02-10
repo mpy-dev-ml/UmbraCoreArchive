@@ -1,31 +1,33 @@
-//
-// ResourceMonitor.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for monitoring system resources
 public final class ResourceMonitor: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with thresholds and logger
+    /// - Parameters:
+    ///   - thresholds: Resource thresholds
+    ///   - maxSnapshots: Maximum number of snapshots to keep
+    ///   - logger: Logger for tracking operations
+    public init(
+        thresholds: ResourceThresholds = ResourceThresholds(),
+        maxSnapshots: Int = 1000,
+        logger: LoggerProtocol
+    ) {
+        self.thresholds = thresholds
+        self.maxSnapshots = maxSnapshots
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Resource usage snapshot
     public struct ResourceSnapshot: Codable {
-        /// Memory usage in bytes
-        public let memoryUsage: UInt64
-        /// CPU usage percentage (0-100)
-        public let cpuUsage: Double
-        /// Disk space usage in bytes
-        public let diskUsage: UInt64
-        /// Available disk space in bytes
-        public let diskAvailable: UInt64
-        /// Network throughput in bytes/second
-        public let networkThroughput: Double
-        /// Timestamp of snapshot
-        public let timestamp: Date
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -43,10 +45,42 @@ public final class ResourceMonitor: BaseSandboxedService {
             self.networkThroughput = networkThroughput
             self.timestamp = timestamp
         }
+
+        // MARK: Public
+
+        /// Memory usage in bytes
+        public let memoryUsage: UInt64
+        /// CPU usage percentage (0-100)
+        public let cpuUsage: Double
+        /// Disk space usage in bytes
+        public let diskUsage: UInt64
+        /// Available disk space in bytes
+        public let diskAvailable: UInt64
+        /// Network throughput in bytes/second
+        public let networkThroughput: Double
+        /// Timestamp of snapshot
+        public let timestamp: Date
     }
 
     /// Resource usage thresholds
     public struct ResourceThresholds {
+        // MARK: Lifecycle
+
+        /// Initialize with default values
+        public init(
+            memoryThreshold: UInt64 = 1_000_000_000, // 1 GB
+            cpuThreshold: Double = 80.0, // 80%
+            diskThreshold: UInt64 = 1_000_000_000, // 1 GB
+            networkThreshold: Double = 1_000_000 // 1 MB/s
+        ) {
+            self.memoryThreshold = memoryThreshold
+            self.cpuThreshold = cpuThreshold
+            self.diskThreshold = diskThreshold
+            self.networkThreshold = networkThreshold
+        }
+
+        // MARK: Public
+
         /// Memory usage threshold in bytes
         public var memoryThreshold: UInt64
         /// CPU usage threshold percentage (0-100)
@@ -55,54 +89,6 @@ public final class ResourceMonitor: BaseSandboxedService {
         public var diskThreshold: UInt64
         /// Network throughput threshold in bytes/second
         public var networkThreshold: Double
-
-        /// Initialize with default values
-        public init(
-            memoryThreshold: UInt64 = 1_000_000_000,  // 1 GB
-            cpuThreshold: Double = 80.0,              // 80%
-            diskThreshold: UInt64 = 1_000_000_000,    // 1 GB
-            networkThreshold: Double = 1_000_000       // 1 MB/s
-        ) {
-            self.memoryThreshold = memoryThreshold
-            self.cpuThreshold = cpuThreshold
-            self.diskThreshold = diskThreshold
-            self.networkThreshold = networkThreshold
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.resources",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Resource thresholds
-    private var thresholds: ResourceThresholds
-
-    /// Resource snapshots
-    private var snapshots: [ResourceSnapshot] = []
-
-    /// Maximum number of snapshots to keep
-    private let maxSnapshots: Int
-
-    // MARK: - Initialization
-
-    /// Initialize with thresholds and logger
-    /// - Parameters:
-    ///   - thresholds: Resource thresholds
-    ///   - maxSnapshots: Maximum number of snapshots to keep
-    ///   - logger: Logger for tracking operations
-    public init(
-        thresholds: ResourceThresholds = ResourceThresholds(),
-        maxSnapshots: Int = 1000,
-        logger: LoggerProtocol
-    ) {
-        self.thresholds = thresholds
-        self.maxSnapshots = maxSnapshots
-        super.init(logger: logger)
     }
 
     // MARK: - Public Methods
@@ -143,11 +129,11 @@ public final class ResourceMonitor: BaseSandboxedService {
         queue.sync {
             var filtered = snapshots
 
-            if let startDate = startDate {
+            if let startDate {
                 filtered = filtered.filter { $0.timestamp >= startDate }
             }
 
-            if let endDate = endDate {
+            if let endDate {
                 filtered = filtered.filter { $0.timestamp <= endDate }
             }
 
@@ -190,13 +176,31 @@ public final class ResourceMonitor: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.resources",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Resource thresholds
+    private var thresholds: ResourceThresholds
+
+    /// Resource snapshots
+    private var snapshots: [ResourceSnapshot] = []
+
+    /// Maximum number of snapshots to keep
+    private let maxSnapshots: Int
+
     // MARK: - Private Methods
 
     /// Capture current resource usage
     private func captureResourceUsage() async throws -> ResourceSnapshot {
         // Implementation would use platform-specific APIs
         // This is a placeholder that returns dummy data
-        return ResourceSnapshot(
+        ResourceSnapshot(
             memoryUsage: 500_000_000,
             cpuUsage: 25.0,
             diskUsage: 10_000_000_000,

@@ -1,28 +1,9 @@
-//
-// RepositoryDiscoveryService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
 /// Service responsible for discovering and managing Restic repositories
 public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
-    // MARK: - Properties
-
-    private let xpcConnection: NSXPCConnection
-    private let logger: Logger
-    private let securityService: SecurityServiceProtocol
-    private let bookmarkStorage: BookmarkStorageProtocol
-
-    private var proxy: RepositoryDiscoveryXPCProtocol? {
-        xpcConnection.remoteObjectProxyWithErrorHandler { [weak self] error in
-            self?.logger.error("XPC connection failed: \(error.localizedDescription)")
-        } as? RepositoryDiscoveryXPCProtocol
-    }
+    // MARK: Lifecycle
 
     // MARK: - Initialisation
 
@@ -43,8 +24,10 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         self.bookmarkStorage = bookmarkStorage
         self.logger = logger
 
-        self.setupXPCConnection()
+        setupXPCConnection()
     }
+
+    // MARK: Public
 
     // MARK: - RepositoryDiscoveryProtocol
 
@@ -57,12 +40,12 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
 
         return try await withCheckedThrowingContinuation { continuation in
             proxy?.scanLocation(url, recursive: recursive) { urls, error in
-                if let error = error {
+                if let error {
                     continuation.resume(throwing: error)
                     return
                 }
 
-                guard let urls = urls else {
+                guard let urls else {
                     continuation.resume(returning: [])
                     return
                 }
@@ -84,7 +67,7 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
 
         return try await withCheckedThrowingContinuation { continuation in
             proxy?.verifyRepository(at: repository.url) { isValid, error in
-                if let error = error {
+                if let error {
                     continuation.resume(throwing: error)
                     return
                 }
@@ -98,7 +81,7 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
 
         try await withCheckedThrowingContinuation { continuation in
             proxy?.indexRepository(at: repository.url) { error in
-                if let error = error {
+                if let error {
                     continuation.resume(throwing: error)
                     return
                 }
@@ -112,10 +95,24 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         proxy?.cancelOperations()
     }
 
+    // MARK: Private
+
+    private let xpcConnection: NSXPCConnection
+    private let logger: Logger
+    private let securityService: SecurityServiceProtocol
+    private let bookmarkStorage: BookmarkStorageProtocol
+
+    private var proxy: RepositoryDiscoveryXPCProtocol? {
+        xpcConnection.remoteObjectProxyWithErrorHandler { [weak self] error in
+            self?.logger.error("XPC connection failed: \(error.localizedDescription)")
+        } as? RepositoryDiscoveryXPCProtocol
+    }
+
     // MARK: - Private Methods
 
     private func setupXPCConnection() {
-        xpcConnection.remoteObjectInterface = NSXPCInterface(with: RepositoryDiscoveryXPCProtocol.self)
+        xpcConnection
+            .remoteObjectInterface = NSXPCInterface(with: RepositoryDiscoveryXPCProtocol.self)
         xpcConnection.resume()
     }
 
@@ -166,12 +163,12 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
     private func getRepositoryMetadata(for url: URL) async throws -> RepositoryMetadata {
         try await withCheckedThrowingContinuation { continuation in
             proxy?.getRepositoryMetadata(at: url) { metadata, error in
-                if let error = error {
+                if let error {
                     continuation.resume(throwing: error)
                     return
                 }
 
-                guard let metadata = metadata else {
+                guard let metadata else {
                     continuation.resume(throwing: RepositoryDiscoveryError.invalidRepository(url))
                     return
                 }

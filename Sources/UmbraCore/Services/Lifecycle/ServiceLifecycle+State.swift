@@ -1,11 +1,3 @@
-//
-// ServiceLifecycle+State.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 extension ServiceLifecycle {
@@ -79,6 +71,8 @@ extension ServiceLifecycle {
         }
     }
 }
+
+// MARK: - StateManaged
 
 /// Protocol for services that manage their own state
 protocol StateManaged: AnyObject {

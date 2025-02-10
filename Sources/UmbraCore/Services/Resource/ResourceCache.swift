@@ -1,104 +1,8 @@
-//
-// ResourceCache.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for caching resource data
 public final class ResourceCache: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Cache configuration
-    public struct Configuration {
-        /// Maximum cache size in bytes
-        public let maxSize: Int64
-
-        /// Maximum number of items
-        public let maxItems: Int
-
-        /// Cache cleanup interval
-        public let cleanupInterval: TimeInterval
-
-        /// Whether to use memory cache
-        public let useMemoryCache: Bool
-
-        /// Whether to use disk cache
-        public let useDiskCache: Bool
-
-        /// Initialize with values
-        public init(
-            maxSize: Int64 = 100 * 1024 * 1024, // 100MB
-            maxItems: Int = 1000,
-            cleanupInterval: TimeInterval = 300, // 5 minutes
-            useMemoryCache: Bool = true,
-            useDiskCache: Bool = true
-        ) {
-            self.maxSize = maxSize
-            self.maxItems = maxItems
-            self.cleanupInterval = cleanupInterval
-            self.useMemoryCache = useMemoryCache
-            self.useDiskCache = useDiskCache
-        }
-    }
-
-    /// Cache entry
-    private struct CacheEntry {
-        /// Resource data
-        let data: Data
-
-        /// Resource metadata
-        let metadata: ResourceService.ResourceMetadata
-
-        /// Last access date
-        var lastAccess: Date
-
-        /// Access count
-        var accessCount: Int
-
-        /// Initialize with values
-        init(
-            data: Data,
-            metadata: ResourceService.ResourceMetadata,
-            lastAccess: Date = Date(),
-            accessCount: Int = 0
-        ) {
-            self.data = data
-            self.metadata = metadata
-            self.lastAccess = lastAccess
-            self.accessCount = accessCount
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Cache configuration
-    private let configuration: Configuration
-
-    /// Persistence service
-    private let persistence: PersistenceService
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.resource.cache",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Memory cache
-    private var memoryCache: [String: CacheEntry] = [:]
-
-    /// Current cache size
-    private var currentSize: Int64 = 0
-
-    /// Cleanup timer
-    private var cleanupTimer: Timer?
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -119,6 +23,53 @@ public final class ResourceCache: BaseSandboxedService {
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
         setupCleanupTimer()
+    }
+
+    // MARK: - Deinitializer
+
+    deinit {
+        cleanupTimer?.invalidate()
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Cache configuration
+    public struct Configuration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            maxSize: Int64 = 100 * 1024 * 1024, // 100MB
+            maxItems: Int = 1000,
+            cleanupInterval: TimeInterval = 300, // 5 minutes
+            useMemoryCache: Bool = true,
+            useDiskCache: Bool = true
+        ) {
+            self.maxSize = maxSize
+            self.maxItems = maxItems
+            self.cleanupInterval = cleanupInterval
+            self.useMemoryCache = useMemoryCache
+            self.useDiskCache = useDiskCache
+        }
+
+        // MARK: Public
+
+        /// Maximum cache size in bytes
+        public let maxSize: Int64
+
+        /// Maximum number of items
+        public let maxItems: Int
+
+        /// Cache cleanup interval
+        public let cleanupInterval: TimeInterval
+
+        /// Whether to use memory cache
+        public let useMemoryCache: Bool
+
+        /// Whether to use disk cache
+        public let useDiskCache: Bool
     }
 
     // MARK: - Public Methods
@@ -171,7 +122,8 @@ public final class ResourceCache: BaseSandboxedService {
 
             // Check cache limits
             if currentSize > configuration.maxSize ||
-               memoryCache.count > configuration.maxItems {
+                memoryCache.count > configuration.maxItems
+            {
                 try await cleanup()
             }
         }
@@ -189,7 +141,8 @@ public final class ResourceCache: BaseSandboxedService {
         return try await performanceMonitor.trackDuration("resource.cache.load") {
             // Try memory cache
             if configuration.useMemoryCache,
-               var entry = memoryCache[identifier] {
+               var entry = memoryCache[identifier]
+            {
                 // Update access info
                 entry.lastAccess = Date()
                 entry.accessCount += 1
@@ -282,6 +235,65 @@ public final class ResourceCache: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    /// Cache entry
+    private struct CacheEntry {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        init(
+            data: Data,
+            metadata: ResourceService.ResourceMetadata,
+            lastAccess: Date = Date(),
+            accessCount: Int = 0
+        ) {
+            self.data = data
+            self.metadata = metadata
+            self.lastAccess = lastAccess
+            self.accessCount = accessCount
+        }
+
+        // MARK: Internal
+
+        /// Resource data
+        let data: Data
+
+        /// Resource metadata
+        let metadata: ResourceService.ResourceMetadata
+
+        /// Last access date
+        var lastAccess: Date
+
+        /// Access count
+        var accessCount: Int
+    }
+
+    /// Cache configuration
+    private let configuration: Configuration
+
+    /// Persistence service
+    private let persistence: PersistenceService
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.resource.cache",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Memory cache
+    private var memoryCache: [String: CacheEntry] = [:]
+
+    /// Current cache size
+    private var currentSize: Int64 = 0
+
+    /// Cleanup timer
+    private var cleanupTimer: Timer?
+
     // MARK: - Private Methods
 
     /// Set up cleanup timer
@@ -299,7 +311,9 @@ public final class ResourceCache: BaseSandboxedService {
     /// Clean up cache
     private func cleanup() async throws {
         try await performanceMonitor.trackDuration("resource.cache.cleanup") {
-            guard configuration.useMemoryCache else { return }
+            guard configuration.useMemoryCache else {
+                return
+            }
 
             // Sort entries by last access and count
             let sortedEntries = memoryCache.sorted { first, second in
@@ -315,9 +329,10 @@ public final class ResourceCache: BaseSandboxedService {
             var removedSize: Int64 = 0
 
             queue.async(flags: .barrier) {
-                while (self.currentSize - removedSize > self.configuration.maxSize ||
-                       self.memoryCache.count - removedCount > self.configuration.maxItems) &&
-                       removedCount < sortedEntries.count {
+                while self.currentSize - removedSize > self.configuration.maxSize ||
+                    self.memoryCache.count - removedCount > self.configuration.maxItems,
+                    removedCount < sortedEntries.count
+                {
                     let entry = sortedEntries[removedCount]
                     self.memoryCache.removeValue(forKey: entry.key)
                     removedSize += Int64(entry.value.data.count)
@@ -346,11 +361,5 @@ public final class ResourceCache: BaseSandboxedService {
         for identifier: String
     ) -> String {
         "cache/resources/\(identifier)"
-    }
-
-    // MARK: - Deinitializer
-
-    deinit {
-        cleanupTimer?.invalidate()
     }
 }

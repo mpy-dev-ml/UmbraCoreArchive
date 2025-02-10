@@ -1,18 +1,11 @@
-//
-// BaseService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
+// MARK: - BaseService
+
 /// Base class providing common service functionality
 open class BaseService: NSObject, LoggingService {
-    /// Logger for tracking operations
-    public let logger: LoggerProtocol
+    // MARK: Lifecycle
 
     /// Initialize with a logger
     /// - Parameter logger: Logger for tracking operations
@@ -20,6 +13,11 @@ open class BaseService: NSObject, LoggingService {
         self.logger = logger
         super.init()
     }
+
+    // MARK: Public
+
+    /// Logger for tracking operations
+    public let logger: LoggerProtocol
 
     /// Execute an operation with retry logic
     /// - Parameters:
@@ -37,7 +35,7 @@ open class BaseService: NSObject, LoggingService {
     ) async throws -> T {
         var lastError: Error?
 
-        for attempt in 1...attempts {
+        for attempt in 1 ... attempts {
             do {
                 return try await action()
             } catch {
@@ -97,6 +95,8 @@ open class BaseService: NSObject, LoggingService {
     }
 }
 
+// MARK: - ServiceError
+
 /// Common service errors
 public enum ServiceError: LocalizedError {
     /// Operation failed after all retry attempts
@@ -104,12 +104,14 @@ public enum ServiceError: LocalizedError {
     /// Operation timed out
     case timeout(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .operationFailed(let operation):
-            return "Operation '\(operation)' failed after all retry attempts"
-        case .timeout(let operation):
-            return "Operation '\(operation)' timed out"
+        case let .operationFailed(operation):
+            "Operation '\(operation)' failed after all retry attempts"
+        case let .timeout(operation):
+            "Operation '\(operation)' timed out"
         }
     }
 }

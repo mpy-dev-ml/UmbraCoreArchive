@@ -1,28 +1,8 @@
-//
-// ResourceMonitor.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Monitors resource usage for development services
 final class ResourceMonitor {
-    // MARK: - Properties
-
-    /// Active resource counts
-    private var resourceCounts: [String: Int] = [:]
-
-    /// Peak resource counts
-    private var peakCounts: [String: Int] = [:]
-
-    /// Queue for synchronizing access
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.development.resources",
-        qos: .utility
-    )
+    // MARK: Internal
 
     // MARK: - Public Methods
 
@@ -77,4 +57,18 @@ final class ResourceMonitor {
             self.peakCounts.removeAll()
         }
     }
+
+    // MARK: Private
+
+    /// Active resource counts
+    private var resourceCounts: [String: Int] = [:]
+
+    /// Peak resource counts
+    private var peakCounts: [String: Int] = [:]
+
+    /// Queue for synchronizing access
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.development.resources",
+        qos: .utility
+    )
 }

@@ -1,99 +1,8 @@
-//
-// ErrorRecoveryService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for error recovery operations
 public final class ErrorRecoveryService: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Recovery operation
-    public struct RecoveryOperation {
-        /// Operation identifier
-        public let id: String
-
-        /// Operation description
-        public let description: String
-
-        /// Priority level
-        public let priority: Priority
-
-        /// Recovery function
-        public let recover: () async throws -> Void
-
-        /// Initialize with values
-        public init(
-            id: String,
-            description: String,
-            priority: Priority = .normal,
-            recover: @escaping () async throws -> Void
-        ) {
-            self.id = id
-            self.description = description
-            self.priority = priority
-            self.recover = recover
-        }
-    }
-
-    /// Priority level
-    public enum Priority: Int, Comparable {
-        case low = 0
-        case normal = 1
-        case high = 2
-        case critical = 3
-
-        public static func < (lhs: Priority, rhs: Priority) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-    }
-
-    /// Recovery result
-    public struct RecoveryResult {
-        /// Whether recovery succeeded
-        public let succeeded: Bool
-
-        /// Duration of recovery
-        public let duration: TimeInterval
-
-        /// Any error that occurred
-        public let error: Error?
-
-        /// Additional details
-        public let details: [String: Any]
-
-        /// Initialize with values
-        public init(
-            succeeded: Bool,
-            duration: TimeInterval,
-            error: Error? = nil,
-            details: [String: Any] = [:]
-        ) {
-            self.succeeded = succeeded
-            self.duration = duration
-            self.error = error
-            self.details = details
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Recovery operations
-    private var operations: [RecoveryOperation] = []
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.recovery",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -107,6 +16,88 @@ public final class ErrorRecoveryService: BaseSandboxedService {
     ) {
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Recovery operation
+    public struct RecoveryOperation {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            id: String,
+            description: String,
+            priority: Priority = .normal,
+            recover: @escaping () async throws -> Void
+        ) {
+            self.id = id
+            self.description = description
+            self.priority = priority
+            self.recover = recover
+        }
+
+        // MARK: Public
+
+        /// Operation identifier
+        public let id: String
+
+        /// Operation description
+        public let description: String
+
+        /// Priority level
+        public let priority: Priority
+
+        /// Recovery function
+        public let recover: () async throws -> Void
+    }
+
+    /// Priority level
+    public enum Priority: Int, Comparable {
+        case low = 0
+        case normal = 1
+        case high = 2
+        case critical = 3
+
+        // MARK: Public
+
+        public static func < (lhs: Priority, rhs: Priority) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+    }
+
+    /// Recovery result
+    public struct RecoveryResult {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            succeeded: Bool,
+            duration: TimeInterval,
+            error: Error? = nil,
+            details: [String: Any] = [:]
+        ) {
+            self.succeeded = succeeded
+            self.duration = duration
+            self.error = error
+            self.details = details
+        }
+
+        // MARK: Public
+
+        /// Whether recovery succeeded
+        public let succeeded: Bool
+
+        /// Duration of recovery
+        public let duration: TimeInterval
+
+        /// Any error that occurred
+        public let error: Error?
+
+        /// Additional details
+        public let details: [String: Any]
     }
 
     // MARK: - Public Methods
@@ -197,7 +188,7 @@ public final class ErrorRecoveryService: BaseSandboxedService {
 
     /// Remove recovery operation
     /// - Parameter id: Operation ID
-    public func removeOperation(withId id: String) {
+    public func removeOperation(withID id: String) {
         queue.async(flags: .barrier) {
             self.operations.removeAll { $0.id == id }
 
@@ -229,4 +220,19 @@ public final class ErrorRecoveryService: BaseSandboxedService {
     public func getOperations() -> [RecoveryOperation] {
         queue.sync { operations }
     }
+
+    // MARK: Private
+
+    /// Recovery operations
+    private var operations: [RecoveryOperation] = []
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.recovery",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 }

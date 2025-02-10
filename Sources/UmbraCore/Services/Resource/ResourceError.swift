@@ -1,11 +1,3 @@
-//
-// ResourceError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Errors that can occur during resource operations
@@ -29,49 +21,51 @@ public enum ResourceError: LocalizedError {
     /// Cache error
     case cacheError(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .resourceNotFound(let identifier):
-            return "Resource not found: \(identifier)"
-        case .invalidResourceType(let type):
-            return "Invalid resource type: \(type)"
-        case .invalidResourceData(let reason):
-            return "Invalid resource data: \(reason)"
-        case .storeFailed(let reason):
-            return "Failed to store resource: \(reason)"
-        case .loadFailed(let reason):
-            return "Failed to load resource: \(reason)"
-        case .removeFailed(let reason):
-            return "Failed to remove resource: \(reason)"
-        case .invalidIdentifier(let reason):
-            return "Invalid resource identifier: \(reason)"
-        case .invalidMetadata(let reason):
-            return "Invalid resource metadata: \(reason)"
-        case .cacheError(let reason):
-            return "Resource cache error: \(reason)"
+        case let .resourceNotFound(identifier):
+            "Resource not found: \(identifier)"
+        case let .invalidResourceType(type):
+            "Invalid resource type: \(type)"
+        case let .invalidResourceData(reason):
+            "Invalid resource data: \(reason)"
+        case let .storeFailed(reason):
+            "Failed to store resource: \(reason)"
+        case let .loadFailed(reason):
+            "Failed to load resource: \(reason)"
+        case let .removeFailed(reason):
+            "Failed to remove resource: \(reason)"
+        case let .invalidIdentifier(reason):
+            "Invalid resource identifier: \(reason)"
+        case let .invalidMetadata(reason):
+            "Invalid resource metadata: \(reason)"
+        case let .cacheError(reason):
+            "Resource cache error: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .resourceNotFound:
-            return "Check if the resource exists"
+            "Check if the resource exists"
         case .invalidResourceType:
-            return "Use a valid resource type"
+            "Use a valid resource type"
         case .invalidResourceData:
-            return "Check resource data format"
+            "Check resource data format"
         case .storeFailed:
-            return "Check disk space and permissions"
+            "Check disk space and permissions"
         case .loadFailed:
-            return "Check if resource exists and is accessible"
+            "Check if resource exists and is accessible"
         case .removeFailed:
-            return "Check resource permissions"
+            "Check resource permissions"
         case .invalidIdentifier:
-            return "Use a valid resource identifier"
+            "Use a valid resource identifier"
         case .invalidMetadata:
-            return "Check resource metadata format"
+            "Check resource metadata format"
         case .cacheError:
-            return "Try reloading the resource cache"
+            "Try reloading the resource cache"
         }
     }
 }

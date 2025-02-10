@@ -1,11 +1,3 @@
-//
-// SystemError.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Errors that can occur during system operations
@@ -29,72 +21,74 @@ public enum SystemError: LocalizedError {
     /// Unimplemented feature
     case unimplemented(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .monitorStartFailed(let reason):
-            return "Monitor failed to start: \(reason)"
-        case .monitorStopFailed(let reason):
-            return "Monitor failed to stop: \(reason)"
-        case .invalidMonitorState(let state):
-            return "Invalid monitor state: \(state)"
-        case .resourceAccessDenied(let resource):
-            return "Resource access denied: \(resource)"
-        case .unsupportedResource(let resource):
-            return "Unsupported resource: \(resource)"
-        case .resourceUnavailable(let resource):
-            return "Resource unavailable: \(resource)"
-        case .invalidConfiguration(let reason):
-            return "Invalid configuration: \(reason)"
-        case .operationFailed(let reason):
-            return "Operation failed: \(reason)"
-        case .unimplemented(let feature):
-            return "Feature not implemented: \(feature)"
+        case let .monitorStartFailed(reason):
+            "Monitor failed to start: \(reason)"
+        case let .monitorStopFailed(reason):
+            "Monitor failed to stop: \(reason)"
+        case let .invalidMonitorState(state):
+            "Invalid monitor state: \(state)"
+        case let .resourceAccessDenied(resource):
+            "Resource access denied: \(resource)"
+        case let .unsupportedResource(resource):
+            "Unsupported resource: \(resource)"
+        case let .resourceUnavailable(resource):
+            "Resource unavailable: \(resource)"
+        case let .invalidConfiguration(reason):
+            "Invalid configuration: \(reason)"
+        case let .operationFailed(reason):
+            "Operation failed: \(reason)"
+        case let .unimplemented(feature):
+            "Feature not implemented: \(feature)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .monitorStartFailed:
-            return "Check monitor configuration and try again"
+            "Check monitor configuration and try again"
         case .monitorStopFailed:
-            return "Force stop monitor and clean up resources"
+            "Force stop monitor and clean up resources"
         case .invalidMonitorState:
-            return "Reset monitor to a valid state"
+            "Reset monitor to a valid state"
         case .resourceAccessDenied:
-            return "Request necessary permissions"
+            "Request necessary permissions"
         case .unsupportedResource:
-            return "Use a supported resource type"
+            "Use a supported resource type"
         case .resourceUnavailable:
-            return "Check resource availability"
+            "Check resource availability"
         case .invalidConfiguration:
-            return "Check configuration settings"
+            "Check configuration settings"
         case .operationFailed:
-            return "Try the operation again"
+            "Try the operation again"
         case .unimplemented:
-            return "Use an implemented feature"
+            "Use an implemented feature"
         }
     }
 
     public var helpAnchor: String? {
         switch self {
         case .monitorStartFailed:
-            return "monitor_start"
+            "monitor_start"
         case .monitorStopFailed:
-            return "monitor_stop"
+            "monitor_stop"
         case .invalidMonitorState:
-            return "monitor_state"
+            "monitor_state"
         case .resourceAccessDenied:
-            return "resource_access"
+            "resource_access"
         case .unsupportedResource:
-            return "resource_types"
+            "resource_types"
         case .resourceUnavailable:
-            return "resource_availability"
+            "resource_availability"
         case .invalidConfiguration:
-            return "configuration"
+            "configuration"
         case .operationFailed:
-            return "operation_troubleshooting"
+            "operation_troubleshooting"
         case .unimplemented:
-            return "implementation_status"
+            "implementation_status"
         }
     }
 }

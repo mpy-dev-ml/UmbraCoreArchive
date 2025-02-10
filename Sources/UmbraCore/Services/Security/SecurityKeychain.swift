@@ -1,16 +1,26 @@
-//
-// SecurityKeychain.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import Security
 
 /// Service for managing keychain operations
 public final class SecurityKeychain: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Keychain item accessibility
@@ -22,35 +32,24 @@ public final class SecurityKeychain: BaseSandboxedService {
         /// Always
         case always
 
+        // MARK: Internal
+
         /// Convert to Security framework value
         var securityValue: CFString {
             switch self {
             case .afterFirstUnlock:
-                return kSecAttrAccessibleAfterFirstUnlock
+                kSecAttrAccessibleAfterFirstUnlock
             case .whenUnlocked:
-                return kSecAttrAccessibleWhenUnlocked
+                kSecAttrAccessibleWhenUnlocked
             case .always:
-                return kSecAttrAccessibleAlways
+                kSecAttrAccessibleAlways
             }
         }
     }
 
     /// Keychain item attributes
     public struct ItemAttributes {
-        /// Service name
-        public let service: String
-
-        /// Account name
-        public let account: String
-
-        /// Access group
-        public let accessGroup: String?
-
-        /// Accessibility
-        public let accessibility: Accessibility
-
-        /// Synchronize with iCloud
-        public let synchronizable: Bool
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -66,32 +65,23 @@ public final class SecurityKeychain: BaseSandboxedService {
             self.accessibility = accessibility
             self.synchronizable = synchronizable
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.security.keychain",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
+        /// Service name
+        public let service: String
 
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+        /// Account name
+        public let account: String
 
-    // MARK: - Initialization
+        /// Access group
+        public let accessGroup: String?
 
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
+        /// Accessibility
+        public let accessibility: Accessibility
+
+        /// Synchronize with iCloud
+        public let synchronizable: Bool
     }
 
     // MARK: - Public Methods
@@ -173,7 +163,8 @@ public final class SecurityKeychain: BaseSandboxedService {
             )
 
             guard status == errSecSuccess,
-                  let data = result as? Data else {
+                  let data = result as? Data
+            else {
                 throw SecurityError.keychainError(
                     "Failed to load item: \(status)"
                 )
@@ -231,6 +222,18 @@ public final class SecurityKeychain: BaseSandboxedService {
         }
     }
 
+    // MARK: Private
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.security.keychain",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
     // MARK: - Private Methods
 
     /// Create base query for attributes
@@ -242,7 +245,7 @@ public final class SecurityKeychain: BaseSandboxedService {
             kSecAttrService as String: attributes.service,
             kSecAttrAccount as String: attributes.account,
             kSecAttrAccessible as String: attributes.accessibility.securityValue,
-            kSecAttrSynchronizable as String: attributes.synchronizable
+            kSecAttrSynchronizable as String: attributes.synchronizable,
         ]
 
         if let accessGroup = attributes.accessGroup {

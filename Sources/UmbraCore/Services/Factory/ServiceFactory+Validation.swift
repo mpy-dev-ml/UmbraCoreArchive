@@ -1,18 +1,10 @@
-//
-// ServiceFactory+Validation.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
-extension ServiceFactory {
+public extension ServiceFactory {
     /// Validate service factory configuration
     /// - Returns: true if configuration is valid
     /// - Throws: ServiceFactoryError if validation fails
-    public static func validateConfiguration() throws -> Bool {
+    static func validateConfiguration() throws -> Bool {
         try queue.sync {
             // Validate development configuration
             if configuration.developmentEnabled {
@@ -31,7 +23,7 @@ extension ServiceFactory {
     /// - Parameter service: Service to validate
     /// - Returns: true if service is valid
     /// - Throws: ServiceFactoryError if validation fails
-    public static func validateService(_ service: Any) throws -> Bool {
+    static func validateService(_ service: Any) throws -> Bool {
         try queue.sync {
             // Validate service type
             switch service {
@@ -50,6 +42,8 @@ extension ServiceFactory {
     }
 }
 
+// MARK: - ServiceFactoryError
+
 /// Errors that can occur in the service factory
 public enum ServiceFactoryError: LocalizedError {
     /// Invalid configuration
@@ -59,14 +53,16 @@ public enum ServiceFactoryError: LocalizedError {
     /// Service creation failed
     case serviceCreationFailed(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .invalidConfiguration(let reason):
-            return "Invalid service factory configuration: \(reason)"
-        case .invalidServiceType(let type):
-            return "Invalid service type: \(type)"
-        case .serviceCreationFailed(let service):
-            return "Failed to create service: \(service)"
+        case let .invalidConfiguration(reason):
+            "Invalid service factory configuration: \(reason)"
+        case let .invalidServiceType(type):
+            "Invalid service type: \(type)"
+        case let .serviceCreationFailed(service):
+            "Failed to create service: \(service)"
         }
     }
 }

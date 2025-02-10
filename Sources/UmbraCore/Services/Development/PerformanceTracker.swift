@@ -1,25 +1,8 @@
-//
-// PerformanceTracker.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Tracks performance metrics for development services
 final class PerformanceTracker {
-    // MARK: - Properties
-
-    /// Metrics for each operation
-    private var metrics: [String: [TimeInterval]] = [:]
-
-    /// Queue for synchronizing access
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.development.performance",
-        qos: .utility
-    )
+    // MARK: Internal
 
     // MARK: - Public Methods
 
@@ -90,4 +73,15 @@ final class PerformanceTracker {
             self.metrics.removeAll()
         }
     }
+
+    // MARK: Private
+
+    /// Metrics for each operation
+    private var metrics: [String: [TimeInterval]] = [:]
+
+    /// Queue for synchronizing access
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.development.performance",
+        qos: .utility
+    )
 }

@@ -1,15 +1,9 @@
-//
-// RepositoryServiceProtocol.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
+// MARK: - RepositoryServiceProtocol
+
 /// Protocol for managing repositories
-public protocol RepositoryServiceProtocol {: Sendable: Sendable
+public protocol RepositoryServiceProtocol { : Sendable: Sendable
     /// Create a new repository
     /// - Parameter repository: Repository to create
     /// - Throws: RepositoryError if creation fails
@@ -37,6 +31,8 @@ public protocol RepositoryServiceProtocol {: Sendable: Sendable
     ) async throws
 }
 
+// MARK: - RepositoryError
+
 /// Error types for repository operations
 public enum RepositoryError: LocalizedError {
     case creationFailed(String)
@@ -44,6 +40,8 @@ public enum RepositoryError: LocalizedError {
     case updateFailed(String)
     case listingFailed(String)
     case invalidConfiguration
+
+    // MARK: Public
 
     public var errorDescription: String? {
         switch self {

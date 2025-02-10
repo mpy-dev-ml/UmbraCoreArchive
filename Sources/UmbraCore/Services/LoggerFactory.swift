@@ -1,56 +1,10 @@
-//
-// LoggerFactory.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
 /// Factory for creating loggers
 @objc
 public class LoggerFactory: NSObject {
-    // MARK: - Types
-
-    /// Logger configuration
-    public struct Configuration {
-        /// Minimum log level
-        public let minimumLevel: Logger.Level
-
-        /// Log destination
-        public let destination: LogDestination
-
-        /// Initialize with values
-        public init(
-            minimumLevel: Logger.Level = .info,
-            destination: LogDestination = .osLog
-        ) {
-            self.minimumLevel = minimumLevel
-            self.destination = destination
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Shared instance
-    public static let shared = LoggerFactory()
-
-    /// Default configuration
-    private let defaultConfig = Configuration()
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Cache of created loggers
-    private var loggers: [String: LoggerProtocol] = [:]
-
-    /// Queue for synchronizing access
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbra.logger-factory",
-        attributes: .concurrent
-    )
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -61,6 +15,35 @@ public class LoggerFactory: NSObject {
         super.init()
     }
 
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Logger configuration
+    public struct Configuration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            minimumLevel: Logger.Level = .info,
+            destination: LogDestination = .osLog
+        ) {
+            self.minimumLevel = minimumLevel
+            self.destination = destination
+        }
+
+        // MARK: Public
+
+        /// Minimum log level
+        public let minimumLevel: Logger.Level
+
+        /// Log destination
+        public let destination: LogDestination
+    }
+
+    /// Shared instance
+    public static let shared: LoggerFactory = .init()
+
     // MARK: - Public Methods
 
     /// Get logger for category
@@ -69,7 +52,7 @@ public class LoggerFactory: NSObject {
         forCategory category: String,
         configuration: Configuration? = nil
     ) -> LoggerProtocol {
-        return queue.sync {
+        queue.sync {
             if let logger = loggers[category] {
                 return logger
             }
@@ -93,14 +76,31 @@ public class LoggerFactory: NSObject {
         }
     }
 
+    // MARK: Private
+
+    /// Default configuration
+    private let defaultConfig: Configuration = .init()
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Cache of created loggers
+    private var loggers: [String: LoggerProtocol] = [:]
+
+    /// Queue for synchronizing access
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbra.logger-factory",
+        attributes: .concurrent
+    )
+
     // MARK: - Private Methods
 
     /// Create logger for category
     private func createLogger(
-        forCategory category: String,
+        forCategory _: String,
         configuration: Configuration
     ) -> LoggerProtocol {
-        return Logger(
+        Logger(
             minimumLevel: configuration.minimumLevel,
             destination: configuration.destination
         )

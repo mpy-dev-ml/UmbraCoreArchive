@@ -1,83 +1,9 @@
-//
-// SecurityCrypto.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
-import Foundation
 import CryptoKit
+import Foundation
 
 /// Service for cryptographic operations
 public final class SecurityCrypto: BaseSandboxedService {
-    // MARK: - Types
-
-    /// Encryption key
-    public struct EncryptionKey {
-        /// Key data
-        public let data: SymmetricKey
-
-        /// Key identifier
-        public let identifier: String
-
-        /// Creation date
-        public let creationDate: Date
-
-        /// Initialize with values
-        public init(
-            data: SymmetricKey,
-            identifier: String,
-            creationDate: Date = Date()
-        ) {
-            self.data = data
-            self.identifier = identifier
-            self.creationDate = creationDate
-        }
-    }
-
-    /// Encrypted data
-    public struct EncryptedData {
-        /// Ciphertext
-        public let ciphertext: Data
-
-        /// Nonce
-        public let nonce: AES.GCM.Nonce
-
-        /// Authentication tag
-        public let tag: Data
-
-        /// Key identifier
-        public let keyIdentifier: String
-
-        /// Initialize with values
-        public init(
-            ciphertext: Data,
-            nonce: AES.GCM.Nonce,
-            tag: Data,
-            keyIdentifier: String
-        ) {
-            self.ciphertext = ciphertext
-            self.nonce = nonce
-            self.tag = tag
-            self.keyIdentifier = keyIdentifier
-        }
-    }
-
-    // MARK: - Properties
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.security.crypto",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    /// Active encryption keys
-    private var activeKeys: [String: EncryptionKey] = [:]
+    // MARK: Lifecycle
 
     // MARK: - Initialization
 
@@ -91,6 +17,69 @@ public final class SecurityCrypto: BaseSandboxedService {
     ) {
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
+    }
+
+    // MARK: Public
+
+    // MARK: - Types
+
+    /// Encryption key
+    public struct EncryptionKey {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            data: SymmetricKey,
+            identifier: String,
+            creationDate: Date = Date()
+        ) {
+            self.data = data
+            self.identifier = identifier
+            self.creationDate = creationDate
+        }
+
+        // MARK: Public
+
+        /// Key data
+        public let data: SymmetricKey
+
+        /// Key identifier
+        public let identifier: String
+
+        /// Creation date
+        public let creationDate: Date
+    }
+
+    /// Encrypted data
+    public struct EncryptedData {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            ciphertext: Data,
+            nonce: AES.GCM.Nonce,
+            tag: Data,
+            keyIdentifier: String
+        ) {
+            self.ciphertext = ciphertext
+            self.nonce = nonce
+            self.tag = tag
+            self.keyIdentifier = keyIdentifier
+        }
+
+        // MARK: Public
+
+        /// Ciphertext
+        public let ciphertext: Data
+
+        /// Nonce
+        public let nonce: AES.GCM.Nonce
+
+        /// Authentication tag
+        public let tag: Data
+
+        /// Key identifier
+        public let keyIdentifier: String
     }
 
     // MARK: - Public Methods
@@ -262,4 +251,19 @@ public final class SecurityCrypto: BaseSandboxedService {
             line: #line
         )
     }
+
+    // MARK: Private
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.security.crypto",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Active encryption keys
+    private var activeKeys: [String: EncryptionKey] = [:]
 }

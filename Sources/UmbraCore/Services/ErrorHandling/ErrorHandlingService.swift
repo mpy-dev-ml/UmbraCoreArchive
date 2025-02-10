@@ -1,15 +1,28 @@
-//
-// ErrorHandlingService.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
+
+// MARK: - ErrorHandlingService
 
 /// Service for handling and recovering from errors
 public final class ErrorHandlingService: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+        registerDefaultHandlers()
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Error recovery strategy
@@ -26,6 +39,29 @@ public final class ErrorHandlingService: BaseSandboxedService {
 
     /// Error context
     public struct ErrorContext {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            error: Error,
+            operation: String,
+            file: String = #file,
+            function: String = #function,
+            line: Int = #line,
+            timestamp: Date = Date(),
+            metadata: [String: Any] = [:]
+        ) {
+            self.error = error
+            self.operation = operation
+            self.file = file
+            self.function = function
+            self.line = line
+            self.timestamp = timestamp
+            self.metadata = metadata
+        }
+
+        // MARK: Public
+
         /// Source error
         public let error: Error
 
@@ -46,59 +82,10 @@ public final class ErrorHandlingService: BaseSandboxedService {
 
         /// Additional metadata
         public let metadata: [String: Any]
-
-        /// Initialize with values
-        public init(
-            error: Error,
-            operation: String,
-            file: String = #file,
-            function: String = #function,
-            line: Int = #line,
-            timestamp: Date = Date(),
-            metadata: [String: Any] = [:]
-        ) {
-            self.error = error
-            self.operation = operation
-            self.file = file
-            self.function = function
-            self.line = line
-            self.timestamp = timestamp
-            self.metadata = metadata
-        }
     }
 
     /// Error handler
     public typealias ErrorHandler = (ErrorContext) async throws -> RecoveryStrategy
-
-    // MARK: - Properties
-
-    /// Error handlers by type
-    private var handlers: [String: ErrorHandler] = [:]
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.error",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
-        registerDefaultHandlers()
-    }
 
     // MARK: - Public Methods
 
@@ -152,7 +139,7 @@ public final class ErrorHandlingService: BaseSandboxedService {
             let errorType = String(describing: type(of: context.error))
             let handler = queue.sync { handlers[errorType] }
 
-            guard let handler = handler else {
+            guard let handler else {
                 logger.warning(
                     "No handler found for error type: \(errorType)",
                     file: context.file,
@@ -222,21 +209,21 @@ public final class ErrorHandlingService: BaseSandboxedService {
             let strategy = try await handleError(context)
 
             switch strategy {
-            case .retry(let maxAttempts, let delay):
+            case let .retry(maxAttempts, delay):
                 return try await retry(
                     operation: operation,
                     maxAttempts: maxAttempts,
                     delay: delay,
                     work: work
                 )
-            case .fallback(let value):
+            case let .fallback(value):
                 guard let result = value as? T else {
                     throw ErrorHandlingError.invalidFallbackValue(
                         "Expected type \(T.self), got \(type(of: value))"
                     )
                 }
                 return result
-            case .cleanup(let cleanup):
+            case let .cleanup(cleanup):
                 try await cleanup()
                 throw error
             case .terminate:
@@ -244,6 +231,21 @@ public final class ErrorHandlingService: BaseSandboxedService {
             }
         }
     }
+
+    // MARK: Private
+
+    /// Error handlers by type
+    private var handlers: [String: ErrorHandler] = [:]
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.error",
+        qos: .userInitiated,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
 
     // MARK: - Private Methods
 
@@ -322,6 +324,8 @@ public final class ErrorHandlingService: BaseSandboxedService {
     }
 }
 
+// MARK: - ErrorHandlingError
+
 /// Errors that can occur during error handling
 public enum ErrorHandlingError: LocalizedError {
     /// Invalid fallback value
@@ -331,25 +335,27 @@ public enum ErrorHandlingError: LocalizedError {
     /// Error handling failed
     case errorHandlingFailed(String)
 
+    // MARK: Public
+
     public var errorDescription: String? {
         switch self {
-        case .invalidFallbackValue(let reason):
-            return "Invalid fallback value: \(reason)"
-        case .maxRetriesExceeded(let operation):
-            return "Maximum retries exceeded for operation: \(operation)"
-        case .errorHandlingFailed(let reason):
-            return "Error handling failed: \(reason)"
+        case let .invalidFallbackValue(reason):
+            "Invalid fallback value: \(reason)"
+        case let .maxRetriesExceeded(operation):
+            "Maximum retries exceeded for operation: \(operation)"
+        case let .errorHandlingFailed(reason):
+            "Error handling failed: \(reason)"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .invalidFallbackValue:
-            return "Check fallback value type"
+            "Check fallback value type"
         case .maxRetriesExceeded:
-            return "Check operation and try again later"
+            "Check operation and try again later"
         case .errorHandlingFailed:
-            return "Check error handler implementation"
+            "Check error handler implementation"
         }
     }
 }

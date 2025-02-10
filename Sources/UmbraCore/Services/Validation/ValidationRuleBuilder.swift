@@ -1,30 +1,24 @@
-//
-// ValidationRuleBuilder.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Builder for creating validation rules
 public final class ValidationRuleBuilder {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with configuration
+    /// - Parameter configuration: Builder configuration
+    public init(configuration: Configuration = Configuration(id: "", description: "")) {
+        self.configuration = configuration
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Builder configuration
     public struct Configuration {
-        /// Rule identifier
-        public var id: String
-
-        /// Rule description
-        public var description: String
-
-        /// Priority level
-        public var priority: ValidationService.Priority
-
-        /// Validation conditions
-        public var conditions: [ValidationCondition]
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -38,18 +32,25 @@ public final class ValidationRuleBuilder {
             self.priority = priority
             self.conditions = conditions
         }
+
+        // MARK: Public
+
+        /// Rule identifier
+        public var id: String
+
+        /// Rule description
+        public var description: String
+
+        /// Priority level
+        public var priority: ValidationService.Priority
+
+        /// Validation conditions
+        public var conditions: [ValidationCondition]
     }
 
     /// Validation condition
     public struct ValidationCondition {
-        /// Condition name
-        public let name: String
-
-        /// Validation function
-        public let validate: (Any) async throws -> Bool
-
-        /// Error message
-        public let errorMessage: String
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -61,19 +62,17 @@ public final class ValidationRuleBuilder {
             self.validate = validate
             self.errorMessage = errorMessage
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Current configuration
-    private var configuration: Configuration
+        /// Condition name
+        public let name: String
 
-    // MARK: - Initialization
+        /// Validation function
+        public let validate: (Any) async throws -> Bool
 
-    /// Initialize with configuration
-    /// - Parameter configuration: Builder configuration
-    public init(configuration: Configuration = Configuration(id: "", description: "")) {
-        self.configuration = configuration
+        /// Error message
+        public let errorMessage: String
     }
 
     // MARK: - Public Methods
@@ -82,7 +81,7 @@ public final class ValidationRuleBuilder {
     /// - Parameter id: Rule identifier
     /// - Returns: Builder instance
     @discardableResult
-    public func withId(_ id: String) -> ValidationRuleBuilder {
+    public func withID(_ id: String) -> ValidationRuleBuilder {
         configuration.id = id
         return self
     }
@@ -199,7 +198,9 @@ public final class ValidationRuleBuilder {
             name: conditionName,
             errorMessage: "Value cannot be nil"
         ) { data in
-            guard let value = data as? T else { return false }
+            guard let value = data as? T else {
+                return false
+            }
             return value[keyPath: keyPath] != nil
         }
     }
@@ -223,7 +224,9 @@ public final class ValidationRuleBuilder {
             name: conditionName,
             errorMessage: "String length must be between \(minLength) and \(maxLength)"
         ) { data in
-            guard let value = data as? T else { return false }
+            guard let value = data as? T else {
+                return false
+            }
             let string = value[keyPath: keyPath]
             return string.count >= minLength && string.count <= maxLength
         }
@@ -248,7 +251,9 @@ public final class ValidationRuleBuilder {
             name: conditionName,
             errorMessage: "Number must be between \(min) and \(max)"
         ) { data in
-            guard let value = data as? T else { return false }
+            guard let value = data as? T else {
+                return false
+            }
             let number = value[keyPath: keyPath]
             return number >= min && number <= max
         }
@@ -271,9 +276,16 @@ public final class ValidationRuleBuilder {
             name: conditionName,
             errorMessage: "String must match pattern: \(pattern)"
         ) { data in
-            guard let value = data as? T else { return false }
+            guard let value = data as? T else {
+                return false
+            }
             let string = value[keyPath: keyPath]
             return string.range(of: pattern, options: .regularExpression) != nil
         }
     }
+
+    // MARK: Private
+
+    /// Current configuration
+    private var configuration: Configuration
 }

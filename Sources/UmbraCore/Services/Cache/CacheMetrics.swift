@@ -1,36 +1,33 @@
-//
-// CacheMetrics.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for tracking cache metrics
 public final class CacheMetrics: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - directoryURL: Cache directory URL
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        directoryURL: URL,
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.directoryURL = directoryURL
+        self.performanceMonitor = performanceMonitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Cache metrics
     public struct Metrics {
-        /// Total cache size in bytes
-        public let totalSize: Int64
-
-        /// Number of entries
-        public let entryCount: Int
-
-        /// Hit rate
-        public let hitRate: Double
-
-        /// Miss rate
-        public let missRate: Double
-
-        /// Average entry size
-        public let averageEntrySize: Double
-
-        /// Average entry age
-        public let averageEntryAge: TimeInterval
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -48,44 +45,26 @@ public final class CacheMetrics: BaseSandboxedService {
             self.averageEntrySize = averageEntrySize
             self.averageEntryAge = averageEntryAge
         }
-    }
 
-    // MARK: - Properties
+        // MARK: Public
 
-    /// Cache directory URL
-    private let directoryURL: URL
+        /// Total cache size in bytes
+        public let totalSize: Int64
 
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.cache.metrics",
-        qos: .utility,
-        attributes: .concurrent
-    )
+        /// Number of entries
+        public let entryCount: Int
 
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+        /// Hit rate
+        public let hitRate: Double
 
-    /// Hit count
-    private var hitCount: Int = 0
+        /// Miss rate
+        public let missRate: Double
 
-    /// Miss count
-    private var missCount: Int = 0
+        /// Average entry size
+        public let averageEntrySize: Double
 
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - directoryURL: Cache directory URL
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        directoryURL: URL,
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.directoryURL = directoryURL
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
+        /// Average entry age
+        public let averageEntryAge: TimeInterval
     }
 
     // MARK: - Public Methods
@@ -217,4 +196,25 @@ public final class CacheMetrics: BaseSandboxedService {
             line: #line
         )
     }
+
+    // MARK: Private
+
+    /// Cache directory URL
+    private let directoryURL: URL
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.cache.metrics",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+
+    /// Hit count
+    private var hitCount: Int = 0
+
+    /// Miss count
+    private var missCount: Int = 0
 }

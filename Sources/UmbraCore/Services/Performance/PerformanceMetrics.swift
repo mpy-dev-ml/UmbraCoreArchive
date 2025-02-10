@@ -1,36 +1,30 @@
-//
-// PerformanceMetrics.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 
 /// Service for collecting and analyzing performance metrics
 public final class PerformanceMetrics: BaseSandboxedService {
+    // MARK: Lifecycle
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - monitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        monitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.monitor = monitor
+        super.init(logger: logger)
+    }
+
+    // MARK: Public
+
     // MARK: - Types
 
     /// Metric analysis result
     public struct AnalysisResult {
-        /// Average value
-        public let average: Double
-
-        /// Minimum value
-        public let minimum: Double
-
-        /// Maximum value
-        public let maximum: Double
-
-        /// Standard deviation
-        public let standardDeviation: Double
-
-        /// Percentile values
-        public let percentiles: [Double: Double]
-
-        /// Sample count
-        public let sampleCount: Int
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -48,6 +42,26 @@ public final class PerformanceMetrics: BaseSandboxedService {
             self.percentiles = percentiles
             self.sampleCount = sampleCount
         }
+
+        // MARK: Public
+
+        /// Average value
+        public let average: Double
+
+        /// Minimum value
+        public let minimum: Double
+
+        /// Maximum value
+        public let maximum: Double
+
+        /// Standard deviation
+        public let standardDeviation: Double
+
+        /// Percentile values
+        public let percentiles: [Double: Double]
+
+        /// Sample count
+        public let sampleCount: Int
     }
 
     /// Time window for analysis
@@ -61,17 +75,19 @@ public final class PerformanceMetrics: BaseSandboxedService {
         /// Custom range
         case range(Date, Date)
 
+        // MARK: Internal
+
         /// Get start date for window
         var startDate: Date {
             let now = Date()
             switch self {
-            case .minutes(let count):
+            case let .minutes(count):
                 return now.addingTimeInterval(-TimeInterval(count * 60))
-            case .hours(let count):
+            case let .hours(count):
                 return now.addingTimeInterval(-TimeInterval(count * 3600))
-            case .days(let count):
+            case let .days(count):
                 return now.addingTimeInterval(-TimeInterval(count * 86400))
-            case .range(let start, _):
+            case let .range(start, _):
                 return start
             }
         }
@@ -79,38 +95,14 @@ public final class PerformanceMetrics: BaseSandboxedService {
         /// Get end date for window
         var endDate: Date {
             switch self {
-            case .minutes, .hours, .days:
-                return Date()
-            case .range(_, let end):
-                return end
+            case .minutes,
+                 .hours,
+                 .days:
+                Date()
+            case let .range(_, end):
+                end
             }
         }
-    }
-
-    // MARK: - Properties
-
-    /// Performance monitor
-    private let monitor: PerformanceMonitor
-
-    /// Queue for synchronizing operations
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.performance.metrics",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - monitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        monitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.monitor = monitor
-        super.init(logger: logger)
     }
 
     // MARK: - Public Methods
@@ -127,7 +119,7 @@ public final class PerformanceMetrics: BaseSandboxedService {
         // Get metrics for window
         let metrics = monitor.getMetrics(for: type).filter { metric in
             metric.timestamp >= window.startDate &&
-            metric.timestamp <= window.endDate
+                metric.timestamp <= window.endDate
         }
 
         guard !metrics.isEmpty else {
@@ -142,7 +134,7 @@ public final class PerformanceMetrics: BaseSandboxedService {
         }
 
         // Calculate statistics
-        let values = metrics.map { $0.value }
+        let values = metrics.map(\.value)
         let count = values.count
         let sum = values.reduce(0, +)
         let average = sum / Double(count)
@@ -206,7 +198,7 @@ public final class PerformanceMetrics: BaseSandboxedService {
         // Get metrics for window
         let metrics = monitor.getMetrics(for: type).filter { metric in
             metric.timestamp >= window.startDate &&
-            metric.timestamp <= window.endDate
+                metric.timestamp <= window.endDate
         }
 
         var trends: [Date: Double] = [:]
@@ -267,7 +259,7 @@ public final class PerformanceMetrics: BaseSandboxedService {
         // Get metrics for window
         let metrics = monitor.getMetrics(for: type).filter { metric in
             metric.timestamp >= window.startDate &&
-            metric.timestamp <= window.endDate
+                metric.timestamp <= window.endDate
         }
 
         guard metrics.count > 1 else {
@@ -275,7 +267,7 @@ public final class PerformanceMetrics: BaseSandboxedService {
         }
 
         // Calculate statistics
-        let values = metrics.map { $0.value }
+        let values = metrics.map(\.value)
         let average = values.reduce(0, +) / Double(values.count)
         let squaredDifferences = values.map { pow($0 - average, 2) }
         let variance = squaredDifferences.reduce(0, +) / Double(values.count)
@@ -302,4 +294,16 @@ public final class PerformanceMetrics: BaseSandboxedService {
 
         return anomalies
     }
+
+    // MARK: Private
+
+    /// Performance monitor
+    private let monitor: PerformanceMonitor
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.performance.metrics",
+        qos: .utility,
+        attributes: .concurrent
+    )
 }
