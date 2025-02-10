@@ -120,8 +120,11 @@ public enum ValidationPreset {
                 name: "positiveCheck",
                 errorMessage: "Value must be positive"
             ) { data in
-                guard let number = data as? (any Numeric) else { return false }
-                return number as! (any Comparable) > 0
+                guard let number = data as? (any Numeric),
+                      let comparable = number as? (any Comparable) else {
+                    return false
+                }
+                return comparable > 0
             }
             .build()
     }

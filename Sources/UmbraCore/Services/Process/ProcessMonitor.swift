@@ -142,15 +142,13 @@ public class ProcessMonitor: NSObject {
             // Store monitor
             self.monitors[pid] = monitor
 
-            self.logger.info(
-                "Started monitoring process",
-                config: LogConfig(
-                    metadata: [
-                        "pid": String(pid),
-                        "name": info.name
-                    ]
-                )
-            )
+            // Log monitoring start
+            let metadata: [String: String] = [
+                "pid": String(pid),
+                "name": info.name
+            ]
+            let config = LogConfig(metadata: metadata)
+            self.logger.info("Started monitoring process", config: config)
         }
     }
 
@@ -175,16 +173,14 @@ public class ProcessMonitor: NSObject {
                 startTime: monitor.startTime
             )
 
-            self.logger.info(
-                "Stopped monitoring process",
-                config: LogConfig(
-                    metadata: [
-                        "pid": String(pid),
-                        "name": monitor.info.name,
-                        "duration": String(stats.duration)
-                    ]
-                )
-            )
+            // Log monitoring stop
+            let metadata: [String: String] = [
+                "pid": String(pid),
+                "name": monitor.info.name,
+                "duration": String(stats.duration)
+            ]
+            let config = LogConfig(metadata: metadata)
+            self.logger.info("Stopped monitoring process", config: config)
 
             return stats
         }
@@ -200,39 +196,82 @@ public class ProcessMonitor: NSObject {
         ) { [weak self] in
             guard let self = self else { return }
 
-            var info = proc_taskinfo()
-            var size = MemoryLayout<proc_taskinfo>.size
+            // Get process task info
+            var taskInfo = proc_taskinfo()
+            let taskInfoSize = MemoryLayout<proc_taskinfo>.size
 
-            guard proc_pidinfo(
+            let result = proc_pidinfo(
                 pid,
                 PROC_PIDTASKINFO,
                 0,
-                &info,
-                Int32(size)
-            ) == size else {
-                throw ProcessError.infoPidFailed(pid)
+                &taskInfo,
+                Int32(taskInfoSize)
+            )
+
+            guard result == taskInfoSize else {
+                let error = ProcessError.infoPidFailed(pid)
+                self.logProcessError(error, pid: pid)
+                throw error
             }
 
+            // Get process name
             var name = [CChar](repeating: 0, count: MAXPATHLEN)
             guard proc_name(pid, &name, UInt32(MAXPATHLEN)) != -1 else {
-                throw ProcessError.namePidFailed(pid)
+                let error = ProcessError.namePidFailed(pid)
+                self.logProcessError(error, pid: pid)
+                throw error
             }
 
-            let processName = String(cString: name)
-            let startTime = Date(timeIntervalSince1970: TimeInterval(info.pti_start_time))
-            let cpuUsage = Double(info.pti_total_user + info.pti_total_system) / Double(info.pti_total_time)
+            // Convert name to string
+            guard let processName = String(
+                cString: name,
+                encoding: .utf8
+            ) else {
+                let error = ProcessError.nameEncodingFailed(pid)
+                self.logProcessError(error, pid: pid)
+                throw error
+            }
+
+            // Calculate CPU usage
+            let cpuTime = Double(
+                taskInfo.pti_total_user + taskInfo.pti_total_system
+            )
+            let cpuUsage = cpuTime / ProcessMonitor.cpuTimeBase
 
             return ProcessInfo(
                 pid: pid,
                 name: processName,
-                startTime: startTime,
+                startTime: Date(),
                 cpuUsage: cpuUsage,
-                memoryUsage: UInt64(info.pti_resident_size),
-                threadCount: Int(info.pti_threadnum),
-                fileDescriptorCount: Int(info.pti_fds)
+                memoryUsage: UInt64(taskInfo.pti_resident_size),
+                threadCount: Int(taskInfo.pti_threadnum),
+                fileDescriptorCount: Int(taskInfo.pti_fds)
             )
         }
     }
+
+    /// Log a process error with metadata
+    private func logProcessError(
+        _ error: ProcessError,
+        pid: Int32
+    ) {
+        let metadata: [String: String] = [
+            "pid": String(pid),
+            "error": String(describing: error)
+        ]
+        let config = LogConfig(metadata: metadata)
+        logger.error(
+            "Process monitoring error",
+            config: config
+        )
+    }
+
+    /// Base value for CPU time calculations
+    private static let cpuTimeBase: Double = {
+        var timebase = mach_timebase_info_data_t()
+        mach_timebase_info(&timebase)
+        return Double(timebase.denom) / Double(timebase.numer) * 1e9
+    }()
 
     // MARK: - Private Methods
 
@@ -268,15 +307,13 @@ public class ProcessMonitor: NSObject {
                     startTime: monitor.startTime
                 )
             } catch {
-                logger.error(
-                    "Failed to update process info",
-                    config: LogConfig(
-                        metadata: [
-                            "pid": String(pid),
-                            "error": String(describing: error)
-                        ]
-                    )
-                )
+                // Log error
+                let metadata: [String: String] = [
+                    "pid": String(pid),
+                    "error": String(describing: error)
+                ]
+                let config = LogConfig(metadata: metadata)
+                logger.error("Failed to update process info", config: config)
             }
         }
     }

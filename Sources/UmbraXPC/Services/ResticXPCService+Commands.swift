@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 //
@@ -70,12 +70,8 @@ public extension ResticXPCService {
     /// - Parameter url: The URL where the repository should be initialized
     /// - Throws: ProcessError if the initialization fails
     func initializeRepository(at url: URL) async throws {
-        logger.info(
-            "Initializing repository at \(url.path)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+        let message = "Initializing repository at \(url.path)"
+        logger.info(message, file: #file, function: #function, line: #line)
 
         // Initialize repository
         let command = XPCCommandConfig(
@@ -96,12 +92,8 @@ public extension ResticXPCService {
     ///   - destination: The URL of the Restic repository
     /// - Throws: ProcessError if the backup operation fails
     func backup(from source: URL, to destination: URL) async throws {
-        logger.info(
-            "Backing up \(source.path) to \(destination.path)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+        let message = "Backing up \(source.path) to \(destination.path)"
+        logger.info(message, file: #file, function: #function, line: #line)
 
         let command = XPCCommandConfig(
             command: "backup",
@@ -115,7 +107,8 @@ public extension ResticXPCService {
         let result = try await executeResticCommand(command)
 
         if !result.succeeded {
-            throw ProcessError.executionFailed("Backup command failed with exit code: \(result.exitCode)")
+            let message = "Backup command failed with exit code: \(result.exitCode)"
+            throw ProcessError.executionFailed(message)
         }
     }
 
@@ -135,8 +128,9 @@ public extension ResticXPCService {
         let result = try await executeResticCommand(command)
 
         // Parse JSON output to extract snapshot IDs
-        // This is a simplified implementation
-        return result.output.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        return result.output
+            .components(separatedBy: .newlines)
+            .filter { !$0.isEmpty }
     }
 
     /// Restores data from a repository snapshot to a destination directory
@@ -145,12 +139,8 @@ public extension ResticXPCService {
     ///   - destination: The URL where the data should be restored
     /// - Throws: ProcessError if the restore operation fails
     func restore(from source: URL, to destination: URL) async throws {
-        logger.info(
-            "Restoring from \(source.path) to \(destination.path)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+        let message = "Restoring from \(source.path) to \(destination.path)"
+        logger.info(message, file: #file, function: #function, line: #line)
 
         let command = XPCCommandConfig(
             command: "restore",
@@ -164,7 +154,8 @@ public extension ResticXPCService {
         let result = try await executeResticCommand(command)
 
         if !result.succeeded {
-            throw ProcessError.executionFailed("Restore command failed with exit code: \(result.exitCode)")
+            let message = "Restore command failed with exit code: \(result.exitCode)"
+            throw ProcessError.executionFailed(message)
         }
     }
 }
@@ -179,7 +170,8 @@ private extension ResticXPCService {
     private func validateCommandPrerequisites(_ command: XPCCommandConfig) async throws {
         // Check connection state
         guard connectionState == .connected else {
-            throw ResticXPCError.serviceUnavailable("Service is not connected")
+            let message = "Service is not connected"
+            throw ResticXPCError.serviceUnavailable(message)
         }
 
         // Validate command parameters
@@ -187,20 +179,26 @@ private extension ResticXPCService {
 
         // Check resource availability
         guard try await checkResourceAvailability(for: command) else {
-            throw ResticXPCError.resourceUnavailable("Required resources are not available")
+            let message = "Required resources are not available"
+            throw ResticXPCError.resourceUnavailable(message)
         }
     }
 
     private func validateCommandParameters(_ command: XPCCommandConfig) throws {
         // Validate required parameters
         guard !command.command.isEmpty else {
-            throw ResticXPCError.invalidArguments("Command cannot be empty")
+            let message = "Command cannot be empty"
+            throw ResticXPCError.invalidArguments(message)
         }
 
         // Check for unsafe arguments
         let unsafeArguments = ["--no-cache", "--no-lock", "--force"]
-        guard !command.arguments.contains(where: unsafeArguments.contains) else {
-            throw ResticXPCError.unsafeArguments("Command contains unsafe arguments")
+        let hasUnsafeArgs = command.arguments.contains {
+            unsafeArguments.contains($0)
+        }
+        guard !hasUnsafeArgs else {
+            let message = "Command contains unsafe arguments"
+            throw ResticXPCError.unsafeArguments(message)
         }
 
         // Validate environment variables
@@ -211,7 +209,8 @@ private extension ResticXPCService {
         let requiredVariables = ["RESTIC_PASSWORD", "RESTIC_REPOSITORY"]
         for variable in requiredVariables {
             guard environment[variable] != nil else {
-                throw ResticXPCError.missingEnvironment("Missing required environment variable: \(variable)")
+                let message = "Missing required environment variable: \(variable)"
+                throw ResticXPCError.missingEnvironment(message)
             }
         }
     }
@@ -285,7 +284,9 @@ private extension ResticXPCService {
         } catch {
             // Handle execution error
             progressTracker.failOperation(operationId, error: error)
-            throw ResticXPCError.executionFailed("Command execution failed: \(error.localizedDescription)")
+            let errorDesc = error.localizedDescription
+            let message = "Command execution failed: \(errorDesc)"
+            throw ResticXPCError.executionFailed(message)
         }
     }
 }

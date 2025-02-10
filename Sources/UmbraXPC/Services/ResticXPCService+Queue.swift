@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 import Foundation
@@ -31,25 +31,27 @@ extension ResticXPCService {
             await messageQueue.completeMessage(message.id)
 
             // Notify success
+            let successInfo: [String: Any] = [
+                "messageId": message.id,
+                "result": result
+            ]
             NotificationCenter.default.post(
                 name: .xpcCommandCompleted,
                 object: nil,
-                userInfo: [
-                    "messageId": message.id,
-                    "result": result
-                ]
+                userInfo: successInfo
             )
         } catch {
             await messageQueue.completeMessage(message.id, error: error)
 
             // Notify failure
+            let failureInfo: [String: Any] = [
+                "messageId": message.id,
+                "error": error
+            ]
             NotificationCenter.default.post(
                 name: .xpcCommandFailed,
                 object: nil,
-                userInfo: [
-                    "messageId": message.id,
-                    "error": error
-                ]
+                userInfo: failureInfo
             )
         }
     }
@@ -61,7 +63,8 @@ extension ResticXPCService {
         queueProcessor = Task {
             while !Task.isCancelled {
                 await processNextMessage()
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
+                // 100ms delay between processing messages
+                try? await Task.sleep(nanoseconds: 100_000_000)
             }
         }
     }

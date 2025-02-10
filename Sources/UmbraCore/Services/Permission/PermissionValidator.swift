@@ -11,43 +11,30 @@ import Foundation
 /// Validator for permission operations
 public struct PermissionValidator {
     // MARK: - Types
-    
     /// Validation result
     public struct ValidationResult {
         /// Whether validation passed
         public let passed: Bool
-        
         /// Validation issues if any
         public let issues: [ValidationIssue]
-        
         /// Initialize with values
-        public init(
-            passed: Bool,
-            issues: [ValidationIssue] = []
-        ) {
+        public init(passed: Bool, issues: [ValidationIssue] = []) {
             self.passed = passed
             self.issues = issues
         }
     }
-    
     /// Validation issue
     public struct ValidationIssue {
         /// Issue type
         public let type: IssueType
-        
         /// Issue description
         public let description: String
-        
         /// Initialize with values
-        public init(
-            type: IssueType,
-            description: String
-        ) {
+        public init(type: IssueType, description: String) {
             self.type = type
             self.description = description
         }
     }
-    
     /// Issue type
     public enum IssueType {
         /// Permission missing
@@ -63,22 +50,24 @@ public struct PermissionValidator {
         /// Custom issue
         case custom(String)
     }
-    
     // MARK: - Properties
-    
     /// Logger for tracking operations
     private let logger: LoggerProtocol
-    
+    /// Resource availability checker
+    private let resourceChecker: ResourceAvailabilityChecking
     // MARK: - Initialization
-    
     /// Initialize with dependencies
-    /// - Parameter logger: Logger for tracking operations
-    public init(logger: LoggerProtocol) {
+    /// - Parameters:
+    ///   - logger: Logger for tracking operations
+    ///   - resourceChecker: Resource availability checker
+    public init(
+        logger: LoggerProtocol,
+        resourceChecker: ResourceAvailabilityChecking = ResourceAvailabilityChecker()
+    ) {
         self.logger = logger
+        self.resourceChecker = resourceChecker
     }
-    
     // MARK: - Public Methods
-    
     /// Validate permission
     /// - Parameters:
     ///   - type: Permission type
@@ -92,60 +81,43 @@ public struct PermissionValidator {
         manager: PermissionManager
     ) async throws -> ValidationResult {
         var issues: [ValidationIssue] = []
-        
         // Check permission exists
         guard let currentLevel = try await manager.checkPermission(type) else {
-            issues.append(
-                ValidationIssue(
-                    type: .permissionMissing,
-                    description: "Permission not found: \(type)"
-                )
+            let issue = ValidationIssue(
+                type: .permissionMissing,
+                description: "Permission not found: \(type)"
             )
+            issues.append(issue)
             return ValidationResult(passed: false, issues: issues)
         }
-        
         // Validate access level
         if !isAccessLevelValid(currentLevel, required: accessLevel) {
-            issues.append(
-                ValidationIssue(
-                    type: .invalidAccessLevel,
-                    description: "Invalid access level: \(currentLevel)"
-                )
+            let issue = ValidationIssue(
+                type: .invalidAccessLevel,
+                description: "Invalid access level: \(currentLevel)"
             )
+            issues.append(issue)
         }
-        
         // Validate resource availability
-        if !await isResourceAvailable(for: type) {
-            issues.append(
-                ValidationIssue(
-                    type: .resourceUnavailable,
-                    description: "Resource unavailable: \(type)"
-                )
+        if !await resourceChecker.isResourceAvailable(type) {
+            let issue = ValidationIssue(
+                type: .resourceUnavailable,
+                description: "Resource unavailable: \(type)"
             )
+            issues.append(issue)
         }
-        
         // Log validation result
-        logger.debug(
-            """
+        let logMessage = """
             Permission validation:
             Type: \(type)
             Required: \(accessLevel)
             Current: \(currentLevel)
             Issues: \(issues.count)
-            """,
-            file: #file,
-            function: #function,
-            line: #line
-        )
-        
-        return ValidationResult(
-            passed: issues.isEmpty,
-            issues: issues
-        )
+            """
+        logger.debug(logMessage, file: #file, function: #function, line: #line)
+        return ValidationResult(passed: issues.isEmpty, issues: issues)
     }
-    
     // MARK: - Private Methods
-    
     /// Check if access level is valid
     private func isAccessLevelValid(
         _ current: PermissionManager.AccessLevel,
@@ -159,38 +131,30 @@ public struct PermissionValidator {
         case (.readOnly, .readOnly):
             return true
         case (.custom, _), (_, .custom):
-            // Custom access levels require specific handling
-            return false
+            return false // Custom access levels require specific handling
         default:
             return false
         }
     }
-    
+}
+
+/// Protocol for checking resource availability
+public protocol ResourceAvailabilityChecking {
     /// Check if resource is available
-    private func isResourceAvailable(
-        for type: PermissionManager.PermissionType
-    ) async -> Bool {
+    func isResourceAvailable(_ type: PermissionManager.PermissionType) async -> Bool
+}
+
+/// Default implementation of resource availability checking
+public struct ResourceAvailabilityChecker: ResourceAvailabilityChecking {
+    public init() {}
+    public func isResourceAvailable(_ type: PermissionManager.PermissionType) async -> Bool {
         switch type {
         case .fileSystem:
             return FileManager.default.isUbiquitousItemAvailable
-        case .keychain:
-            return true // Keychain is always available
-        case .network:
-            return true // Network availability should be checked
-        case .camera:
-            return true // Camera availability should be checked
-        case .microphone:
-            return true // Microphone availability should be checked
-        case .location:
-            return true // Location services availability should be checked
-        case .notifications:
-            return true // Notification availability should be checked
-        case .calendar:
-            return true // Calendar availability should be checked
-        case .contacts:
-            return true // Contacts availability should be checked
-        case .photos:
-            return true // Photos availability should be checked
+        case .keychain, .network, .camera, .microphone,
+             .location, .notifications, .calendar,
+             .contacts, .photos:
+            return true // These should be implemented with actual availability checks
         case .custom:
             return false // Custom types require specific handling
         }

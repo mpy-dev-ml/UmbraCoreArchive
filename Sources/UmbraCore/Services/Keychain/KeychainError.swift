@@ -30,41 +30,41 @@ public enum KeychainError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .addFailed(let account, let service, let status):
+        case let .addFailed(account, service, status):
             return """
                 Failed to add keychain item:
                 Account: \(account)
                 Service: \(service)
                 Status: \(status) (\(securityError(for: status)))
                 """
-        case .updateFailed(let account, let service, let status):
+        case let .updateFailed(account, service, status):
             return """
                 Failed to update keychain item:
                 Account: \(account)
                 Service: \(service)
                 Status: \(status) (\(securityError(for: status)))
                 """
-        case .deleteFailed(let account, let service, let status):
+        case let .deleteFailed(account, service, status):
             return """
                 Failed to delete keychain item:
                 Account: \(account)
                 Service: \(service)
                 Status: \(status) (\(securityError(for: status)))
                 """
-        case .getFailed(let account, let service, let status):
+        case let .getFailed(account, service, status):
             return """
                 Failed to get keychain item:
                 Account: \(account)
                 Service: \(service)
                 Status: \(status) (\(securityError(for: status)))
                 """
-        case .invalidData(let reason):
+        case let .invalidData(reason):
             return "Invalid keychain data: \(reason)"
-        case .invalidAccessGroup(let group):
+        case let .invalidAccessGroup(group):
             return "Invalid keychain access group: \(group)"
-        case .invalidConfiguration(let reason):
+        case let .invalidConfiguration(reason):
             return "Invalid keychain configuration: \(reason)"
-        case .operationFailed(let reason):
+        case let .operationFailed(reason):
             return "Keychain operation failed: \(reason)"
         }
     }
@@ -115,29 +115,18 @@ public enum KeychainError: LocalizedError {
     /// - Parameter status: Security framework status code
     /// - Returns: Error description
     private func securityError(for status: OSStatus) -> String {
-        switch status {
-        case errSecSuccess:
-            return "No error"
-        case errSecUnimplemented:
-            return "Function not implemented"
-        case errSecParam:
-            return "Invalid parameters"
-        case errSecAllocate:
-            return "Failed to allocate memory"
-        case errSecNotAvailable:
-            return "No keychain is available"
-        case errSecDuplicateItem:
-            return "Item already exists"
-        case errSecItemNotFound:
-            return "Item not found"
-        case errSecInteractionNotAllowed:
-            return "Interaction not allowed"
-        case errSecDecode:
-            return "Unable to decode data"
-        case errSecAuthFailed:
-            return "Authentication failed"
-        default:
-            return "Unknown error (\(status))"
-        }
+        let errorDescriptions: [OSStatus: String] = [
+            errSecSuccess: "No error",
+            errSecUnimplemented: "Function not implemented",
+            errSecParam: "Invalid parameters",
+            errSecAllocate: "Failed to allocate memory",
+            errSecNotAvailable: "No keychain is available",
+            errSecDuplicateItem: "Item already exists",
+            errSecItemNotFound: "Item not found",
+            errSecInteractionNotAllowed: "Interaction not allowed",
+            errSecDecode: "Unable to decode data",
+            errSecAuthFailed: "Authentication failed"
+        ]
+        return errorDescriptions[status] ?? "Unknown error (\(status))"
     }
 }

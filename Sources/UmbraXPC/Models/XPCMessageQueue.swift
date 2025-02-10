@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 import Foundation
@@ -81,7 +81,8 @@ public actor XPCMessageQueue {
     public func enqueue(_ command: XPCCommandConfig) -> UUID {
         let message = XPCQueuedMessage(command: command)
         messages.append(message)
-        logger.debug("Enqueued message \(message.id)", privacy: .public)
+        let logMessage = "Enqueued message \(message.id)"
+        logger.debug(logMessage, privacy: .public)
         return message.id
     }
 
@@ -95,20 +96,16 @@ public actor XPCMessageQueue {
         // Check if message is in progress
         if case .inProgress = messages[index].status {
             let msgId = messages[index].id
-            logger.warning(
-                "Message \(msgId) is already in progress",
-                privacy: .public
-            )
+            let message = "Message \(msgId) is already in progress"
+            logger.warning(message, privacy: .public)
             return nil
         }
 
         // Check if message is completed
         if case .completed = messages[index].status {
             let msgId = messages[index].id
-            logger.warning(
-                "Message \(msgId) is already completed",
-                privacy: .public
-            )
+            let message = "Message \(msgId) is already completed"
+            logger.warning(message, privacy: .public)
             return nil
         }
 
@@ -123,7 +120,8 @@ public actor XPCMessageQueue {
     ///   - error: Optional error if the message failed
     public func completeMessage(_ id: UUID, error: Error? = nil) {
         guard let index = messages.firstIndex(where: { $0.id == id }) else {
-            logger.error("Message \(id) not found for completion", privacy: .public)
+            let message = "Message \(id) not found for completion"
+            logger.error(message, privacy: .public)
             return
         }
 
@@ -131,7 +129,8 @@ public actor XPCMessageQueue {
             handleMessageFailure(at: index, error: error)
         } else {
             messages[index].status = .completed
-            logger.debug("Message \(id) completed successfully", privacy: .public)
+            let message = "Message \(id) completed successfully"
+            logger.debug(message, privacy: .public)
         }
     }
 
@@ -140,19 +139,23 @@ public actor XPCMessageQueue {
     private func handleMessageFailure(at index: Int, error: Error) {
         messages[index].retryCount += 1
         let msgId = messages[index].id
+        let retryCount = messages[index].retryCount
 
-        if messages[index].retryCount >= maxRetries {
+        if retryCount >= maxRetries {
             messages[index].status = .failed(error)
-            logger.error(
-                "Message \(msgId) failed after \(maxRetries) retries: \(error.localizedDescription)",
-                privacy: .public
-            )
+            let message = """
+                Message \(msgId) failed after \
+                \(maxRetries) retries: \
+                \(error.localizedDescription)
+                """
+            logger.error(message, privacy: .public)
         } else {
             messages[index].status = .pending
-            logger.warning(
-                "Message \(msgId) failed, scheduling retry \(messages[index].retryCount)/\(maxRetries)",
-                privacy: .public
-            )
+            let message = """
+                Message \(msgId) failed, scheduling \
+                retry \(retryCount)/\(maxRetries)
+                """
+            logger.warning(message, privacy: .public)
         }
     }
 

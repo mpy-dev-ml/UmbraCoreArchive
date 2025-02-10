@@ -99,30 +99,8 @@ public final class PermissionManager: BaseSandboxedService {
         return try await performanceMonitor.trackDuration(
             "permission.request"
         ) {
-            switch type {
-            case .fileSystem:
-                return try await requestFileSystemPermission(accessLevel)
-            case .keychain:
-                return try await requestKeychainPermission(accessLevel)
-            case .network:
-                return try await requestNetworkPermission(accessLevel)
-            case .camera:
-                return try await requestCameraPermission(accessLevel)
-            case .microphone:
-                return try await requestMicrophonePermission(accessLevel)
-            case .location:
-                return try await requestLocationPermission(accessLevel)
-            case .notifications:
-                return try await requestNotificationsPermission(accessLevel)
-            case .calendar:
-                return try await requestCalendarPermission(accessLevel)
-            case .contacts:
-                return try await requestContactsPermission(accessLevel)
-            case .photos:
-                return try await requestPhotosPermission(accessLevel)
-            case .custom(let permission):
-                throw PermissionError.unsupportedPermission(permission)
-            }
+            let handler = try getPermissionHandler(for: type)
+            return try await handler(accessLevel)
         }
     }
 
@@ -160,6 +138,37 @@ public final class PermissionManager: BaseSandboxedService {
     }
 
     // MARK: - Private Methods
+
+    /// Type alias for permission request handler
+    private typealias PermissionRequestHandler = (AccessLevel) async throws -> Bool
+
+    /// Get permission request handler for permission type
+    /// - Parameter type: Permission type
+    /// - Returns: Handler function for the permission type
+    /// - Throws: PermissionError if permission type is unsupported
+    private func getPermissionHandler(
+        for type: PermissionType
+    ) throws -> PermissionRequestHandler {
+        let handlers: [PermissionType: PermissionRequestHandler] = [
+            .fileSystem: requestFileSystemPermission,
+            .keychain: requestKeychainPermission,
+            .network: requestNetworkPermission,
+            .camera: requestCameraPermission,
+            .microphone: requestMicrophonePermission,
+            .location: requestLocationPermission,
+            .notifications: requestNotificationsPermission,
+            .calendar: requestCalendarPermission,
+            .contacts: requestContactsPermission,
+            .photos: requestPhotosPermission
+        ]
+        if case .custom(let permission) = type {
+            throw PermissionError.unsupportedPermission(permission)
+        }
+        guard let handler = handlers[type] else {
+            throw PermissionError.unsupportedPermission(String(describing: type))
+        }
+        return handler
+    }
 
     /// Request file system permission
     private func requestFileSystemPermission(

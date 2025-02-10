@@ -113,9 +113,11 @@ public actor XPCConnectionManager {
 
             // Validate current state
             guard state == .disconnected else {
-                throw XPCError.invalidState(
-                    "Cannot connect while in state: \(state)"
-                )
+                let message = """
+                    Cannot connect while in state: \
+                    \(state)
+                    """
+                throw XPCError.invalidState(message)
             }
 
             // Update state
@@ -139,14 +141,11 @@ public actor XPCConnectionManager {
             self.connection = connection
             state = .connected
 
-            logger.info(
-                "Connected to XPC service",
-                config: LogConfig(
-                    metadata: [
-                        "service": configuration.serviceName
-                    ]
-                )
-            )
+            // Log success
+            let metadata = ["service": configuration.serviceName]
+            let config = LogConfig(metadata: metadata)
+            let message = "Connected to XPC service"
+            logger.info(message, config: config)
 
             // Start health checks
             self.startHealthChecks()
@@ -175,14 +174,16 @@ public actor XPCConnectionManager {
 
     /// Handle connection interruption
     public func handleInterruption() {
-        logger.warning("XPC connection interrupted", privacy: .public)
+        let message = "XPC connection interrupted"
+        logger.warning(message, privacy: .public)
         updateState(.interrupted(Date()))
         startRecovery()
     }
 
     /// Handle connection invalidation
     public func handleInvalidation() {
-        logger.error("XPC connection invalidated", privacy: .public)
+        let message = "XPC connection invalidated"
+        logger.error(message, privacy: .public)
         updateState(.invalidated(Date()))
         startRecovery()
     }
@@ -190,8 +191,9 @@ public actor XPCConnectionManager {
     // MARK: - Private Methods
 
     private func configureConnection(_ connection: NSXPCConnection) {
-        connection.remoteObjectInterface = NSXPCInterface(with: configuration.interfaceProtocol)
-        connection.exportedInterface = NSXPCInterface(with: configuration.interfaceProtocol)
+        let interface = configuration.interfaceProtocol
+        connection.remoteObjectInterface = NSXPCInterface(with: interface)
+        connection.exportedInterface = NSXPCInterface(with: interface)
         connection.auditSessionIdentifier = au_session_self()
 
         connection.interruptionHandler = { [weak self] in
@@ -204,7 +206,9 @@ public actor XPCConnectionManager {
     }
 
     private func createConnection() async throws -> NSXPCConnection {
-        let connection = NSXPCConnection(serviceName: configuration.serviceName)
+        let connection = NSXPCConnection(
+            serviceName: configuration.serviceName
+        )
 
         // Configure interfaces
         configureConnection(connection)
@@ -220,7 +224,11 @@ public actor XPCConnectionManager {
 
     private func startRecovery() {
         guard state.canRecover else {
-            logger.error("Connection cannot be recovered in current state: \(state)", privacy: .public)
+            let message = """
+                Connection cannot be recovered in current state: \
+                \(state)
+                """
+            logger.error(message, privacy: .public)
             return
         }
 
@@ -230,19 +238,32 @@ public actor XPCConnectionManager {
             let startTime = Date()
 
             while !Task.isCancelled {
-                guard Date().timeIntervalSince(startTime) < XPCConnectionState.recoveryTimeout else {
+                let timeElapsed = Date().timeIntervalSince(startTime)
+                guard timeElapsed < XPCConnectionState.recoveryTimeout else {
                     updateState(.failed(ResticXPCError.recoveryTimeout))
                     return
                 }
 
-                updateState(.recovering(attempt: attempt, since: startTime))
+                let recoveryState = RecoveryState(
+                    attempt: attempt,
+                    since: startTime
+                )
+                updateState(.recovering(recoveryState))
 
                 do {
                     _ = try await establishConnection()
-                    logger.info("Connection recovered after \(attempt) attempts", privacy: .public)
+                    let message = """
+                        Connection recovered after \
+                        \(attempt) attempts
+                        """
+                    logger.info(message, privacy: .public)
                     return
                 } catch {
-                    logger.error("Recovery attempt \(attempt) failed: \(error.localizedDescription)", privacy: .public)
+                    let message = """
+                        Recovery attempt \(attempt) failed: \
+                        \(error.localizedDescription)
+                        """
+                    logger.error(message, privacy: .public)
                     attempt += 1
 
                     if attempt > XPCConnectionState.maxRecoveryAttempts {
@@ -250,7 +271,9 @@ public actor XPCConnectionManager {
                         return
                     }
 
-                    try? await Task.sleep(nanoseconds: UInt64(XPCConnectionState.recoveryDelay * 1_000_000_000))
+                    let delay = XPCConnectionState.recoveryDelay
+                    let nanoseconds = delay * 1_000_000_000
+                    try? await Task.sleep(nanoseconds: UInt64(nanoseconds))
                 }
             }
         }
@@ -258,7 +281,11 @@ public actor XPCConnectionManager {
 
     private func startHealthCheck() {
         healthCheckTimer?.invalidate()
-        healthCheckTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+        let interval = 30.0
+        healthCheckTimer = Timer.scheduledTimer(
+            withTimeInterval: interval,
+            repeats: true
+        ) { [weak self] _ in
             Task {
                 await self?.performHealthCheck()
             }
@@ -267,7 +294,11 @@ public actor XPCConnectionManager {
 
     private func startHealthChecks() {
         healthCheckTimer?.invalidate()
-        healthCheckTimer = Timer.scheduledTimer(withTimeInterval: configuration.healthCheckInterval, repeats: true) { [weak self] _ in
+        let interval = configuration.healthCheckInterval
+        healthCheckTimer = Timer.scheduledTimer(
+            withTimeInterval: interval,
+            repeats: true
+        ) { [weak self] _ in
             Task {
                 await self?.performHealthCheck()
             }
@@ -275,12 +306,17 @@ public actor XPCConnectionManager {
     }
 
     private func performHealthCheck() async {
-        guard case .active = state, let connection = connection else { return }
+        guard case .active = state, let connection = connection else {
+            return
+        }
 
         do {
-            let remote = connection.remoteObjectProxyWithErrorHandler { [weak self] error in
+            let errorHandler = { [weak self] (error: Error) in
                 Task { await self?.handleHealthCheckError(error) }
-            } as? ResticXPCProtocol
+            }
+            let remote = connection.remoteObjectProxyWithErrorHandler(
+                errorHandler
+            ) as? ResticXPCProtocol
 
             guard let remote = remote else {
                 throw ResticXPCError.invalidRemoteObject
@@ -288,17 +324,26 @@ public actor XPCConnectionManager {
 
             let isHealthy = try await remote.ping()
             if !isHealthy {
-                logger.warning("Health check failed", privacy: .public)
+                let message = "Health check failed"
+                logger.warning(message, privacy: .public)
                 handleInterruption()
             }
         } catch {
-            logger.error("Health check error: \(error.localizedDescription)", privacy: .public)
+            let message = """
+                Health check error: \
+                \(error.localizedDescription)
+                """
+            logger.error(message, privacy: .public)
             handleHealthCheckError(error)
         }
     }
 
     private func handleHealthCheckError(_ error: Error) {
-        logger.error("Health check error: \(error.localizedDescription)", privacy: .public)
+        let message = """
+            Health check error: \
+            \(error.localizedDescription)
+            """
+        logger.error(message, privacy: .public)
         handleInterruption()
     }
 
@@ -307,19 +352,23 @@ public actor XPCConnectionManager {
         state = newState
         delegate?.connectionStateDidChange(from: oldState, to: newState)
 
+        let userInfo: [String: Any] = [
+            "oldState": oldState,
+            "newState": newState
+        ]
         NotificationCenter.default.post(
             name: .xpcConnectionStateChanged,
             object: nil,
-            userInfo: [
-                "oldState": oldState,
-                "newState": newState
-            ]
+            userInfo: userInfo
         )
     }
 
-    private func waitForConnection(_ connection: NSXPCConnection) async throws {
+    private func waitForConnection(
+        _ connection: NSXPCConnection
+    ) async throws {
         // Wait for connection
-        let expectation = XCTestExpectation(description: "Wait for connection")
+        let description = "Wait for connection"
+        let expectation = XCTestExpectation(description: description)
         connection.remoteObjectProxyWithErrorHandler { _ in
             expectation.fulfill()
         }

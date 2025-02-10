@@ -50,9 +50,15 @@ extension ResticXPCService {
         var description: String {
             switch self {
             case let .backup(source, destination):
-                return "Backup from \(source.path) to \(destination.path)"
+                return """
+                    Backup from \(source.path) to \
+                    \(destination.path)
+                    """
             case let .restore(source, destination):
-                return "Restore from \(source.path) to \(destination.path)"
+                return """
+                    Restore from \(source.path) to \
+                    \(destination.path)
+                    """
             case let .initialize(url):
                 return "Initialize repository at \(url.path)"
             case .list:
@@ -84,12 +90,11 @@ extension ResticXPCService {
         queue.sync {
             pendingOperations.append(operation)
         }
-        logger.info(
-            "Started operation: \(type.description)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+
+        let message = "Started operation: \(type.description)"
+        let metadata = ["operation_id": operation.id.uuidString]
+        let config = LogConfig(metadata: metadata)
+        logger.info(message, config: config)
         return operation.id
     }
 
@@ -98,22 +103,31 @@ extension ResticXPCService {
     ///   - id: Operation ID
     ///   - status: New status
     ///   - error: Optional error if operation failed
-    func updateOperation(_ id: UUID, status: OperationStatus, error: Error? = nil) {
+    func updateOperation(
+        _ id: UUID,
+        status: OperationStatus,
+        error: Error? = nil
+    ) {
         queue.sync {
-            if let index = pendingOperations.firstIndex(where: { operation in operation.id == id }) {
-                pendingOperations[index].status = status
-                pendingOperations[index].error = error
+            guard let index = pendingOperations.firstIndex(
+                where: { $0.id == id }
+            ) else { return }
 
-                logger.info(
-                    "Updated operation \(id): \(status)",
-                    file: #file,
-                    function: #function,
-                    line: #line
-                )
+            pendingOperations[index].status = status
+            pendingOperations[index].error = error
 
-                if status == .completed || status == .failed || status == .cancelled {
-                    cleanupOperation(id)
-                }
+            let metadata: [String: String] = [
+                "operation_id": id.uuidString,
+                "status": String(describing: status)
+            ]
+            let config = LogConfig(metadata: metadata)
+            let message = "Updated operation status"
+            logger.info(message, config: config)
+
+            if case .completed = status,
+               case .failed = status,
+               case .cancelled = status {
+                cleanupOperation(id)
             }
         }
     }
@@ -124,9 +138,19 @@ extension ResticXPCService {
     ///   - progress: Progress value between 0 and 1
     func updateOperationProgress(_ id: UUID, progress: Double) {
         queue.sync {
-            if let index = pendingOperations.firstIndex(where: { operation in operation.id == id }) {
-                pendingOperations[index].progress = progress
-            }
+            guard let index = pendingOperations.firstIndex(
+                where: { $0.id == id }
+            ) else { return }
+
+            pendingOperations[index].progress = progress
+
+            let metadata: [String: String] = [
+                "operation_id": id.uuidString,
+                "progress": String(format: "%.2f", progress)
+            ]
+            let config = LogConfig(metadata: metadata)
+            let message = "Updated operation progress"
+            logger.debug(message, config: config)
         }
     }
 
@@ -134,30 +158,43 @@ extension ResticXPCService {
     /// - Parameter id: Operation ID
     func cancelOperation(_ id: UUID) {
         queue.sync {
-            if let index = pendingOperations.firstIndex(where: { operation in operation.id == id }) {
-                pendingOperations[index].status = .cancelled
-                cleanupOperation(id)
-            }
+            guard let index = pendingOperations.firstIndex(
+                where: { $0.id == id }
+            ) else { return }
+
+            pendingOperations[index].status = .cancelled
+
+            let metadata = ["operation_id": id.uuidString]
+            let config = LogConfig(metadata: metadata)
+            let message = "Operation cancelled"
+            logger.info(message, config: config)
+
+            cleanupOperation(id)
         }
     }
 
     /// Get the status of an operation
     /// - Parameter id: Operation ID
     /// - Returns: Current operation status and progress
-    func getOperationStatus(_ id: UUID) -> (status: OperationStatus, progress: Double)? {
+    func getOperationStatus(
+        _ id: UUID
+    ) -> (status: OperationStatus, progress: Double)? {
         queue.sync {
-            if let operation = pendingOperations.first(where: { operation in operation.id == id }) {
-                return (operation.status, operation.progress)
-            }
-            return nil
+            guard let operation = pendingOperations.first(
+                where: { $0.id == id }
+            ) else { return nil }
+
+            return (operation.status, operation.progress)
         }
     }
 
-    /// Clean up resources for an operation
-    /// - Parameter id: Operation ID
+    /// Clean up completed or failed operations
+    /// - Parameter id: Operation ID to clean up
     private func cleanupOperation(_ id: UUID) {
-        queue.sync {
-            pendingOperations.removeAll { operation in operation.id == id }
-        }
+        pendingOperations.removeAll { $0.id == id }
+        let metadata = ["operation_id": id.uuidString]
+        let config = LogConfig(metadata: metadata)
+        let message = "Operation cleaned up"
+        logger.debug(message, config: config)
     }
 }

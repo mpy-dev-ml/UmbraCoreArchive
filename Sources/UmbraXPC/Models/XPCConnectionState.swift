@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 import Foundation
@@ -64,5 +64,8 @@ public protocol XPCConnectionStateDelegate: AnyObject {
     /// - Parameters:
     ///   - oldState: Previous connection state
     ///   - newState: New connection state
-    func connectionStateDidChange(from oldState: XPCConnectionState, to newState: XPCConnectionState)
+    func connectionStateDidChange(
+        from oldState: XPCConnectionState,
+        to newState: XPCConnectionState
+    )
 }

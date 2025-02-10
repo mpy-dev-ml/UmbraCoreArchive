@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 import Foundation
@@ -27,9 +27,10 @@ extension ResticXPCService {
     func startAccessingResources(_ bookmarks: [String: NSData]) throws {
         for (path, bookmark) in bookmarks {
             var isStale = false
+            let options = URL.BookmarkResolutionOptions.withSecurityScope
             guard let url = try? URL(
                 resolvingBookmarkData: bookmark as Data,
-                options: .withSecurityScope,
+                options: options,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             ) else {
@@ -51,18 +52,20 @@ extension ResticXPCService {
     /// Stop accessing all active security-scoped resources and clean up bookmarks
     func stopAccessingResources() {
         for (path, bookmark) in activeBookmarks {
+            let options = URL.BookmarkResolutionOptions.withSecurityScope
             if let url = try? URL(
                 resolvingBookmarkData: bookmark as Data,
-                options: .withSecurityScope,
+                options: options,
                 relativeTo: nil,
                 bookmarkDataIsStale: nil
             ) {
                 url.stopAccessingSecurityScopedResource()
             }
 
+            let metadata = ["path": .string(path)]
             logger.debug(
                 "Stopped accessing resource",
-                metadata: ["path": .string(path)],
+                metadata: metadata,
                 file: #file,
                 function: #function,
                 line: #line
@@ -78,9 +81,7 @@ extension ResticXPCService {
         stopAccessingResources()
 
         // Cancel any pending operations
-        pendingOperations.forEach { operation in
-            operation.cancel()
-        }
+        pendingOperations.forEach { $0.cancel() }
         pendingOperations.removeAll()
 
         // Invalidate connection
@@ -101,9 +102,10 @@ extension ResticXPCService {
         // Check active bookmarks
         for (path, bookmark) in activeBookmarks {
             var isStale = false
+            let options = URL.BookmarkResolutionOptions.withSecurityScope
             guard let url = try? URL(
                 resolvingBookmarkData: bookmark as Data,
-                options: .withSecurityScope,
+                options: options,
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             ) else {
@@ -127,7 +129,8 @@ extension ResticXPCService {
         }
 
         // Check pending operations
-        for operation in pendingOperations where operation.isCancelled {
+        let cancelledOps = pendingOperations.filter { $0.isCancelled }
+        for operation in cancelledOps {
             pendingOperations.removeAll { $0 === operation }
         }
     }

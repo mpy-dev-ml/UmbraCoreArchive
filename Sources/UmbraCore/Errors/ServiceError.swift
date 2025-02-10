@@ -43,373 +43,486 @@ import Foundation
 ///     }
 /// }
 /// ```
-@objc public enum ServiceError: Int, Error {
-    // MARK: - Lifecycle Errors
 
-    /// Indicates that a service has not been initialised.
-    ///
-    /// This error occurs when:
-    /// - Service methods are called before initialisation
-    /// - Initialisation was skipped
-    /// - Previous initialisation failed
-    ///
-    /// - Parameter service: Name of the service that isn't initialised
-    case notInitialized = 1
+// MARK: - Service Error
 
-    /// Indicates that a service is already initialised.
-    ///
-    /// This error occurs when:
-    /// - Attempting to reinitialise a service
-    /// - Duplicate initialisation calls
-    /// - Race condition in initialisation
-    ///
-    /// - Parameter service: Name of the service that's already initialised
-    case alreadyInitialized = 2
-
-    /// Indicates that service initialisation failed.
-    ///
-    /// This error occurs when:
-    /// - Required resources are unavailable
-    /// - Configuration is invalid
-    /// - System constraints prevent initialisation
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service that failed to initialise
-    ///   - reason: Detailed explanation of the failure
-    case initializationFailed = 3
-
-    // MARK: - State Errors
-
-    /// Indicates that a service is in an invalid state.
-    ///
-    /// This error occurs when:
-    /// - Operation requires different state
-    /// - State machine violation
-    /// - Concurrent state modification
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - currentState: The current state of the service
-    ///   - expectedState: The state required for the operation
-    case invalidState = 4
-
-    /// Indicates that a state transition failed.
-    ///
-    /// This error occurs when:
-    /// - Invalid transition requested
-    /// - Transition preconditions not met
-    /// - System prevents transition
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - from: The starting state
-    ///   - to: The target state that couldn't be reached
-    case stateTransitionFailed = 5
-
-    /// Indicates that acquiring a state lock timed out.
-    ///
-    /// This error occurs when:
-    /// - Lock contention
-    /// - Deadlock prevention
-    /// - System overload
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - desiredState: The state that couldn't be locked
-    case stateLockTimeout = 6
-
-    // MARK: - Dependency Errors
-
-    /// Indicates that a required dependency is unavailable.
-    ///
-    /// This error occurs when:
-    /// - Dependency not found
-    /// - Dependency not running
-    /// - Dependency crashed
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service requiring the dependency
-    ///   - dependency: Name of the unavailable dependency
-    case dependencyUnavailable = 7
-
-    /// Indicates that a dependency is misconfigured.
-    ///
-    /// This error occurs when:
-    /// - Invalid configuration
-    /// - Version mismatch
-    /// - Incompatible settings
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - dependency: Name of the misconfigured dependency
-    ///   - reason: Explanation of the misconfiguration
-    case dependencyMisconfigured = 8
-
-    /// Indicates that waiting for a dependency timed out.
-    ///
-    /// This error occurs when:
-    /// - Dependency is slow to respond
-    /// - Dependency is deadlocked
-    /// - System is overloaded
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - dependency: Name of the dependency that timed out
-    case dependencyTimeout = 9
-
-    // MARK: - Operation Errors
-
-    /// Indicates that a service operation failed.
-    ///
-    /// This error occurs when:
-    /// - Operation preconditions not met
-    /// - Runtime error during execution
-    /// - System prevents operation
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - operation: Name of the failed operation
-    ///   - reason: Detailed explanation of the failure
-    case operationFailed = 10
-
-    /// Indicates that a service operation timed out.
-    ///
-    /// This error occurs when:
-    /// - Operation takes too long
-    /// - Resource contention
-    /// - System is overloaded
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - operation: Name of the operation that timed out
-    ///   - timeout: The duration after which the timeout occurred
-    case operationTimeout = 11
-
-    /// Indicates that a service operation was cancelled.
-    ///
-    /// This error occurs when:
-    /// - User cancels operation
-    /// - System cancels operation
-    /// - Dependent operation fails
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - operation: Name of the cancelled operation
-    case operationCancelled = 12
-
-    // MARK: - Resource Errors
-
-    /// Indicates that a required resource is unavailable.
-    ///
-    /// This error occurs when:
-    /// - Resource doesn't exist
-    /// - Resource is locked
-    /// - System prevents access
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - resource: Name of the unavailable resource
-    case resourceUnavailable = 13
-
-    /// Indicates that a resource has been exhausted.
-    ///
-    /// This error occurs when:
-    /// - Resource pool is empty
-    /// - No more capacity
-    /// - System limits reached
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - resource: Name of the exhausted resource
-    case resourceExhausted = 14
-
-    /// Indicates that a resource limit has been exceeded.
-    ///
-    /// This error occurs when:
-    /// - Usage exceeds quota
-    /// - Rate limit reached
-    /// - System capacity exceeded
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - resource: Name of the resource
-    ///   - current: Current usage level
-    ///   - limit: Maximum allowed usage
-    case resourceLimitExceeded = 15
-
-    // MARK: - Retry Errors
-
-    /// Indicates that a retry attempt failed.
-    ///
-    /// This error occurs when:
-    /// - Maximum retry attempts reached
-    /// - Underlying error persists
-    /// - System prevents further retries
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - operation: Name of the operation that failed
-    ///   - attempts: Number of retry attempts made
-    ///   - underlyingError: The underlying error that caused the failure
-    case retryFailed = 16
-
-    /// Indicates that the retry limit has been exceeded.
-    ///
-    /// This error occurs when:
-    /// - Maximum retry attempts reached
-    /// - Underlying error persists
-    /// - System prevents further retries
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - operation: Name of the operation that failed
-    ///   - limit: Maximum allowed retry attempts
-    case retryLimitExceeded = 17
-
-    // MARK: - Security Errors
-
-    /// Indicates that authentication failed.
-    ///
-    /// This error occurs when:
-    /// - Invalid credentials
-    /// - Authentication system failure
-    /// - System prevents authentication
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - reason: Detailed explanation of the failure
-    case authenticationFailed = 18
-
-    /// Indicates that authorization failed.
-    ///
-    /// This error occurs when:
-    /// - Insufficient permissions
-    /// - Authorization system failure
-    /// - System prevents access
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - resource: Name of the resource that couldn't be accessed
-    case authorizationFailed = 19
-
-    /// Indicates that a security violation occurred.
-    ///
-    /// This error occurs when:
-    /// - Security policy violation
-    /// - System compromise
-    /// - Unauthorized access
-    ///
-    /// - Parameters:
-    ///   - service: Name of the service
-    ///   - violation: Description of the security violation
-    case securityViolation = 20
-
-    // MARK: - Error Description
-
-    public var errorDescription: String? {
-        switch self {
-        // Lifecycle Errors
-        case .notInitialized:
-            return "Service is not initialised"
-        case .alreadyInitialized:
-            return "Service is already initialised"
-        case .initializationFailed:
-            return "Failed to initialize service"
-        // State Errors
-        case .invalidState:
-            return "Service is in an invalid state"
-        case .stateTransitionFailed:
-            return "State transition failed"
-        case .stateLockTimeout:
-            return "Timeout waiting for state"
-        // Dependency Errors
-        case .dependencyUnavailable:
-            return "Required dependency is unavailable"
-        case .dependencyMisconfigured:
-            return "Dependency is misconfigured"
-        case .dependencyTimeout:
-            return "Timeout waiting for dependency"
-        // Operation Errors
-        case .operationFailed:
-            return "Operation failed"
-        case .operationTimeout:
-            return "Operation timed out"
-        case .operationCancelled:
-            return "Operation was cancelled"
-        // Resource Errors
-        case .resourceUnavailable:
-            return "Required resource is unavailable"
-        case .resourceExhausted:
-            return "Resource is exhausted"
-        case .resourceLimitExceeded:
-            return "Resource limit exceeded"
-        // Retry Errors
-        case .retryFailed:
-            return "Retry attempt failed"
-        case .retryLimitExceeded:
-            return "Retry limit exceeded"
-        // Security Errors
-        case .authenticationFailed:
-            return "Authentication failed"
-        case .authorizationFailed:
-            return "Authorization failed"
-        case .securityViolation:
-            return "Security violation occurred"
+/// Errors that can occur during service lifecycle and operations
+@objc public enum ServiceError: Int, LocalizedError {
+    // MARK: - Supporting Types
+    
+    /// Service state information
+    public struct ServiceState: CustomStringConvertible {
+        /// Name of the service state
+        public let name: String
+        
+        /// Current state value
+        public let state: String
+        
+        /// Creates a new service state
+        /// - Parameters:
+        ///   - name: Name of the service
+        ///   - state: Current state
+        public init(name: String, state: String) {
+            self.name = name
+            self.state = state
+        }
+        
+        public var description: String {
+            "\(name) in state: \(state)"
         }
     }
-
-    // MARK: - Recovery Suggestion
-
-    /// Provides a suggestion for how to recover from this error
+    
+    /// Resource usage information
+    public struct ResourceUsage: CustomStringConvertible {
+        /// Current resource usage
+        public let current: UInt64
+        
+        /// Resource usage limit
+        public let limit: UInt64
+        
+        /// Unit of measurement
+        public let unit: String
+        
+        /// Creates new resource usage
+        /// - Parameters:
+        ///   - current: Current usage
+        ///   - limit: Usage limit
+        ///   - unit: Measurement unit
+        public init(
+            current: UInt64,
+            limit: UInt64,
+            unit: String
+        ) {
+            self.current = current
+            self.limit = limit
+            self.unit = unit
+        }
+        
+        public var description: String {
+            String(
+                format: "Current: %llu %@, Limit: %llu %@",
+                current, unit, limit, unit
+            )
+        }
+    }
+    
+    // MARK: - Lifecycle Cases
+    
+    /// Service not initialised
+    case notInitialized(String)
+    
+    /// Service already initialised
+    case alreadyInitialized(String)
+    
+    /// Service initialisation failed
+    case initializationFailed(service: String, reason: String)
+    
+    // MARK: - State Cases
+    
+    /// Invalid service state
+    case invalidState(
+        service: String,
+        current: ServiceState,
+        expected: ServiceState
+    )
+    
+    /// State transition failed
+    case stateTransitionFailed(
+        service: String,
+        from: ServiceState,
+        to: ServiceState
+    )
+    
+    /// State lock timeout
+    case stateLockTimeout(service: String, state: ServiceState)
+    
+    // MARK: - Dependency Cases
+    
+    /// Required dependency unavailable
+    case dependencyUnavailable(service: String, dependency: String)
+    
+    /// Dependency misconfigured
+    case dependencyMisconfigured(
+        service: String,
+        dependency: String,
+        reason: String
+    )
+    
+    /// Dependency timeout
+    case dependencyTimeout(service: String, dependency: String)
+    
+    // MARK: - Operation Cases
+    
+    /// Operation failed
+    case operationFailed(
+        service: String,
+        operation: String,
+        reason: String
+    )
+    
+    /// Operation timeout
+    case operationTimeout(
+        service: String,
+        operation: String,
+        duration: TimeInterval
+    )
+    
+    /// Operation cancelled
+    case operationCancelled(service: String, operation: String)
+    
+    // MARK: - Resource Cases
+    
+    /// Resource unavailable
+    case resourceUnavailable(service: String, resource: String)
+    
+    /// Resource exhausted
+    case resourceExhausted(service: String, resource: String)
+    
+    /// Resource limit exceeded
+    case resourceLimitExceeded(
+        service: String,
+        resource: String,
+        usage: ResourceUsage
+    )
+    
+    // MARK: - Retry Cases
+    
+    /// Retry failed
+    case retryFailed(
+        service: String,
+        operation: String,
+        attempts: Int,
+        error: Error
+    )
+    
+    /// Retry limit exceeded
+    case retryLimitExceeded(
+        service: String,
+        operation: String,
+        limit: Int
+    )
+    
+    // MARK: - Security Cases
+    
+    /// Authentication failed
+    case authenticationFailed(service: String, reason: String)
+    
+    /// Authorization failed
+    case authorizationFailed(service: String, resource: String)
+    
+    /// Security violation
+    case securityViolation(service: String, violation: String)
+    
+    // MARK: - LocalizedError
+    
+    public var errorDescription: String? {
+        switch self {
+        case let .notInitialized(service):
+            return "Service not initialised: \(service)"
+            
+        case let .alreadyInitialized(service):
+            return "Service already initialised: \(service)"
+            
+        case let .initializationFailed(service, reason):
+            return formatError(
+                "Failed to initialise service",
+                service: service,
+                details: reason
+            )
+            
+        case let .invalidState(service, current, expected):
+            return formatError(
+                "Invalid service state",
+                service: service,
+                details: "Current: \(current), Expected: \(expected)"
+            )
+            
+        case let .stateTransitionFailed(service, from, to):
+            return formatError(
+                "State transition failed",
+                service: service,
+                details: "From: \(from), To: \(to)"
+            )
+            
+        case let .stateLockTimeout(service, state):
+            return formatError(
+                "State lock timeout",
+                service: service,
+                details: "State: \(state)"
+            )
+            
+        case let .dependencyUnavailable(service, dependency):
+            return formatError(
+                "Dependency unavailable",
+                service: service,
+                details: "Dependency: \(dependency)"
+            )
+            
+        case let .dependencyMisconfigured(service, dependency, reason):
+            return formatError(
+                "Dependency misconfigured",
+                service: service,
+                details: "\(dependency): \(reason)"
+            )
+            
+        case let .dependencyTimeout(service, dependency):
+            return formatError(
+                "Dependency timeout",
+                service: service,
+                details: "Dependency: \(dependency)"
+            )
+            
+        case let .operationFailed(service, operation, reason):
+            return formatError(
+                "Operation failed",
+                service: service,
+                details: "\(operation): \(reason)"
+            )
+            
+        case let .operationTimeout(service, operation, duration):
+            return formatError(
+                "Operation timeout",
+                service: service,
+                details: "\(operation) after \(duration)s"
+            )
+            
+        case let .operationCancelled(service, operation):
+            return formatError(
+                "Operation cancelled",
+                service: service,
+                details: "Operation: \(operation)"
+            )
+            
+        case let .resourceUnavailable(service, resource):
+            return formatError(
+                "Resource unavailable",
+                service: service,
+                details: "Resource: \(resource)"
+            )
+            
+        case let .resourceExhausted(service, resource):
+            return formatError(
+                "Resource exhausted",
+                service: service,
+                details: "Resource: \(resource)"
+            )
+            
+        case let .resourceLimitExceeded(service, resource, usage):
+            return formatError(
+                "Resource limit exceeded",
+                service: service,
+                details: "\(resource): \(usage)"
+            )
+            
+        case let .retryFailed(service, operation, attempts, error):
+            return formatError(
+                "Retry failed",
+                service: service,
+                details: """
+                    Operation: \(operation), \
+                    Attempts: \(attempts), \
+                    Error: \(error)
+                    """
+            )
+            
+        case let .retryLimitExceeded(service, operation, limit):
+            return formatError(
+                "Retry limit exceeded",
+                service: service,
+                details: """
+                    Operation: \(operation), \
+                    Limit: \(limit)
+                    """
+            )
+            
+        case let .authenticationFailed(service, reason):
+            return formatError(
+                "Authentication failed",
+                service: service,
+                details: reason
+            )
+            
+        case let .authorizationFailed(service, resource):
+            return formatError(
+                "Authorisation failed",
+                service: service,
+                details: "Resource: \(resource)"
+            )
+            
+        case let .securityViolation(service, violation):
+            return formatError(
+                "Security violation",
+                service: service,
+                details: violation
+            )
+        }
+    }
+    
     public var recoverySuggestion: String? {
         switch self {
-        // Lifecycle Errors
         case .notInitialized:
-            return "Initialize the service before using it"
+            return "Initialise the service before using it"
+            
         case .alreadyInitialized:
-            return "Ensure service is not already initialized"
+            return "Ensure service is not already initialised"
+            
         case .initializationFailed:
             return "Check the service configuration and try again"
-        // State Errors
+            
         case .invalidState:
             return "Reset service to a valid state"
+            
         case .stateTransitionFailed:
-            return "Check if the state transition is valid and retry"
+            return """
+                Check if the state transition is valid \
+                and retry
+                """
+            
         case .stateLockTimeout:
-            return "Consider increasing the timeout duration or check for deadlocks"
-        // Dependency Errors
+            return """
+                Consider increasing the timeout duration \
+                or check for deadlocks
+                """
+            
         case .dependencyUnavailable:
-            return "Ensure all required dependencies are available and running"
+            return """
+                Ensure all required dependencies are \
+                available and running
+                """
+            
         case .dependencyMisconfigured:
-            return "Check the dependency configuration and correct any issues"
+            return """
+                Check the dependency configuration \
+                and correct any issues
+                """
+            
         case .dependencyTimeout:
-            return "Verify the dependency is responsive and increase timeout if needed"
-        // Operation Errors
+            return """
+                Verify the dependency is responsive \
+                and increase timeout if needed
+                """
+            
         case .operationFailed:
             return "Check the operation parameters and try again"
+            
         case .operationTimeout:
             return "Consider increasing the operation timeout"
+            
         case .operationCancelled:
             return "Retry the operation if needed"
-        // Resource Errors
+            
         case .resourceUnavailable:
-            return "Wait for the resource to become available or use an alternative"
+            return """
+                Wait for the resource to become available \
+                or use an alternative
+                """
+            
         case .resourceExhausted:
-            return "Wait for resources to be freed or increase resource limits"
+            return """
+                Wait for resources to be freed \
+                or increase resource limits
+                """
+            
         case .resourceLimitExceeded:
-            return "Reduce resource usage or increase resource limits"
-        // Retry Errors
+            return """
+                Reduce resource usage \
+                or increase resource limits
+                """
+            
         case .retryFailed:
-            return "Check the underlying error and adjust retry strategy"
+            return """
+                Check the underlying error \
+                and adjust retry strategy
+                """
+            
         case .retryLimitExceeded:
-            return "Increase retry limit or investigate persistent failures"
-        // Security Errors
+            return """
+                Increase retry limit \
+                or investigate persistent failures
+                """
+            
         case .authenticationFailed:
             return "Verify credentials and try again"
+            
         case .authorizationFailed:
             return "Verify permissions and request access if needed"
+            
         case .securityViolation:
             return "Review security policies and ensure compliance"
         }
+    }
+    
+    public var failureReason: String? {
+        switch self {
+        case .notInitialized:
+            return "Service must be initialised before use"
+            
+        case .alreadyInitialized:
+            return "Service cannot be initialised multiple times"
+            
+        case .initializationFailed:
+            return "Service initialisation encountered an error"
+            
+        case .invalidState:
+            return "Service is in an invalid state for the requested operation"
+            
+        case .stateTransitionFailed:
+            return "Service failed to transition between states"
+            
+        case .stateLockTimeout:
+            return "Service failed to acquire state lock within timeout"
+            
+        case .dependencyUnavailable:
+            return "Required service dependency is not available"
+            
+        case .dependencyMisconfigured:
+            return "Service dependency is not properly configured"
+            
+        case .dependencyTimeout:
+            return "Service dependency did not respond within timeout"
+            
+        case .operationFailed:
+            return "Service operation encountered an error"
+            
+        case .operationTimeout:
+            return "Service operation did not complete within timeout"
+            
+        case .operationCancelled:
+            return "Service operation was cancelled"
+            
+        case .resourceUnavailable:
+            return "Required resource is not available"
+            
+        case .resourceExhausted:
+            return "Resource has been exhausted"
+            
+        case .resourceLimitExceeded:
+            return "Resource usage exceeds configured limits"
+            
+        case .retryFailed:
+            return "Operation retry attempts failed"
+            
+        case .retryLimitExceeded:
+            return "Operation exceeded maximum retry attempts"
+            
+        case .authenticationFailed:
+            return "Service authentication failed"
+            
+        case .authorizationFailed:
+            return "Service authorisation failed"
+            
+        case .securityViolation:
+            return "Service encountered a security violation"
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func formatError(
+        _ type: String,
+        service: String,
+        details: String
+    ) -> String {
+        "\(type) in \(service): \(details)"
     }
 }

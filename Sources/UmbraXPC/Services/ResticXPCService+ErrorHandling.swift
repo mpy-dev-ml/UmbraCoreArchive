@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 import Foundation
@@ -28,12 +28,8 @@ extension ResticXPCService {
     /// - Returns: True if the error was handled and operation should be retried
     func handleError(_ error: Error, operation: UUID? = nil, retryCount: Int = 0) -> Bool {
         // Log the error
-        logger.error(
-            "XPC error occurred: \(error.localizedDescription)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+        let message = "XPC error occurred: \(error.localizedDescription)"
+        logger.error(message, file: #file, function: #function, line: #line)
 
         // Update operation status if provided
         if let operation {
@@ -70,14 +66,31 @@ extension ResticXPCService {
                     try setupXPCConnection()
                     return true
                 } catch {
+                    let message = """
+                        Failed to re-establish XPC connection: \
+                        \(error.localizedDescription)
+                        """
                     logger.error(
-                        "Failed to re-establish XPC connection: \(error.localizedDescription)",
+                        message,
                         file: #file,
                         function: #function,
                         line: #line
                     )
                 }
             }
+            return false
+
+        case .serviceUnavailable:
+            // Service is unavailable, retry if within limits
+            if retryCount < maxRetries {
+                let message = """
+                    Service unavailable, will retry. \
+                    Attempt \(retryCount + 1) of \(maxRetries)
+                    """
+                logger.warning(message, file: #file, function: #function, line: #line)
+                return true
+            }
+            return false
 
         case .invalidBookmark, .staleBookmark:
             // Request bookmark refresh from security service
@@ -86,10 +99,11 @@ extension ResticXPCService {
             }
 
         default:
-            break
+            // Other XPC errors are not recoverable
+            let message = "Unrecoverable XPC error: \(error.localizedDescription)"
+            logger.error(message, file: #file, function: #function, line: #line)
+            return false
         }
-
-        return false
     }
 
     /// Handles security-related errors
@@ -191,12 +205,8 @@ extension ResticXPCService {
             let bookmarks = try await securityService.refreshBookmarks()
             try startAccessingResources(bookmarks)
         } catch {
-            logger.error(
-                "Failed to refresh bookmarks: \(error.localizedDescription)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
+            let message = "Failed to refresh bookmarks: \(error.localizedDescription)"
+            logger.error(message, file: #file, function: #function, line: #line)
         }
     }
 
@@ -205,12 +215,8 @@ extension ResticXPCService {
         do {
             try await securityService.refreshPermissions()
         } catch {
-            logger.error(
-                "Failed to refresh permissions: \(error.localizedDescription)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
+            let message = "Failed to refresh permissions: \(error.localizedDescription)"
+            logger.error(message, file: #file, function: #function, line: #line)
         }
     }
 

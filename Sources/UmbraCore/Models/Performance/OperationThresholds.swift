@@ -57,18 +57,18 @@ public struct ExtendedPerformanceMetrics {
     /// Metrics related to Input/Output operations
     public struct IOMetrics {
         /// Number of read operations performed
-        public let readOps: UInt64
+        public let readOperations: UInt64
         /// Number of write operations performed
-        public let writeOps: UInt64
+        public let writeOperations: UInt64
         /// Total number of bytes read
-        public let readBytes: UInt64
+        public let bytesRead: UInt64
         /// Total number of bytes written
-        public let writeBytes: UInt64
+        public let bytesWritten: UInt64
 
         /// Total number of I/O operations (read + write)
-        public var totalOps: UInt64 { readOps + writeOps }
+        public var totalOperations: UInt64 { readOperations + writeOperations }
         /// Total number of bytes transferred (read + write)
-        public var totalBytes: UInt64 { readBytes + writeBytes }
+        public var totalBytesTransferred: UInt64 { bytesRead + bytesWritten }
     }
 
     /// Metrics related to network activity
@@ -85,9 +85,9 @@ public struct ExtendedPerformanceMetrics {
         public let errors: UInt64
 
         /// Total bytes transferred (received + sent)
-        public var totalBytes: UInt64 { bytesReceived + bytesSent }
+        public var totalBytesTransferred: UInt64 { bytesReceived + bytesSent }
         /// Total packets transferred (received + sent)
-        public var totalPackets: UInt64 { packetsReceived + packetsSent }
+        public var totalPacketsTransferred: UInt64 { packetsReceived + packetsSent }
     }
 
     /// Metrics related to thread utilisation
@@ -102,7 +102,7 @@ public struct ExtendedPerformanceMetrics {
         public let blockedThreads: Int
 
         /// Ratio of running threads to total threads
-        public var threadUtilisation: Double {
+        public var threadUtilisationRatio: Double {
             Double(runningThreads) / Double(totalThreads)
         }
     }
@@ -110,7 +110,7 @@ public struct ExtendedPerformanceMetrics {
     /// Metrics related to garbage collection performance
     public struct GCMetrics {
         /// Number of garbage collection cycles performed
-        public let collections: UInt64
+        public let garbageCollections: UInt64
         /// Total time spent in GC pauses
         public let totalPauseTime: TimeInterval
         /// Average duration of GC pauses
@@ -121,55 +121,55 @@ public struct ExtendedPerformanceMetrics {
         public let heapUsed: UInt64
 
         /// Ratio of used heap to total heap size
-        public var heapUtilisation: Double {
+        public var heapUtilisationRatio: Double {
             Double(heapUsed) / Double(heapSize)
         }
     }
 
     /// I/O performance metrics
-    public let io: IOMetrics
+    public let ioMetrics: IOMetrics
     /// Network performance metrics
-    public let network: NetworkMetrics
+    public let networkMetrics: NetworkMetrics
     /// Thread utilisation metrics
-    public let threads: ThreadMetrics
+    public let threadMetrics: ThreadMetrics
     /// Garbage collection metrics
-    public let gc: GCMetrics
+    public let garbageCollectionMetrics: GCMetrics
     /// Timestamp when these metrics were collected
-    public let timestamp: Date
+    public let metricsCollectionTimestamp: Date
 
     /// Create metrics snapshot
     /// - Returns: Current metrics
-    public static func snapshot() -> ExtendedPerformanceMetrics {
+    public static func createMetricsSnapshot() -> ExtendedPerformanceMetrics {
         // In real implementation, this would use system APIs
         // For now, return dummy values
         return ExtendedPerformanceMetrics(
-            io: IOMetrics(
-                readOps: 1000,
-                writeOps: 500,
-                readBytes: 1024 * 1024 * 10,
-                writeBytes: 1024 * 1024 * 5
+            ioMetrics: IOMetrics(
+                readOperations: 1000,
+                writeOperations: 500,
+                bytesRead: 1024 * 1024 * 10,
+                bytesWritten: 1024 * 1024 * 5
             ),
-            network: NetworkMetrics(
+            networkMetrics: NetworkMetrics(
                 bytesReceived: 1024 * 1024,
                 bytesSent: 1024 * 512,
                 packetsReceived: 1000,
                 packetsSent: 800,
                 errors: 0
             ),
-            threads: ThreadMetrics(
+            threadMetrics: ThreadMetrics(
                 totalThreads: 10,
                 runningThreads: 4,
                 waitingThreads: 5,
                 blockedThreads: 1
             ),
-            gc: GCMetrics(
-                collections: 100,
+            garbageCollectionMetrics: GCMetrics(
+                garbageCollections: 100,
                 totalPauseTime: 0.5,
                 averagePauseTime: 0.005,
                 heapSize: 1024 * 1024 * 100,
                 heapUsed: 1024 * 1024 * 60
             ),
-            timestamp: Date()
+            metricsCollectionTimestamp: Date()
         )
     }
 }

@@ -45,7 +45,7 @@ public class PerformanceMonitor: NSObject {
         public let maxDuration: TimeInterval
         /// Number of samples
         public let sampleCount: Int
-        
+
         /// Initialize with values
         /// - Parameters:
         ///   - totalDuration: Total duration in seconds
@@ -106,35 +106,39 @@ public class PerformanceMonitor: NSObject {
         operation: () async throws -> T
     ) async rethrows -> T {
         let startTime = Date()
-        
+        var finalMetadata = metadata
+
         do {
             let result = try await operation()
             let duration = Date().timeIntervalSince(startTime)
-            
-            recordMetric(
-                Metric(
-                    id: id,
-                    startTime: startTime,
-                    duration: duration,
-                    metadata: metadata
-                )
+
+            finalMetadata["status"] = "success"
+            finalMetadata["duration"] = String(format: "%.3f", duration)
+
+            let metric = Metric(
+                id: id,
+                startTime: startTime,
+                duration: duration,
+                metadata: finalMetadata
             )
-            
+            recordMetric(metric)
+
             return result
         } catch {
             let duration = Date().timeIntervalSince(startTime)
-            
-            recordMetric(
-                Metric(
-                    id: id,
-                    startTime: startTime,
-                    duration: duration,
-                    metadata: [
-                        "error": String(describing: error)
-                    ]
-                )
+
+            finalMetadata["status"] = "error"
+            finalMetadata["error"] = String(describing: error)
+            finalMetadata["duration"] = String(format: "%.3f", duration)
+
+            let metric = Metric(
+                id: id,
+                startTime: startTime,
+                duration: duration,
+                metadata: finalMetadata
             )
-            
+            recordMetric(metric)
+
             throw error
         }
     }
@@ -146,22 +150,33 @@ public class PerformanceMonitor: NSObject {
         for id: String
     ) -> Statistics? {
         queue.sync { [weak self] in
-            guard let self = self else { return nil }
-            guard let metrics = self.metrics[id] else { return nil }
-            
+            guard let self = self,
+                  let metrics = self.metrics[id],
+                  !metrics.isEmpty
+            else { return nil }
+
             let durations = metrics.map { $0.duration }
             let total = durations.reduce(0, +)
             let count = durations.count
-            
-            guard count > 0 else { return nil }
-            
-            return Statistics(
+
+            let stats = Statistics(
                 totalDuration: total,
                 averageDuration: total / Double(count),
                 minDuration: durations.min() ?? 0,
                 maxDuration: durations.max() ?? 0,
                 sampleCount: count
             )
+
+            let metadata: [String: String] = [
+                "id": id,
+                "total": String(format: "%.3f", stats.totalDuration),
+                "average": String(format: "%.3f", stats.averageDuration),
+                "samples": String(stats.sampleCount)
+            ]
+            let config = LogConfig(metadata: metadata)
+            logger.debug("Retrieved performance statistics", config: config)
+
+            return stats
         }
     }
 
@@ -172,16 +187,19 @@ public class PerformanceMonitor: NSObject {
     ) {
         queue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
-            
+
+            let metadata: [String: String] = [
+                "id": id,
+                "metrics_count": String(
+                    self.metrics[id]?.count ?? 0
+                )
+            ]
+            let config = LogConfig(metadata: metadata)
+
             self.metrics.removeValue(forKey: id)
-            
             self.logger.debug(
                 "Reset performance statistics",
-                config: LogConfig(
-                    metadata: [
-                        "id": id
-                    ]
-                )
+                config: config
             )
         }
     }
@@ -193,19 +211,22 @@ public class PerformanceMonitor: NSObject {
     private func recordMetric(_ metric: Metric) {
         queue.async(flags: .barrier) { [weak self] in
             guard let self = self else { return }
-            
+
             var metrics = self.metrics[metric.id] ?? []
             metrics.append(metric)
             self.metrics[metric.id] = metrics
-            
+
+            var metadata = metric.metadata
+            metadata["id"] = metric.id
+            metadata["duration"] = String(
+                format: "%.3f",
+                metric.duration
+            )
+
+            let config = LogConfig(metadata: metadata)
             self.logger.debug(
                 "Recorded performance metric",
-                config: LogConfig(
-                    metadata: [
-                        "id": metric.id,
-                        "duration": String(format: "%.3f", metric.duration)
-                    ]
-                )
+                config: config
             )
         }
     }

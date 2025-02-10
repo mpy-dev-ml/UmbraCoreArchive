@@ -6,14 +6,6 @@
 // Copyright 2025 MPY Dev. All rights reserved.
 //
 
-//
-// ResticXPCService+Connection.swift
-// UmbraCore
-//
-// Created by Migration Script
-// Copyright 2025 MPY Dev. All rights reserved.
-//
-
 import Foundation
 import os.log
 
@@ -21,6 +13,7 @@ import os.log
 
 @available(macOS 13.0, *)
 extension ResticXPCService {
+    /// Configure the XPC connection with all necessary settings
     func configureConnection() {
         configureInterfaces()
         configureSecuritySettings()
@@ -28,37 +21,57 @@ extension ResticXPCService {
         configureMessageHandlers()
     }
 
+    /// Configure XPC interfaces and allowed classes
     private func configureInterfaces() {
-        connection.remoteObjectInterface = NSXPCInterface(with: ResticXPCProtocol.self)
-        connection.exportedInterface = NSXPCInterface(with: ResticXPCProtocol.self)
+        let protocolType = ResticXPCProtocol.self
+        connection.remoteObjectInterface = NSXPCInterface(with: protocolType)
+        connection.exportedInterface = NSXPCInterface(with: protocolType)
 
         // Set up allowed classes for secure coding
-        let remoteInterface = connection.remoteObjectInterface
-        let allowedClasses = Set<AnyClass>([NSString.self, NSArray.self, NSDictionary.self])
-        remoteInterface?.setClasses(
-            Set(allowedClasses.map { $0 as AnyHashable }),
-            for: #selector(ResticXPCProtocol.executeCommand(_:)),
+        guard let remoteInterface = connection.remoteObjectInterface else {
+            logger.error(
+                "Failed to configure remote interface",
+                metadata: ["service": serviceName],
+                privacy: .public
+            )
+            return
+        }
+
+        let allowedClasses = Set<AnyClass>([
+            NSString.self,
+            NSArray.self,
+            NSDictionary.self
+        ])
+
+        let selector = #selector(ResticXPCProtocol.executeCommand(_:))
+        remoteInterface.setClasses(
+            Array(allowedClasses),
+            for: selector,
             argumentIndex: 0,
             ofReply: false
         )
     }
 
+    /// Configure security settings and permissions
     private func configureSecuritySettings() {
         // Set audit session identifier for security
         connection.auditSessionIdentifier = au_session_self()
 
         // Configure sandbox extensions
-        connection.setAccessibilityPermissions([
+        let permissions: [XPCPermission] = [
             .allowFileAccess,
             .allowNetworkAccess
-        ])
+        ]
+        connection.setAccessibilityPermissions(permissions)
 
         // Set up security validation
         connection.setValidationHandler { [weak self] in
-            self?.validateConnection() ?? false
+            guard let self = self else { return false }
+            return self.validateConnection()
         }
     }
 
+    /// Configure error and interruption handlers
     private func configureErrorHandlers() {
         connection.interruptionHandler = { [weak self] in
             self?.handleInterruption()
@@ -73,6 +86,7 @@ extension ResticXPCService {
         }
     }
 
+    /// Configure message and command handlers
     private func configureMessageHandlers() {
         messageHandler = { [weak self] message in
             guard let self = self else {
@@ -89,9 +103,14 @@ extension ResticXPCService {
         }
     }
 
+    /// Handle XPC connection interruption
     private func handleInterruption() {
-        logger.warning("XPC connection interrupted")
         connectionState = .interrupted
+        logger.warning(
+            "XPC connection interrupted",
+            metadata: ["service": serviceName],
+            privacy: .public
+        )
 
         notificationCenter.post(
             name: .xpcConnectionInterrupted,
@@ -105,9 +124,14 @@ extension ResticXPCService {
         }
     }
 
+    /// Handle XPC connection invalidation
     private func handleInvalidation() {
-        logger.error("XPC connection invalidated")
         connectionState = .invalidated
+        logger.error(
+            "XPC connection invalidated",
+            metadata: ["service": serviceName],
+            privacy: .public
+        )
 
         notificationCenter.post(
             name: .xpcConnectionInvalidated,
@@ -119,10 +143,16 @@ extension ResticXPCService {
         cleanupResources()
     }
 
+    /// Handle XPC connection errors
     private func handleError(_ error: Error) {
-        logger.error("XPC connection error", metadata: [
-            "error": .string(error.localizedDescription)
-        ])
+        logger.error(
+            "XPC connection error",
+            metadata: [
+                "service": serviceName,
+                "error": error.localizedDescription
+            ],
+            privacy: .public
+        )
 
         notificationCenter.post(
             name: .xpcConnectionError,
@@ -137,28 +167,43 @@ extension ResticXPCService {
         metrics.recordError()
     }
 
+    /// Attempt to recover a failed connection
     private func recoverConnection() async throws {
-        guard connectionState == .interrupted else {
-            return
-        }
+        guard connectionState == .interrupted else { return }
 
-        logger.info("Attempting to recover XPC connection")
+        logger.info(
+            "Attempting to recover XPC connection",
+            metadata: ["service": serviceName],
+            privacy: .public
+        )
 
         // Wait before attempting recovery
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        try await Task.sleep(
+            nanoseconds: UInt64(1e9)  // 1 second
+        )
 
         do {
             try await reconnect()
             connectionState = .connected
-            logger.info("XPC connection recovered")
+            logger.info(
+                "XPC connection recovered",
+                metadata: ["service": serviceName],
+                privacy: .public
+            )
         } catch {
-            logger.error("Failed to recover XPC connection", metadata: [
-                "error": .string(error.localizedDescription)
-            ])
+            logger.error(
+                "Failed to recover XPC connection",
+                metadata: [
+                    "service": serviceName,
+                    "error": error.localizedDescription
+                ],
+                privacy: .public
+            )
             throw ResticXPCError.recoveryFailed(error)
         }
     }
 
+    /// Clean up connection resources
     private func cleanupResources() {
         // Cancel any pending operations
         pendingOperations.forEach { $0.cancel() }
@@ -170,18 +215,62 @@ extension ResticXPCService {
         commandHandler = nil
     }
 
-    func validateInterface() {
-        guard let service = connection.remoteObjectProxy as? ResticXPCServiceProtocol else {
-            handleError(ResticXPCError.connectionFailed)
-            return
+    /// Validate the XPC interface and service health
+    func validateInterface() async throws {
+        guard let remoteObjectProxy = connection.remoteObjectProxy else {
+            logger.error(
+                "Failed to obtain remote object proxy",
+                metadata: ["service": serviceName],
+                privacy: .public
+            )
+            throw ResticXPCError.connectionFailed
         }
 
-        Task {
-            if await service.ping() {
-                self.isHealthy = true
+        // Use conditional cast instead of force cast
+        guard let service = remoteObjectProxy as? ResticXPCServiceProtocol else {
+            logger.error(
+                """
+                Remote object proxy type mismatch: \
+                expected ResticXPCServiceProtocol
+                """,
+                metadata: [
+                    "service": serviceName,
+                    "actualType": String(describing: type(of: remoteObjectProxy))
+                ],
+                privacy: .public
+            )
+            throw ResticXPCError.invalidServiceType
+        }
+
+        do {
+            let isAlive = try await service.ping()
+            self.isHealthy = isAlive
+
+            if isAlive {
+                logger.info(
+                    "XPC service validation successful",
+                    metadata: ["service": serviceName],
+                    privacy: .public
+                )
             } else {
-                handleError(ResticXPCError.serviceUnavailable)
+                logger.error(
+                    "XPC service is not responding to ping",
+                    metadata: ["service": serviceName],
+                    privacy: .public
+                )
+                throw ResticXPCError.serviceUnavailable
             }
+        } catch {
+            logger.error(
+                "XPC service validation failed",
+                metadata: [
+                    "service": serviceName,
+                    "error": error.localizedDescription
+                ],
+                privacy: .public
+            )
+            self.isHealthy = false
+            throw error
         }
     }
 }

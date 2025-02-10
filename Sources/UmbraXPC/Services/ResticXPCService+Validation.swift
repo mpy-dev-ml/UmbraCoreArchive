@@ -11,7 +11,7 @@
 // UmbraCore
 //
 // Created by Migration Script
-// Copyright © 2025 MPY Dev. All rights reserved.
+// Copyright 2025 MPY Dev. All rights reserved.
 //
 
 import Foundation
@@ -34,13 +34,15 @@ extension ResticXPCService {
         }
 
         // Check exported interface
+        let exportedError = "Exported interface not configured"
         guard connection.exportedInterface != nil else {
-            throw ResticXPCError.invalidInterface("Exported interface not configured")
+            throw ResticXPCError.invalidInterface(exportedError)
         }
 
         // Check remote interface
+        let remoteError = "Remote interface not configured"
         guard connection.remoteObjectInterface != nil else {
-            throw ResticXPCError.invalidInterface("Remote interface not configured")
+            throw ResticXPCError.invalidInterface(remoteError)
         }
 
         // Check remote object proxy
@@ -49,7 +51,8 @@ extension ResticXPCService {
         }
 
         // Check audit session
-        guard connection.auditSessionIdentifier == au_session_self() else {
+        let sessionId = au_session_self()
+        guard connection.auditSessionIdentifier == sessionId else {
             throw ResticXPCError.invalidSession
         }
     }
@@ -83,18 +86,21 @@ extension ResticXPCService {
         }
 
         // Check working directory
+        let workDirError = "Working directory cannot be empty"
         guard !command.workingDirectory.isEmpty else {
-            throw ResticXPCError.invalidCommand("Working directory cannot be empty")
+            throw ResticXPCError.invalidCommand(workDirError)
         }
 
         // Check arguments
+        let pathError = "Arguments cannot contain path traversal"
         for argument in command.arguments where argument.contains("..") {
-            throw ResticXPCError.invalidCommand("Arguments cannot contain path traversal")
+            throw ResticXPCError.invalidCommand(pathError)
         }
 
         // Check environment
+        let envError = "Environment variables cannot be empty"
         for (key, value) in command.environment where key.isEmpty || value.isEmpty {
-            throw ResticXPCError.invalidCommand("Environment variables cannot be empty")
+            throw ResticXPCError.invalidCommand(envError)
         }
     }
 
@@ -102,23 +108,27 @@ extension ResticXPCService {
     /// - Throws: ResticXPCError if validation fails
     func validateConfiguration() throws {
         // Check timeout
+        let timeoutError = "Default timeout must be positive"
         guard defaultTimeout > 0 else {
-            throw ResticXPCError.invalidConfiguration("Default timeout must be positive")
+            throw ResticXPCError.invalidConfiguration(timeoutError)
         }
 
         // Check max retries
+        let retriesError = "Max retries must be positive"
         guard maxRetries > 0 else {
-            throw ResticXPCError.invalidConfiguration("Max retries must be positive")
+            throw ResticXPCError.invalidConfiguration(retriesError)
         }
 
         // Check interface version
+        let versionError = "Interface version must be positive"
         guard interfaceVersion > 0 else {
-            throw ResticXPCError.invalidConfiguration("Interface version must be positive")
+            throw ResticXPCError.invalidConfiguration(versionError)
         }
 
         // Check queue
+        let queueError = "Invalid queue label"
         guard queue.label.contains("dev.mpy.rBUM") else {
-            throw ResticXPCError.invalidConfiguration("Invalid queue label")
+            throw ResticXPCError.invalidConfiguration(queueError)
         }
     }
 

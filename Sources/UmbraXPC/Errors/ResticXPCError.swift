@@ -11,8 +11,7 @@ import Foundation
 /// Error domain for Restic XPC errors
 @objc
 public class ResticXPCErrorDomain: NSObject {
-    @objc
-    public static let name = "dev.mpy.UmbraCore.ResticXPCError"
+    @objc public static let name = "dev.mpy.UmbraCore.ResticXPCError"
 }
 
 /// Error codes for Restic XPC errors
@@ -168,9 +167,7 @@ public class ResticXPCError: NSError {
         super.init(
             domain: ResticXPCErrorDomain.name,
             code: code.rawValue,
-            userInfo: [
-                NSLocalizedDescriptionKey: message
-            ]
+            userInfo: [NSLocalizedDescriptionKey: message]
         )
     }
 
