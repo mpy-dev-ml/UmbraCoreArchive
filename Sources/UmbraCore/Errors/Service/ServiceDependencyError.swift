@@ -1,7 +1,8 @@
 import Foundation
 
 /// Errors that can occur during service dependency management
-@objc public enum ServiceDependencyError: Int, ServiceErrorProtocol {
+@objc
+public enum ServiceDependencyError: Int, ServiceErrorProtocol {
     /// Required dependency unavailable
     case dependencyUnavailable(service: String, dependency: String)
 

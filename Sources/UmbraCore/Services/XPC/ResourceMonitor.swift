@@ -82,7 +82,7 @@ final class ResourceMonitor {
             "cpu": snapshot.cpuUsage,
             "memory": snapshot.memoryUsage,
             "disk": snapshot.diskUsage,
-            "network": snapshot.networkUsage,
+            "network": snapshot.networkUsage
         ]
     }
 
@@ -99,42 +99,15 @@ final class ResourceMonitor {
         duration: TimeInterval? = nil
     ) async throws {
         try await queue.sync(flags: .barrier) {
-            // Check if resources are available
-            let currentUsage = try getCurrentResourceUsage()
-
-            guard currentUsage.cpu + cpu <= limits["cpu"] ?? .infinity else {
-                throw XPCError.resourceUnavailable(
-                    reason: "Insufficient CPU available"
-                )
-            }
-
-            guard currentUsage.memory + memory <= limits["memory"] ?? .infinity else {
-                throw XPCError.resourceUnavailable(
-                    reason: "Insufficient memory available"
-                )
-            }
-
-            // Create reservation
-            let reservation = ResourceReservation(
+            try validateResourceAvailability(cpu: cpu, memory: memory)
+            let reservation = createResourceReservation(
                 identifier: identifier,
-                cpuReservation: cpu,
-                memoryReservation: memory,
-                timestamp: Date(),
-                expiry: duration.map { Date().addingTimeInterval($0) }
+                cpu: cpu,
+                memory: memory,
+                duration: duration
             )
-
-            // Store reservation
-            reservations[identifier] = reservation
-
-            logger.debug(
-                "Reserved resources",
-                metadata: [
-                    "identifier": identifier,
-                    "cpu": String(cpu),
-                    "memory": String(memory),
-                    "duration": duration.map { String($0) } ?? "indefinite",
-                ]
-            )
+            storeReservation(reservation)
+            logReservation(reservation, duration: duration)
         }
     }
 
@@ -164,26 +137,51 @@ final class ResourceMonitor {
         for identifier: String
     ) async throws -> Bool {
         try await queue.sync {
-            guard let reservation = reservations[identifier] else {
-                throw XPCError.resourceUnavailable(
-                    reason: "No reservation found for: \(identifier)"
-                )
-            }
-
-            // Check if reservation has expired
-            if let expiry = reservation.expiry, expiry < Date() {
-                try await releaseResources(for: identifier)
+            let reservation = try getValidReservation(identifier)
+            if try shouldReleaseExpiredReservation(reservation, identifier) {
                 return false
             }
-
-            let currentUsage = try getCurrentResourceUsage()
-
-            return currentUsage.cpu <= limits["cpu"] ?? .infinity &&
-                currentUsage.memory <= limits["memory"] ?? .infinity
+            return try checkResourceLimits()
         }
     }
 
     // MARK: Private
+
+    /// Get valid reservation for identifier
+    /// - Parameter identifier: Operation identifier
+    /// - Returns: Valid reservation
+    private func getValidReservation(_ identifier: String) throws -> ResourceReservation {
+        guard let reservation = reservations[identifier] else {
+            throw XPCError.resourceUnavailable(
+                reason: "No reservation found for: \(identifier)"
+            )
+        }
+        return reservation
+    }
+
+    /// Check if reservation has expired and should be released
+    /// - Parameters:
+    ///   - reservation: Reservation to check
+    ///   - identifier: Operation identifier
+    /// - Returns: Whether reservation should be released
+    private func shouldReleaseExpiredReservation(
+        _ reservation: ResourceReservation,
+        _ identifier: String
+    ) async throws -> Bool {
+        if let expiry = reservation.expiry, expiry < Date() {
+            try await releaseResources(for: identifier)
+            return true
+        }
+        return false
+    }
+
+    /// Check if current usage is within resource limits
+    /// - Returns: Whether usage is within limits
+    private func checkResourceLimits() throws -> Bool {
+        let currentUsage = try getCurrentResourceUsage()
+        return currentUsage.cpu <= limits["cpu"] ?? .infinity &&
+            currentUsage.memory <= limits["memory"] ?? .infinity
+    }
 
     /// Get current resource usage with reservations
     private struct CurrentResourceUsage {
@@ -298,7 +296,7 @@ final class ResourceMonitor {
                     "CPU usage exceeded limit",
                     metadata: [
                         "usage": String(snapshot.cpuUsage),
-                        "limit": String(limits["cpu"] ?? .infinity),
+                        "limit": String(limits["cpu"] ?? .infinity)
                     ]
                 )
             }
@@ -308,7 +306,7 @@ final class ResourceMonitor {
                     "Memory usage exceeded limit",
                     metadata: [
                         "usage": String(snapshot.memoryUsage),
-                        "limit": String(limits["memory"] ?? .infinity),
+                        "limit": String(limits["memory"] ?? .infinity)
                     ]
                 )
             }
@@ -317,15 +315,27 @@ final class ResourceMonitor {
 
     /// Get current resource usage including reservations
     private func getCurrentResourceUsage() throws -> CurrentResourceUsage {
-        // Calculate total reserved resources
-        let reservedResources = reservations.values.reduce(
+        let reservedResources = calculateReservedResources()
+        return try combineWithLatestSnapshot(reservedResources)
+    }
+
+    /// Calculate total reserved resources
+    /// - Returns: Reserved CPU and memory
+    private func calculateReservedResources() -> (cpu: Double, memory: Double) {
+        reservations.values.reduce(
             into: (cpu: 0.0, memory: 0.0)
         ) { result, reservation in
             result.cpu += reservation.cpuReservation
             result.memory += reservation.memoryReservation
         }
+    }
 
-        // Get latest snapshot
+    /// Combine reserved resources with latest snapshot
+    /// - Parameter reservedResources: Reserved resources
+    /// - Returns: Combined resource usage
+    private func combineWithLatestSnapshot(
+        _ reservedResources: (cpu: Double, memory: Double)
+    ) throws -> CurrentResourceUsage {
         guard let latestSnapshot = usageHistory.last else {
             return CurrentResourceUsage(
                 cpu: reservedResources.cpu,
@@ -340,6 +350,73 @@ final class ResourceMonitor {
             memory: latestSnapshot.memoryUsage + reservedResources.memory,
             disk: latestSnapshot.diskUsage,
             network: latestSnapshot.networkUsage
+        )
+    }
+
+    /// Validate resource availability
+    /// - Parameters:
+    ///   - cpu: CPU percentage needed
+    ///   - memory: Memory bytes needed
+    private func validateResourceAvailability(cpu: Double, memory: Double) throws {
+        let currentUsage = try getCurrentResourceUsage()
+
+        guard currentUsage.cpu + cpu <= limits["cpu"] ?? .infinity else {
+            throw XPCError.resourceUnavailable(
+                reason: "Insufficient CPU available"
+            )
+        }
+
+        guard currentUsage.memory + memory <= limits["memory"] ?? .infinity else {
+            throw XPCError.resourceUnavailable(
+                reason: "Insufficient memory available"
+            )
+        }
+    }
+
+    /// Create resource reservation
+    /// - Parameters:
+    ///   - identifier: Operation identifier
+    ///   - cpu: CPU percentage needed
+    ///   - memory: Memory bytes needed
+    ///   - duration: Reservation duration
+    /// - Returns: Created reservation
+    private func createResourceReservation(
+        identifier: String,
+        cpu: Double,
+        memory: Double,
+        duration: TimeInterval?
+    ) -> ResourceReservation {
+        ResourceReservation(
+            identifier: identifier,
+            cpuReservation: cpu,
+            memoryReservation: memory,
+            timestamp: Date(),
+            expiry: duration.map { Date().addingTimeInterval($0) }
+        )
+    }
+
+    /// Store reservation
+    /// - Parameter reservation: Reservation to store
+    private func storeReservation(_ reservation: ResourceReservation) {
+        reservations[reservation.identifier] = reservation
+    }
+
+    /// Log reservation details
+    /// - Parameters:
+    ///   - reservation: Reservation to log
+    ///   - duration: Reservation duration
+    private func logReservation(
+        _ reservation: ResourceReservation,
+        duration: TimeInterval?
+    ) {
+        logger.debug(
+            "Reserved resources",
+            metadata: [
+                "identifier": reservation.identifier,
+                "cpu": String(reservation.cpuReservation),
+                "memory": String(reservation.memoryReservation),
+                "duration": duration.map { String($0) } ?? "indefinite"
+            ]
         )
     }
 }

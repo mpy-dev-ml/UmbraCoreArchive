@@ -25,7 +25,8 @@ import Foundation
 ///     }
 /// }
 /// ```
-@objc public protocol HealthCheckable: Sendable: Sendable: NSObjectProtocol {
+@objc
+public protocol HealthCheckable: Sendable: Sendable: NSObjectProtocol {
     /// The current health state of the service.
     ///
     /// This property provides a cached value of the service's health state,
@@ -55,7 +56,8 @@ import Foundation
     ///
     /// - Returns: The current health state of the service
     /// - Throws: `HealthError` if the health check fails
-    @objc func performHealthCheck() async throws -> HealthState
+    @objc
+    func performHealthCheck() async throws -> HealthState
 
     /// Updates the service's health status asynchronously.
     ///
@@ -65,7 +67,8 @@ import Foundation
     /// - Updating the health state
     /// - Recording metrics
     /// - Logging status changes
-    @objc optional func updateHealthStatus() async
+    @objc
+    optional func updateHealthStatus() async
 
     /// Resets the health state to its initial condition.
     ///
@@ -74,7 +77,8 @@ import Foundation
     /// - Reset health metrics
     /// - Clear error counts
     /// - Reset performance measurements
-    @objc optional func resetHealthState()
+    @objc
+    optional func resetHealthState()
 
     /// Represents the current health status of a service or component
     public enum HealthStatus {
@@ -134,7 +138,8 @@ import Foundation
 // MARK: - HealthState
 
 /// Represents the possible health states of a service
-@objc public enum HealthState: Int {
+@objc
+public enum HealthState: Int {
     case unknown = 0
     case healthy = 1
     case degraded = 2
@@ -166,7 +171,8 @@ import Foundation
 // MARK: - HealthError
 
 /// Health-related errors that can occur during health checks
-@objc public enum HealthError: Int, Error {
+@objc
+public enum HealthError: Int, Error {
     case timeout = 1
     case connectionFailed = 2
     case invalidState = 3
@@ -191,7 +197,8 @@ import Foundation
 // MARK: - HealthMetrics
 
 /// Metrics collected during health checks
-@objc public class HealthMetrics: NSObject {
+@objc
+public class HealthMetrics: NSObject {
     // MARK: Lifecycle
 
     public init(
@@ -212,7 +219,7 @@ import Foundation
     // MARK: Public
 
     /// Format metrics as a string
-    public override var description: String {
+    override public var description: String {
         """
         Response Time: \(String(format: "%.3f", responseTime))s
         Memory Usage: \(ByteCountFormatter.string(

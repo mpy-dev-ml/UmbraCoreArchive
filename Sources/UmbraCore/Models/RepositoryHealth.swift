@@ -32,7 +32,8 @@ import Foundation
 ///     )
 /// }
 /// ```
-@objc public class RepositoryHealth: NSObject, NSSecureCoding {
+@objc
+public class RepositoryHealth: NSObject, NSSecureCoding {
     // MARK: Lifecycle
 
     /// Initialize a new repository health status
@@ -44,7 +45,8 @@ import Foundation
     ///   - sizeConsistent: Whether pack file sizes are consistent
     ///   - indexIntegrity: Whether the repository index is valid
     ///   - packIntegrity: Whether all pack files are valid
-    @objc public init(
+    @objc
+    public init(
         status: String,
         lastCheck: Date,
         errorCount: Int,
@@ -66,7 +68,8 @@ import Foundation
     /// Decodes a health status from secure storage
     /// - Parameter coder: The coder to read from
     /// - Returns: A new RepositoryHealth instance, or nil if decoding fails
-    @objc public required init?(coder: NSCoder) {
+    @objc
+    public required init?(coder: NSCoder) {
         guard
             let status = coder.decodeObject(
                 of: NSString.self,
@@ -141,7 +144,8 @@ import Foundation
 
     /// Encodes the health status for secure storage
     /// - Parameter coder: The coder to write to
-    @objc public func encode(with coder: NSCoder) {
+    @objc
+    public func encode(with coder: NSCoder) {
         coder.encode(status, forKey: "status")
         coder.encode(lastCheck, forKey: "lastCheck")
         coder.encode(errorCount, forKey: "errorCount")

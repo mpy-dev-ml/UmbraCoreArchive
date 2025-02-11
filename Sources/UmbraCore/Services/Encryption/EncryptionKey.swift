@@ -162,10 +162,14 @@ public struct EncryptionKey {
 
     /// Save key to keychain
     private func saveToKeychain() throws {
+        guard let identifierData = identifier.data(using: .utf8) else {
+            throw EncryptionError.operationFailed("Failed to encode identifier as UTF-8")
+        }
+
         let query: [String: Any] = try [
             kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: identifier.data(using: .utf8)!,
-            kSecValueData as String: getKeyData(),
+            kSecAttrApplicationTag as String: identifierData,
+            kSecValueData as String: getKeyData()
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -176,9 +180,13 @@ public struct EncryptionKey {
 
     /// Delete key from keychain
     private func deleteFromKeychain() throws {
+        guard let identifierData = identifier.data(using: .utf8) else {
+            throw EncryptionError.operationFailed("Failed to encode identifier as UTF-8")
+        }
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: identifier.data(using: .utf8)!,
+            kSecAttrApplicationTag as String: identifierData
         ]
 
         let status = SecItemDelete(query as CFDictionary)

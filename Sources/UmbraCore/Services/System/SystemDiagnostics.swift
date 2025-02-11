@@ -106,13 +106,13 @@ public struct SystemDiagnostics {
 
     /// Status
     public enum Status {
-        /// OK
-        case ok
-        /// Warning
+        /// Operational - system is functioning normally
+        case operational
+        /// Warning - potential issues detected
         case warning
-        /// Error
+        /// Error - critical issues detected
         case error
-        /// Unknown
+        /// Unknown - status cannot be determined
         case unknown
     }
 
@@ -215,7 +215,7 @@ public struct SystemDiagnostics {
                 Item(
                     key: "Available",
                     value: formatBytes(metrics.availableCapacity),
-                    status: .ok
+                    status: .operational
                 )
             )
 
@@ -223,7 +223,7 @@ public struct SystemDiagnostics {
                 Item(
                     key: "Total",
                     value: formatBytes(metrics.totalCapacity),
-                    status: .ok
+                    status: .operational
                 )
             )
 
@@ -231,7 +231,7 @@ public struct SystemDiagnostics {
                 title: title,
                 items: items,
                 status: items.contains { $0.status == .error } ? .error :
-                    items.contains { $0.status == .warning } ? .warning : .ok
+                    items.contains { $0.status == .warning } ? .warning : .operational
             )
         } catch {
             return Section(
@@ -241,7 +241,7 @@ public struct SystemDiagnostics {
                         key: "Error",
                         value: error.localizedDescription,
                         status: .error
-                    ),
+                    )
                 ],
                 status: .error
             )
@@ -252,7 +252,7 @@ public struct SystemDiagnostics {
     private func getUsageStatus(_ percentage: Double) -> Status {
         switch percentage {
         case 0 ..< 70:
-            .ok
+            .operational
         case 70 ..< 90:
             .warning
         default:
@@ -278,13 +278,13 @@ public struct SystemDiagnostics {
     private func generateSummary(_ sections: [Section]) -> String {
         let errorCount = sections.filter { $0.status == .error }.count
         let warningCount = sections.filter { $0.status == .warning }.count
-        let okCount = sections.filter { $0.status == .ok }.count
+        let operationalCount = sections.filter { $0.status == .operational }.count
 
         return """
         System Diagnostics Summary:
         - \(errorCount) errors
         - \(warningCount) warnings
-        - \(okCount) ok
+        - \(operationalCount) operational
         """
     }
 }

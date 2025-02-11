@@ -1,11 +1,13 @@
 import Foundation
 
 /// A class representing a Restic backup repository
-@objc public class Repository: NSObject, NSSecureCoding {
+@objc
+public class Repository: NSObject, NSSecureCoding {
     // MARK: Lifecycle
 
     /// Initialize a new repository
-    @objc public init(
+    @objc
+    public init(
         id: String,
         url: URL,
         name: String,
@@ -26,7 +28,8 @@ import Foundation
         super.init()
     }
 
-    @objc public required init?(coder: NSCoder) {
+    @objc
+    public required init?(coder: NSCoder) {
         guard let id = coder.decodeObject(of: NSString.self, forKey: "id") as String?,
               let url = coder.decodeObject(of: NSURL.self, forKey: "url") as URL?,
               let name = coder.decodeObject(of: NSString.self, forKey: "name") as String?,
@@ -55,7 +58,7 @@ import Foundation
 
     public static var supportsSecureCoding: Bool { true }
 
-    public override var description: String {
+    override public var description: String {
         String(
             format: "Repository(id: %@, name: %@, url: %@)",
             id as NSString,
@@ -90,7 +93,8 @@ import Foundation
 
     // MARK: - NSSecureCoding
 
-    @objc public func encode(with coder: NSCoder) {
+    @objc
+    public func encode(with coder: NSCoder) {
         coder.encode(id, forKey: "id")
         coder.encode(url, forKey: "url")
         coder.encode(name, forKey: "name")

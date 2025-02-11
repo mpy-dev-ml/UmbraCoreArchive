@@ -212,7 +212,7 @@ public final class PermissionManager: BaseSandboxedService {
             .notifications: requestNotificationsPermission,
             .calendar: requestCalendarPermission,
             .contacts: requestContactsPermission,
-            .photos: requestPhotosPermission,
+            .photos: requestPhotosPermission
         ]
 
         if case let .custom(permission) = type {

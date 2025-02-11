@@ -58,7 +58,7 @@ public final class ProgressTracker: ProgressTrackerProtocol {
                 name: .progressTrackerOperationStarted,
                 object: self,
                 userInfo: [
-                    "operationId": operationID,
+                    "operationId": operationID
                 ]
             )
         }
@@ -78,7 +78,7 @@ public final class ProgressTracker: ProgressTrackerProtocol {
 
             let userInfo: [String: Any] = [
                 "operationId": operationID,
-                "progress": progress,
+                "progress": progress
             ]
 
             notificationCenter.post(
@@ -103,7 +103,7 @@ public final class ProgressTracker: ProgressTrackerProtocol {
 
             let userInfo: [String: Any] = [
                 "operationId": operationID,
-                "error": error,
+                "error": error
             ]
 
             notificationCenter.post(

@@ -1,10 +1,12 @@
 import Foundation
 
 /// Result of a process execution through the XPC service
-@objc public final class ProcessResult: NSObject, Codable {
+@objc
+public final class ProcessResult: NSObject, Codable {
     // MARK: Lifecycle
 
-    @objc public init(output: String, error: String, exitCode: Int) {
+    @objc
+    public init(output: String, error: String, exitCode: Int) {
         self.output = output
         self.error = error
         self.exitCode = exitCode

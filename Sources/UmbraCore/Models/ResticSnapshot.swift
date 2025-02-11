@@ -38,13 +38,12 @@ import Foundation
 ///     """
 /// )
 /// ```
-@objc public final class ResticSnapshot: NSObject,
+@objc
+public final class ResticSnapshot: NSObject,
     NSSecureCoding,
     Codable,
     Identifiable,
-    Equatable,
-    Hashable
-{
+    Equatable, Hashable {
     // MARK: Lifecycle
 
     /// Creates a new snapshot instance
@@ -82,7 +81,7 @@ import Foundation
         paths: [String],
         parent: String? = nil,
         size: UInt64,
-        repositoryID: String
+        repositoryId: String
     ) {
         self.id = id
         self.time = time
@@ -91,7 +90,7 @@ import Foundation
         self.paths = paths
         self.parent = parent
         self.size = size
-        self.repositoryID = repositoryID
+        self.repositoryId = repositoryId
         super.init()
     }
 
@@ -125,7 +124,7 @@ import Foundation
             let hostname = json["hostname"] as? String,
             let paths = json["paths"] as? [String],
             let size = json["size"] as? UInt64,
-            let repositoryID = json["repository_id"] as? String
+            let repositoryId = json["repository_id"] as? String
         else {
             let context = DecodingError.Context(
                 codingPath: [],
@@ -157,7 +156,7 @@ import Foundation
             paths: paths,
             parent: json["parent"] as? String,
             size: size,
-            repositoryID: repositoryID
+            repositoryId: repositoryId
         )
     }
 
@@ -188,7 +187,7 @@ import Foundation
                 of: NSArray.self,
                 forKey: "paths"
             ) as? [String],
-            let repositoryID = coder.decodeObject(
+            let repositoryId = coder.decodeObject(
                 of: NSString.self,
                 forKey: "repositoryId"
             ) as String?
@@ -209,13 +208,21 @@ import Foundation
             forKey: "parent"
         ) as String?
         size = coder.decodeUInt64(forKey: "size")
-        self.repositoryID = repositoryID
+        self.repositoryId = repositoryId
         super.init()
     }
 
     // MARK: Public
 
     public static var supportsSecureCoding: Bool { true }
+
+    /// Provides a hash value for the snapshot
+    override public var hash: Int {
+        var hasher = Hasher()
+        hasher.combine(id)
+        hasher.combine(repositoryId)
+        return hasher.finalize()
+    }
 
     /// Unique identifier of the snapshot
     ///
@@ -276,7 +283,7 @@ import Foundation
     /// - Track snapshot ownership
     /// - Prevent ID collisions
     /// - Support multiple repositories
-    public let repositoryID: String
+    public let repositoryId: String
 
     /// Short ID (first 8 characters)
     ///
@@ -284,22 +291,30 @@ import Foundation
     /// - Display purposes
     /// - User interaction
     /// - Log messages
-    public var shortID: String {
+    public var shortId: String {
         String(id.prefix(8))
+    }
+
+    // MARK: - NSObject
+
+    /// Checks if two snapshots are equal
+    /// - Parameter object: The object to compare with
+    /// - Returns: True if the snapshots are equal
+    override public func isEqual(_ object: Any?) -> Bool {
+        guard let other = object as? ResticSnapshot else { return false }
+        return id == other.id
     }
 
     // MARK: - Equatable
 
-    /// Compares two snapshots for equality
-    ///
-    /// Snapshots are equal if they have:
+    /// Equality operator for ResticSnapshot
+    /// Compares:
     /// - Same snapshot ID
     /// - Same repository ID
     ///
     /// Note: Other properties don't affect equality
     public static func == (lhs: ResticSnapshot, rhs: ResticSnapshot) -> Bool {
-        lhs.id == rhs.id &&
-            lhs.repositoryID == rhs.repositoryID
+        lhs.isEqual(rhs)
     }
 
     // MARK: - NSSecureCoding
@@ -320,7 +335,7 @@ import Foundation
         coder.encode(paths, forKey: "paths")
         coder.encode(parent, forKey: "parent")
         coder.encode(size, forKey: "size")
-        coder.encode(repositoryID, forKey: "repositoryId")
+        coder.encode(repositoryId, forKey: "repositoryId")
     }
 
     // MARK: - Hashable
@@ -334,6 +349,6 @@ import Foundation
     /// Note: Other properties are not included as they don't affect identity
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
-        hasher.combine(repositoryID)
+        hasher.combine(repositoryId)
     }
 }

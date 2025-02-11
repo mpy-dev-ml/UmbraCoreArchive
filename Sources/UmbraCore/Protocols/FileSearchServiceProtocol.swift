@@ -3,7 +3,7 @@ import Foundation
 // MARK: - FileSearchServiceProtocol
 
 /// Protocol for searching files across backups
-public protocol FileSearchServiceProtocol { : Sendable: Sendable
+public protocol FileSearchServiceProtocol: Sendable {
     /// Search for a file across all snapshots in a repository
     /// - Parameters:
     ///   - pattern: Search pattern (supports glob patterns)

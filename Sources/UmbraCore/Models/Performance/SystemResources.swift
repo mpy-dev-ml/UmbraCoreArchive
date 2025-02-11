@@ -86,20 +86,16 @@ public class SystemResources: NSObject, NSSecureCoding {
     public static var supportsSecureCoding: Bool { true }
 
     /// Available system memory in bytes
-    @objc
-    public let availableMemory: UInt64
+    @objc public let availableMemory: UInt64
 
     /// Available disk space in bytes
-    @objc
-    public let availableDiskSpace: UInt64
+    @objc public let availableDiskSpace: UInt64
 
     /// CPU usage as a percentage (0-100)
-    @objc
-    public let cpuUsagePercentage: Double
+    @objc public let cpuUsagePercentage: Double
 
     /// System load averages for 1, 5, and 15 minutes
-    @objc
-    public let systemLoad: [Double]
+    @objc public let systemLoad: [Double]
 
     // MARK: - NSSecureCoding
 

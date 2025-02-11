@@ -9,7 +9,7 @@ public final class KeychainService: BaseSandboxedService, Measurable {
 
     // MARK: - Initialization
 
-    public override init(logger: LoggerProtocol, securityService: SecurityServiceProtocol) {
+    override public init(logger: LoggerProtocol, securityService: SecurityServiceProtocol) {
         queue = DispatchQueue(label: "dev.mpy.rBUM.keychain", qos: .userInitiated)
         isHealthy = true // Default to true, will be updated by health checks
         super.init(logger: logger, securityService: securityService)

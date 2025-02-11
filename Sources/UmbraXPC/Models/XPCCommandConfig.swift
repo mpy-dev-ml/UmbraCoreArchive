@@ -1,17 +1,9 @@
-import Foundation
-
 // MARK: - XPCCommandConfig
 
 /// Configuration for XPC command execution
 ///
 /// This class encapsulates all necessary configuration for executing a command
-/// through XPC, including:
-/// - Command and arguments
-/// - Environment variables
-/// - Working directory
-/// - Security-scoped bookmarks
-/// - Timeout settings
-/// - Audit session information
+/// through XPC, including command details, environment setup, and security settings.
 ///
 /// Example usage:
 /// ```swift
@@ -19,15 +11,12 @@ import Foundation
 ///     command: "restic",
 ///     arguments: ["backup", "/path/to/backup"],
 ///     environment: ["RESTIC_PASSWORD": "secret"],
-///     workingDirectory: "/tmp",
-///     bookmarks: [:],
-///     timeout: 300,
-///     auditSessionId: au_session_self()
+///     workingDirectory: "/tmp"
 /// )
 /// ```
 @objc
 public class XPCCommandConfig: NSObject {
-    // MARK: - Types
+    // MARK: - Public Types
 
     /// Type alias for environment variables dictionary
     public typealias Environment = [String: String]
@@ -35,62 +24,40 @@ public class XPCCommandConfig: NSObject {
     /// Type alias for security bookmarks dictionary
     public typealias Bookmarks = [String: NSData]
 
-    // MARK: - Properties
+    // MARK: - Public Properties
 
-    /// Command to execute
-    ///
-    /// The main command to be executed, typically "restic"
+    /// Command to execute (typically "restic")
     @objc public let command: String
 
-    /// Command arguments
-    ///
-    /// Array of arguments to pass to the command, such as:
-    /// - Operation type (backup, restore, etc.)
-    /// - Target paths
-    /// - Configuration options
+    /// Array of command arguments
     @objc public let arguments: [String]
 
-    /// Environment variables
-    ///
-    /// Dictionary of environment variables required for the command:
-    /// - RESTIC_PASSWORD: Repository password
-    /// - RESTIC_REPOSITORY: Repository location
-    /// - Custom configuration variables
+    /// Dictionary of environment variables
     @objc public let environment: Environment
 
-    /// Working directory
-    ///
-    /// Directory from which to execute the command
+    /// Directory to execute command from
     @objc public let workingDirectory: String
 
-    /// Security-scoped bookmarks
-    ///
-    /// Dictionary mapping paths to their security-scoped bookmarks.
-    /// Used to maintain file access across app launches.
+    /// Dictionary mapping paths to security-scoped bookmarks
     @objc public let bookmarks: Bookmarks
 
-    /// Command timeout
-    ///
-    /// Maximum time (in seconds) to wait for command completion.
-    /// A value of 0 means no timeout.
+    /// Maximum execution time in seconds (0 = no timeout)
     @objc public let timeout: TimeInterval
 
-    /// Audit session identifier
-    ///
-    /// Used for security auditing and process tracking
+    /// Session identifier for security auditing
     @objc public let auditSessionID: au_asid_t
 
     // MARK: - Initialization
 
     /// Initialize with command configuration
     /// - Parameters:
-    ///   - command: Command to execute (typically "restic")
-    ///   - arguments: Array of command arguments
-    ///   - environment: Dictionary of environment variables
-    ///   - workingDirectory: Directory to execute command from
-    ///   - bookmarks: Dictionary of security-scoped bookmarks
-    ///   - timeout: Maximum execution time in seconds (0 = no timeout)
-    ///   - auditSessionId: Session identifier for security auditing
+    ///   - command: Command to execute
+    ///   - arguments: Command arguments
+    ///   - environment: Environment variables
+    ///   - workingDirectory: Working directory
+    ///   - bookmarks: Security-scoped bookmarks
+    ///   - timeout: Maximum execution time
+    ///   - auditSessionID: Security audit session ID
     @objc
     public init(
         command: String,
@@ -118,8 +85,6 @@ extension XPCCommandConfig: NSSecureCoding {
     public static var supportsSecureCoding: Bool { true }
 
     /// Initialize from decoder
-    /// - Parameter coder: Decoder to read from
-    /// - Returns: A new XPCCommandConfig instance, or nil if decoding fails
     @objc
     public required init?(coder: NSCoder) {
         guard let values = Self.decodeRequiredValues(from: coder) else {
@@ -137,26 +102,19 @@ extension XPCCommandConfig: NSSecureCoding {
     }
 
     /// Encode to coder
-    /// - Parameter coder: Coder to write to
     @objc
     public func encode(with coder: NSCoder) {
         coder.encode(command, forKey: CodingKeys.command)
         coder.encode(arguments, forKey: CodingKeys.arguments)
         coder.encode(environment, forKey: CodingKeys.environment)
-        coder.encode(
-            workingDirectory,
-            forKey: CodingKeys.workingDirectory
-        )
+        coder.encode(workingDirectory, forKey: CodingKeys.workingDirectory)
         coder.encode(bookmarks, forKey: CodingKeys.bookmarks)
         coder.encode(timeout, forKey: CodingKeys.timeout)
-        coder.encode(
-            Int32(auditSessionID),
-            forKey: CodingKeys.auditSessionID
-        )
+        coder.encode(Int32(auditSessionID), forKey: CodingKeys.auditSessionID)
     }
 }
 
-// MARK: - Decoding Support
+// MARK: - Private Extensions
 
 private extension XPCCommandConfig {
     /// Structure to hold decoded values
@@ -171,22 +129,11 @@ private extension XPCCommandConfig {
     }
 
     /// Decode required values from the coder
-    /// - Parameter coder: The decoder to read from
-    /// - Returns: The decoded values, or nil if decoding fails
-    static func decodeRequiredValues(
-        from coder: NSCoder
-    ) -> DecodedValues? {
+    static func decodeRequiredValues(from coder: NSCoder) -> DecodedValues? {
         // Decode required command
-        guard let command = decodeString(
-            from: coder,
-            forKey: .command
-        ) else {
+        guard let command = decodeString(from: coder, forKey: .command) else {
             return nil
         }
-
-        // Decode optional values with defaults
-        let arguments = decodeStringArray(from: coder) ?? []
-        let environment = decodeEnvironment(from: coder) ?? [:]
 
         // Decode required working directory
         guard let workingDirectory = decodeString(
@@ -196,15 +143,13 @@ private extension XPCCommandConfig {
             return nil
         }
 
-        // Decode remaining values
+        // Decode optional values with defaults
+        let arguments = decodeStringArray(from: coder) ?? []
+        let environment = decodeEnvironment(from: coder) ?? [:]
         let bookmarks = decodeBookmarks(from: coder) ?? [:]
-        let timeout = coder.decodeDouble(
-            forKey: CodingKeys.timeout.rawValue
-        )
+        let timeout = coder.decodeDouble(forKey: CodingKeys.timeout.rawValue)
         let auditSessionID = au_asid_t(
-            coder.decodeInt32(
-                forKey: CodingKeys.auditSessionID.rawValue
-            )
+            coder.decodeInt32(forKey: CodingKeys.auditSessionID.rawValue)
         )
 
         return DecodedValues(
@@ -219,65 +164,36 @@ private extension XPCCommandConfig {
     }
 
     /// Decode a string value from the coder
-    /// - Parameters:
-    ///   - coder: The decoder to read from
-    ///   - key: The coding key to read
-    /// - Returns: The decoded string, or nil if decoding fails
     static func decodeString(
         from coder: NSCoder,
         forKey key: CodingKeys
     ) -> String? {
-        coder.decodeObject(
-            of: NSString.self,
-            forKey: key.rawValue
-        ) as String?
+        coder.decodeObject(of: NSString.self, forKey: key.rawValue) as String?
     }
 
     /// Decode string array from the coder
-    /// - Parameter coder: The decoder to read from
-    /// - Returns: The decoded string array, or nil if decoding fails
-    static func decodeStringArray(
-        from coder: NSCoder
-    ) -> [String]? {
-        let allowedTypes = [NSArray.self, NSString.self]
-        return coder.decodeObject(
-            of: allowedTypes,
-            forKey: CodingKeys.arguments.rawValue
-        ) as? [String]
+    static func decodeStringArray(from coder: NSCoder) -> [String]? {
+        let types = [NSArray.self, NSString.self]
+        return coder.decodeObject(of: types, forKey: CodingKeys.arguments.rawValue)
+            as? [String]
     }
 
     /// Decode environment dictionary from the coder
-    /// - Parameter coder: The decoder to read from
-    /// - Returns: The decoded environment dictionary, or nil if decoding fails
-    static func decodeEnvironment(
-        from coder: NSCoder
-    ) -> Environment? {
-        let allowedTypes = [NSDictionary.self, NSString.self]
-        return coder.decodeObject(
-            of: allowedTypes,
-            forKey: CodingKeys.environment.rawValue
-        ) as? Environment
+    static func decodeEnvironment(from coder: NSCoder) -> Environment? {
+        let types = [NSDictionary.self, NSString.self]
+        return coder.decodeObject(of: types, forKey: CodingKeys.environment.rawValue)
+            as? Environment
     }
 
     /// Decode bookmarks dictionary from the coder
-    /// - Parameter coder: The decoder to read from
-    /// - Returns: The decoded bookmarks dictionary, or nil if decoding fails
-    static func decodeBookmarks(
-        from coder: NSCoder
-    ) -> Bookmarks? {
-        let allowedTypes = [
-            NSDictionary.self,
-            NSString.self,
-            NSData.self
-        ]
-        return coder.decodeObject(
-            of: allowedTypes,
-            forKey: CodingKeys.bookmarks.rawValue
-        ) as? Bookmarks
+    static func decodeBookmarks(from coder: NSCoder) -> Bookmarks? {
+        let types = [NSDictionary.self, NSString.self, NSData.self]
+        return coder.decodeObject(of: types, forKey: CodingKeys.bookmarks.rawValue)
+            as? Bookmarks
     }
 }
 
-// MARK: - Coding Keys
+// MARK: - CodingKeys
 
 private extension XPCCommandConfig {
     enum CodingKeys: String {

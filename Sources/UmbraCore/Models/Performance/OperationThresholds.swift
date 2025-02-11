@@ -28,7 +28,7 @@ public struct OperationThresholds {
                 minBackupSpeed: 0.0,
                 maxOperationDuration: 1_800_000, // 30 minutes
                 minSuccessRate: 99.9
-            ),
+            )
         ]
     )
 

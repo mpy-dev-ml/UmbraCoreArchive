@@ -245,7 +245,7 @@ public final class SecurityKeychain: BaseSandboxedService {
             kSecAttrService as String: attributes.service,
             kSecAttrAccount as String: attributes.account,
             kSecAttrAccessible as String: attributes.accessibility.securityValue,
-            kSecAttrSynchronizable as String: attributes.synchronizable,
+            kSecAttrSynchronizable as String: attributes.synchronizable
         ]
 
         if let accessGroup = attributes.accessGroup {

@@ -32,7 +32,7 @@ extension ResticXPCService {
         let allowedClasses = Set<AnyClass>([
             NSString.self,
             NSArray.self,
-            NSDictionary.self,
+            NSDictionary.self
         ])
 
         let selector = #selector(ResticXPCProtocol.executeCommand(_:))
@@ -52,7 +52,7 @@ extension ResticXPCService {
         // Configure sandbox extensions
         let permissions: [XPCPermission] = [
             .allowFileAccess,
-            .allowNetworkAccess,
+            .allowNetworkAccess
         ]
         connection.setAccessibilityPermissions(permissions)
 
@@ -143,7 +143,7 @@ extension ResticXPCService {
             "XPC connection error",
             metadata: [
                 "service": serviceName,
-                "error": error.localizedDescription,
+                "error": error.localizedDescription
             ],
             privacy: .public
         )
@@ -153,7 +153,7 @@ extension ResticXPCService {
             object: nil,
             userInfo: [
                 "service": serviceName,
-                "error": error,
+                "error": error
             ]
         )
 
@@ -191,7 +191,7 @@ extension ResticXPCService {
                 "Failed to recover XPC connection",
                 metadata: [
                     "service": serviceName,
-                    "error": error.localizedDescription,
+                    "error": error.localizedDescription
                 ],
                 privacy: .public
             )
@@ -211,8 +211,8 @@ extension ResticXPCService {
         commandHandler = nil
     }
 
-    /// Validate the XPC interface and service health
-    func validateInterface() async throws {
+    /// Validate the remote object proxy and return the service instance
+    private func validateRemoteProxy() throws -> ResticXPCServiceProtocol {
         guard let remoteObjectProxy = connection.remoteObjectProxy else {
             logger.error(
                 "Failed to obtain remote object proxy",
@@ -222,7 +222,6 @@ extension ResticXPCService {
             throw ResticXPCError.connectionFailed
         }
 
-        // Use conditional cast instead of force cast
         guard let service = remoteObjectProxy as? ResticXPCServiceProtocol else {
             logger.error(
                 """
@@ -231,13 +230,18 @@ extension ResticXPCService {
                 """,
                 metadata: [
                     "service": serviceName,
-                    "actualType": String(describing: type(of: remoteObjectProxy)),
+                    "actualType": String(describing: type(of: remoteObjectProxy))
                 ],
                 privacy: .public
             )
             throw ResticXPCError.invalidServiceType
         }
 
+        return service
+    }
+
+    /// Check the health of the XPC service
+    private func checkServiceHealth(_ service: ResticXPCServiceProtocol) async throws {
         do {
             let isAlive = try await service.ping()
             isHealthy = isAlive
@@ -261,12 +265,18 @@ extension ResticXPCService {
                 "XPC service validation failed",
                 metadata: [
                     "service": serviceName,
-                    "error": error.localizedDescription,
+                    "error": error.localizedDescription
                 ],
                 privacy: .public
             )
             isHealthy = false
             throw error
         }
+    }
+
+    /// Validate the XPC interface and service health
+    func validateInterface() async throws {
+        let service = try validateRemoteProxy()
+        try await checkServiceHealth(service)
     }
 }

@@ -67,44 +67,18 @@ public actor PermissionManager { // MARK: Lifecycle
     /// - Parameter url: The URL to request permission for
     /// - Returns: true if permission was granted and persisted
     public func requestAndPersistPermission(for url: URL) async throws -> Bool {
-        logger.debug(
-            "Requesting permission for: \(url.path)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+        logPermissionRequest(for: url)
 
         do {
-            // Request permission
-            guard try await securityService.requestPermission(for: url) else {
-                logger.error(
-                    "Permission denied for: \(url.path)",
-                    file: #file,
-                    function: #function,
-                    line: #line
-                )
+            guard try await requestPermission(for: url) else {
                 return false
             }
 
-            // Create and store bookmark
-            let bookmark = try await securityService.createBookmark(for: url)
-            try persistBookmark(bookmark, for: url)
-
-            logger.info(
-                "Permission granted and persisted for: \(url.path)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
+            try await createAndPersistBookmark(for: url)
+            logPermissionGranted(for: url)
             return true
-
         } catch {
-            logger.error(
-                "Failed to request/persist permission: \(error.localizedDescription)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
+            logPermissionError(error, for: url)
             throw PermissionError.persistenceFailed(error.localizedDescription)
         }
     }
@@ -113,41 +87,21 @@ public actor PermissionManager { // MARK: Lifecycle
     /// - Parameter url: The URL to recover permission for
     /// - Returns: true if permission was recovered
     public func recoverPermission(for url: URL) async throws -> Bool {
-        logger.debug(
-            "Attempting to recover permission for: \(url.path)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+        logRecoveryAttempt(for: url)
 
-        // Check for existing bookmark
-        guard let bookmark = try loadBookmark(for: url) else {
-            logger.debug(
-                "No stored bookmark found for: \(url.path)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
+        guard let bookmark = try loadStoredBookmark(for: url) else {
             return false
         }
 
-        // Attempt to resolve and verify bookmark
         guard let resolvedURL = try resolveAndVerifyBookmark(bookmark, originalURL: url) else {
             return false
         }
 
-        // Test access
-        guard try await testAccess(to: resolvedURL) else {
-            try removeBookmark(for: url)
+        guard try await validateAndTestAccess(resolvedURL, url) else {
             return false
         }
 
-        logger.info(
-            "Successfully recovered permission for: \(url.path)",
-            file: #file,
-            function: #function,
-            line: #line
-        )
+        logRecoverySuccess(for: url)
         return true
     }
 
@@ -156,72 +110,175 @@ public actor PermissionManager { // MARK: Lifecycle
     /// - Returns: true if permission exists and is valid
     public func hasValidPermission(for url: URL) async throws -> Bool {
         do {
-            guard let bookmark = try loadBookmark(for: url) else {
-                return false
-            }
-
-            let resolvedURL = try securityService.resolveBookmark(bookmark)
-            let canAccess = try await securityService.startAccessing(resolvedURL)
-            if !canAccess {
-                logger.error(
-                    "Failed to access resolved URL: \(resolvedURL.path)",
-                    file: #file,
-                    function: #function,
-                    line: #line
-                )
-                try removeBookmark(for: url)
-                return false
-            }
-            return resolvedURL.path == url.path
-
+            return try await validatePermission(for: url)
         } catch {
-            logger.debug(
-                "Permission check failed: \(error.localizedDescription)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
+            logPermissionCheckError(error)
             return false
         }
+    }
+
+    /// Validate permission for URL
+    /// - Parameter url: URL to validate
+    /// - Returns: true if permission is valid
+    private func validatePermission(for url: URL) async throws -> Bool {
+        guard let bookmark = try loadBookmark(for: url) else {
+            return false
+        }
+
+        let resolvedURL = try securityService.resolveBookmark(bookmark)
+        return try await validateAccess(to: resolvedURL, originalURL: url)
+    }
+
+    /// Validate access to resolved URL
+    /// - Parameters:
+    ///   - resolvedURL: Resolved URL from bookmark
+    ///   - originalURL: Original URL for comparison
+    /// - Returns: true if access is valid
+    private func validateAccess(
+        to resolvedURL: URL,
+        originalURL: URL
+    ) async throws -> Bool {
+        let canAccess = try await securityService.startAccessing(resolvedURL)
+        if !canAccess {
+            logAccessFailure(for: resolvedURL)
+            try removeBookmark(for: originalURL)
+            return false
+        }
+        return resolvedURL.path == originalURL.path
+    }
+
+    /// Log permission check error
+    /// - Parameter error: Error to log
+    private func logPermissionCheckError(_ error: Error) {
+        logger.debug(
+            "Permission check failed: \(error.localizedDescription)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    /// Log access failure for URL
+    /// - Parameter url: URL that failed access
+    private func logAccessFailure(for url: URL) {
+        logger.error(
+            "Failed to access resolved URL: \(url.path)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
     }
 
     /// Revoke permission for a URL
     /// - Parameter url: The URL to revoke permission for
     public func revokePermission(for url: URL) async throws {
+        logRevocationStart(for: url)
+
+        do {
+            try removeBookmark(for: url)
+            logRevocationSuccess(for: url)
+        } catch {
+            logRevocationFailure(error, for: url)
+            throw PermissionError.revocationFailed(error.localizedDescription)
+        }
+    }
+
+    /// Log start of permission revocation
+    /// - Parameter url: URL being revoked
+    private func logRevocationStart(for url: URL) {
         logger.debug(
             "Revoking permission for: \(url.path)",
             file: #file,
             function: #function,
             line: #line
         )
-
-        do {
-            try removeBookmark(for: url)
-            logger.info(
-                "Permission revoked for: \(url.path)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
-
-        } catch {
-            logger.error(
-                "Failed to revoke permission: \(error.localizedDescription)",
-                file: #file,
-                function: #function,
-                line: #line
-            )
-            throw PermissionError.revocationFailed(error.localizedDescription)
-        }
     }
 
-        // MARK: Internal
-        :
+    /// Log successful permission revocation
+    /// - Parameter url: URL that was revoked
+    private func logRevocationSuccess(for url: URL) {
+        logger.info(
+            "Permission revoked for: \(url.path)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
 
+    /// Log permission revocation failure
+    /// - Parameters:
+    ///   - error: Error that occurred
+    ///   - url: URL that failed revocation
+    private func logRevocationFailure(_ error: Error, for _: URL) {
+        logger.error(
+            "Failed to revoke permission: \(error.localizedDescription)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
 
-        Sendable: Sendable
+    /// Request permission for URL
+    /// - Parameter url: URL to request permission for
+    /// - Returns: Whether permission was granted
+    private func requestPermission(for url: URL) async throws -> Bool {
+        guard try await securityService.requestPermission(for: url) else {
+            logger.error(
+                "Permission denied for: \(url.path)",
+                file: #file,
+                function: #function,
+                line: #line
+            )
+            return false
+        }
+        return true
+    }
 
-    // MARK: - Properties
+    /// Create and persist bookmark for URL
+    /// - Parameter url: URL to create bookmark for
+    private func createAndPersistBookmark(for url: URL) async throws {
+        let bookmark = try await securityService.createBookmark(for: url)
+        try persistBookmark(bookmark, for: url)
+    }
+
+    /// Log permission request
+    /// - Parameter url: URL being requested
+    private func logPermissionRequest(for url: URL) {
+        logger.debug(
+            "Requesting permission for: \(url.path)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    /// Log permission granted
+    /// - Parameter url: URL permission was granted for
+    private func logPermissionGranted(for url: URL) {
+        logger.info(
+            "Permission granted and persisted for: \(url.path)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    /// Log permission error
+    /// - Parameters:
+    ///   - error: Error that occurred
+    ///   - url: URL that caused error
+    private func logPermissionError(_ error: Error, for _: URL) {
+        logger.error(
+            "Failed to request/persist permission: \(error.localizedDescription)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    // MARK: Internal
+
+    // MARK: Internal
 
     let logger: LoggerProtocol
     let securityService: SecurityServiceProtocol
@@ -331,6 +388,60 @@ public actor PermissionManager { // MARK: Lifecycle
         }
         try await securityService.stopAccessing(url)
         return true
+    }
+
+    /// Load stored bookmark for URL
+    /// - Parameter url: URL to load bookmark for
+    /// - Returns: Stored bookmark if found
+    private func loadStoredBookmark(for url: URL) throws -> Data? {
+        guard let bookmark = try loadBookmark(for: url) else {
+            logger.debug(
+                "No stored bookmark found for: \(url.path)",
+                file: #file,
+                function: #function,
+                line: #line
+            )
+            return nil
+        }
+        return bookmark
+    }
+
+    /// Validate and test access to URL
+    /// - Parameters:
+    ///   - resolvedURL: Resolved URL to test
+    ///   - originalURL: Original URL for bookmark removal
+    /// - Returns: Whether access is valid
+    private func validateAndTestAccess(
+        _ resolvedURL: URL,
+        _ originalURL: URL
+    ) async throws -> Bool {
+        guard try await testAccess(to: resolvedURL) else {
+            try removeBookmark(for: originalURL)
+            return false
+        }
+        return true
+    }
+
+    /// Log recovery attempt
+    /// - Parameter url: URL attempting to recover
+    private func logRecoveryAttempt(for url: URL) {
+        logger.debug(
+            "Attempting to recover permission for: \(url.path)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    /// Log recovery success
+    /// - Parameter url: URL successfully recovered
+    private func logRecoverySuccess(for url: URL) {
+        logger.info(
+            "Successfully recovered permission for: \(url.path)",
+            file: #file,
+            function: #function,
+            line: #line
+        )
     }
 }
 

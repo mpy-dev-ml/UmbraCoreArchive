@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - XPCConnectionManager
+
 /// Manages XPC connection lifecycle and recovery
 @available(macOS 13.0, *)
 public actor XPCConnectionManager {
@@ -350,7 +352,7 @@ public actor XPCConnectionManager {
 
         let userInfo: [String: Any] = [
             "oldState": oldState,
-            "newState": newState,
+            "newState": newState
         ]
         NotificationCenter.default.post(
             name: .xpcConnectionStateChanged,
@@ -386,9 +388,10 @@ public actor XPCConnectionManager {
             XPCConnectionState.active,
             XPCConnectionState.ready
         ]
-        
+
         guard let currentState = connectionState,
-              validStates.contains(currentState) else {
+              validStates.contains(currentState)
+        else {
             throw XPCError.invalidConnectionState
         }
     }
@@ -399,7 +402,7 @@ public actor XPCConnectionManager {
             "Verify connection parameters",
             "Restart XPC service if needed"
         ]
-        
+
         logger.error(
             "XPC connection error: \(error.localizedDescription)",
             category: "XPCConnection",
@@ -417,19 +420,19 @@ extension XPCConnectionManager {
             "messageId": message.id,
             "error": error
         ]
-        
+
         NotificationCenter.default.post(
             name: .xpcConnectionError,
             object: self,
             userInfo: errorInfo
         )
-        
+
         logger.error(
             "XPC connection error: \(error.localizedDescription)",
             metadata: ["message_id": message.id]
         )
     }
-    
+
     func handleDisconnection(
         for connection: NSXPCConnection,
         with error: Error?
@@ -438,14 +441,14 @@ extension XPCConnectionManager {
             "connection": connection,
             "error": error as Any
         ]
-        
+
         NotificationCenter.default.post(
             name: .xpcConnectionDisconnected,
             object: self,
             userInfo: errorInfo
         )
-        
-        if let error = error {
+
+        if let error {
             logger.error(
                 "XPC connection disconnected with error: \(error.localizedDescription)",
                 metadata: ["connection": connection.description]
@@ -457,20 +460,20 @@ extension XPCConnectionManager {
             )
         }
     }
-    
+
     func handleReconnection(
         for connection: NSXPCConnection
     ) {
         let connectionInfo: [String: Any] = [
             "connection": connection
         ]
-        
+
         NotificationCenter.default.post(
             name: .xpcConnectionReconnected,
             object: self,
             userInfo: connectionInfo
         )
-        
+
         logger.info(
             "XPC connection reestablished",
             metadata: ["connection": connection.description]

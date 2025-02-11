@@ -185,7 +185,7 @@ public enum XPCConnectionState: Int {
             "terminal": String(isTerminal),
             "active": String(isActive),
             "recoverable": String(isRecoverable),
-            "transitioning": String(isTransitioning),
+            "transitioning": String(isTransitioning)
         ]
     }
 

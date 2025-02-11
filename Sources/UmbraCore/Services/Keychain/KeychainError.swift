@@ -274,7 +274,7 @@ public enum KeychainError: LocalizedError {
             errSecInvalidItemRef: "Invalid item reference",
             errSecDataTooLarge: "Data is too large",
             errSecDataNotAvailable: "Data is not available",
-            errSecDataNotModifiable: "Data is not modifiable",
+            errSecDataNotModifiable: "Data is not modifiable"
         ]
         return errorDescriptions[status] ?? "Unknown error (\(status))"
     }

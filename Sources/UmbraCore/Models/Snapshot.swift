@@ -1,7 +1,8 @@
 import Foundation
 
 /// Class representing a backup snapshot
-@objc public class Snapshot: NSObject, NSSecureCoding {
+@objc
+public class Snapshot: NSObject, NSSecureCoding {
     // MARK: Lifecycle
 
     /// Initialize a new snapshot
@@ -12,7 +13,8 @@ import Foundation
     ///   - tags: Associated tags
     ///   - paths: Included paths
     ///   - size: Size in bytes
-    @objc public init(
+    @objc
+    public init(
         id: String,
         timestamp: Date,
         hostname: String,
@@ -29,7 +31,8 @@ import Foundation
         super.init()
     }
 
-    @objc public required init?(coder: NSCoder) {
+    @objc
+    public required init?(coder: NSCoder) {
         guard let id = coder.decodeObject(of: NSString.self, forKey: "id") as String?,
               let timestamp = coder.decodeObject(of: NSDate.self, forKey: "timestamp") as Date?,
               let hostname = coder.decodeObject(of: NSString.self, forKey: "hostname") as String?,
@@ -72,7 +75,8 @@ import Foundation
     /// Size of the snapshot in bytes
     @objc public let size: Int64
 
-    @objc public func encode(with coder: NSCoder) {
+    @objc
+    public func encode(with coder: NSCoder) {
         coder.encode(id, forKey: "id")
         coder.encode(timestamp, forKey: "timestamp")
         coder.encode(hostname, forKey: "hostname")

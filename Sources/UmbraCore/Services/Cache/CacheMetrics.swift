@@ -90,93 +90,16 @@ public final class CacheMetrics: BaseSandboxedService {
         try validateUsable(for: "getMetrics")
 
         return try await performanceMonitor.trackDuration("cache.metrics") {
-            // Get cache contents
-            let contents = try FileManager.default.contentsOfDirectory(
-                at: directoryURL,
-                includingPropertiesForKeys: [.fileSizeKey, .creationDateKey]
-            )
-
-            var totalSize: Int64 = 0
-            var totalAge: TimeInterval = 0
-
-            // Calculate metrics
-            for url in contents {
-                let attributes = try FileManager.default.attributesOfItem(
-                    atPath: url.path
-                )
-
-                let size = attributes[.size] as? Int64 ?? 0
-                totalSize += size
-
-                if let creationDate = attributes[.creationDate] as? Date {
-                    totalAge += Date().timeIntervalSince(creationDate)
-                }
-            }
-
-            let entryCount = contents.count
-            let totalRequests = hitCount + missCount
-
-            let hitRate = totalRequests > 0
-                ? Double(hitCount) / Double(totalRequests)
-                : 0.0
-
-            let missRate = totalRequests > 0
-                ? Double(missCount) / Double(totalRequests)
-                : 0.0
-
-            let averageEntrySize = entryCount > 0
-                ? Double(totalSize) / Double(entryCount)
-                : 0.0
-
-            let averageEntryAge = entryCount > 0
-                ? totalAge / Double(entryCount)
-                : 0.0
-
-            // Create metrics
-            let metrics = Metrics(
+            let contents = try getCacheContents()
+            let (totalSize, totalAge) = try calculateTotalSizeAndAge(for: contents)
+            let metrics = try createMetrics(
+                contents: contents,
                 totalSize: totalSize,
-                entryCount: entryCount,
-                hitRate: hitRate,
-                missRate: missRate,
-                averageEntrySize: averageEntrySize,
-                averageEntryAge: averageEntryAge
+                totalAge: totalAge
             )
 
-            // Log metrics
-            logger.debug(
-                """
-                Cache metrics:
-                Size: \(totalSize) bytes
-                Entries: \(entryCount)
-                Hit Rate: \(hitRate * 100)%
-                Miss Rate: \(missRate * 100)%
-                Avg Size: \(averageEntrySize) bytes
-                Avg Age: \(averageEntryAge)s
-                """,
-                file: #file,
-                function: #function,
-                line: #line
-            )
-
-            // Track performance metrics
-            Task {
-                try? await performanceMonitor.trackMetric(
-                    "cache.size",
-                    value: Double(totalSize)
-                )
-                try? await performanceMonitor.trackMetric(
-                    "cache.entries",
-                    value: Double(entryCount)
-                )
-                try? await performanceMonitor.trackMetric(
-                    "cache.hit_rate",
-                    value: hitRate
-                )
-                try? await performanceMonitor.trackMetric(
-                    "cache.miss_rate",
-                    value: missRate
-                )
-            }
+            await logMetrics(metrics)
+            await trackPerformanceMetrics(metrics)
 
             return metrics
         }
@@ -217,4 +140,122 @@ public final class CacheMetrics: BaseSandboxedService {
 
     /// Miss count
     private var missCount: Int = 0
+
+    // MARK: - Private Methods
+
+    /// Get contents of cache directory
+    /// - Returns: Array of URLs for cache entries
+    /// - Throws: FileManager errors
+    private func getCacheContents() throws -> [URL] {
+        try FileManager.default.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: [.fileSizeKey, .creationDateKey]
+        )
+    }
+
+    /// Calculate total size and age for cache entries
+    /// - Parameter contents: Array of cache entry URLs
+    /// - Returns: Tuple of total size and age
+    /// - Throws: FileManager errors
+    private func calculateTotalSizeAndAge(
+        for contents: [URL]
+    ) throws -> (size: Int64, age: TimeInterval) {
+        var totalSize: Int64 = 0
+        var totalAge: TimeInterval = 0
+
+        for url in contents {
+            let attributes = try FileManager.default.attributesOfItem(
+                atPath: url.path
+            )
+
+            let size = attributes[.size] as? Int64 ?? 0
+            totalSize += size
+
+            if let creationDate = attributes[.creationDate] as? Date {
+                totalAge += Date().timeIntervalSince(creationDate)
+            }
+        }
+
+        return (totalSize, totalAge)
+    }
+
+    /// Create metrics from cache data
+    /// - Parameters:
+    ///   - contents: Array of cache entry URLs
+    ///   - totalSize: Total size of cache entries
+    ///   - totalAge: Total age of cache entries
+    /// - Returns: Calculated metrics
+    private func createMetrics(
+        contents: [URL],
+        totalSize: Int64,
+        totalAge: TimeInterval
+    ) -> Metrics {
+        let entryCount = contents.count
+        let totalRequests = hitCount + missCount
+
+        let hitRate = totalRequests > 0
+            ? Double(hitCount) / Double(totalRequests)
+            : 0.0
+
+        let missRate = totalRequests > 0
+            ? Double(missCount) / Double(totalRequests)
+            : 0.0
+
+        let averageEntrySize = entryCount > 0
+            ? Double(totalSize) / Double(entryCount)
+            : 0.0
+
+        let averageEntryAge = entryCount > 0
+            ? totalAge / Double(entryCount)
+            : 0.0
+
+        return Metrics(
+            totalSize: totalSize,
+            entryCount: entryCount,
+            hitRate: hitRate,
+            missRate: missRate,
+            averageEntrySize: averageEntrySize,
+            averageEntryAge: averageEntryAge
+        )
+    }
+
+    /// Log metrics to logger
+    /// - Parameter metrics: Metrics to log
+    private func logMetrics(_ metrics: Metrics) {
+        logger.debug(
+            """
+            Cache metrics:
+            Size: \(metrics.totalSize) bytes
+            Entries: \(metrics.entryCount)
+            Hit Rate: \(metrics.hitRate * 100)%
+            Miss Rate: \(metrics.missRate * 100)%
+            Avg Size: \(metrics.averageEntrySize) bytes
+            Avg Age: \(metrics.averageEntryAge)s
+            """,
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    /// Track performance metrics
+    /// - Parameter metrics: Metrics to track
+    private func trackPerformanceMetrics(_ metrics: Metrics) async {
+        try? await performanceMonitor.trackMetric(
+            "cache.size",
+            value: Double(metrics.totalSize)
+        )
+        try? await performanceMonitor.trackMetric(
+            "cache.entries",
+            value: Double(metrics.entryCount)
+        )
+        try? await performanceMonitor.trackMetric(
+            "cache.hit_rate",
+            value: metrics.hitRate
+        )
+        try? await performanceMonitor.trackMetric(
+            "cache.miss_rate",
+            value: metrics.missRate
+        )
+    }
 }

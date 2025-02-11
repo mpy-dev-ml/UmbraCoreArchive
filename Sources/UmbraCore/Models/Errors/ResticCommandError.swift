@@ -13,48 +13,50 @@ public enum ResticCommandError: ResticErrorProtocol {
     /// Indicates that the command is not supported.
     case unsupportedCommand(String)
 
+    // MARK: Public
+
     public var errorDescription: String {
         switch self {
-        case .executionFailed(let details):
-            return "Command execution failed: \(details)"
-        case .timeout(let command):
-            return "Command timed out: \(command)"
+        case let .executionFailed(details):
+            "Command execution failed: \(details)"
+        case let .timeout(command):
+            "Command timed out: \(command)"
         case .interrupted:
-            return "Command was interrupted"
-        case .invalidArguments(let details):
-            return "Invalid command arguments: \(details)"
-        case .unsupportedCommand(let command):
-            return "Unsupported command: \(command)"
+            "Command was interrupted"
+        case let .invalidArguments(details):
+            "Invalid command arguments: \(details)"
+        case let .unsupportedCommand(command):
+            "Unsupported command: \(command)"
         }
     }
 
     public var failureReason: String? {
         switch self {
-        case .executionFailed(let details):
-            return "The command failed to execute properly: \(details)"
-        case .timeout(let command):
-            return "The command '\(command)' exceeded its time limit"
+        case let .executionFailed(details):
+            "The command failed to execute properly: \(details)"
+        case let .timeout(command):
+            "The command '\(command)' exceeded its time limit"
         case .interrupted:
-            return "The command was interrupted before completion"
-        case .invalidArguments(let details):
-            return "The provided command arguments are invalid: \(details)"
-        case .unsupportedCommand(let command):
-            return "The command '\(command)' is not supported"
+            "The command was interrupted before completion"
+        case let .invalidArguments(details):
+            "The provided command arguments are invalid: \(details)"
+        case let .unsupportedCommand(command):
+            "The command '\(command)' is not supported"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .executionFailed:
-            return "Check system resources and try again"
+            "Check system resources and try again"
         case .timeout:
-            return "Consider increasing the timeout duration or optimizing the command"
+            "Consider increasing the timeout duration or optimizing the command"
         case .interrupted:
-            return "Run the command again when ready"
+            "Run the command again when ready"
         case .invalidArguments:
-            return "Check the command documentation and correct the arguments"
+            "Check the command documentation and correct the arguments"
         case .unsupportedCommand:
-            return "Use a supported command or update to a newer version"
+            "Use a supported command or update to a newer version"
         }
     }
 }

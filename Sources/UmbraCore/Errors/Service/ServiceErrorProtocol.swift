@@ -3,7 +3,8 @@ import Foundation
 // MARK: - ServiceErrorProtocol
 
 /// Protocol defining common functionality for service-related errors
-@objc public protocol ServiceErrorProtocol: LocalizedError {
+@objc
+public protocol ServiceErrorProtocol: LocalizedError {
     /// The service name associated with the error
     var serviceName: String { get }
 

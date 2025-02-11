@@ -1,53 +1,90 @@
 import Foundation
 
-// MARK: - SnapshotFilter
+// MARK: - Types
 
 /// Represents filter criteria for snapshot operations in a backup repository.
-/// Used to filter snapshots based on hostname and tags when listing or managing snapshots.
-public struct SnapshotFilter {
-    // MARK: Lifecycle
+/// Used to filter snapshots based on hostname and tags.
+public struct SnapshotFilter: Sendable {
+    // MARK: - Properties
 
-    /// Initialises a new SnapshotFilter with optional hostname and tags criteria.
+    /// The hostname to filter snapshots by
+    /// If nil, snapshots from all hosts are included
+    public let hostname: String?
+
+    /// The tags to filter snapshots by
+    /// If nil, no tag filtering is applied
+    /// If provided, only snapshots containing all specified tags are included
+    public let tags: [String]?
+
+    // MARK: - Initialisation
+
+    /// Creates a new snapshot filter with optional criteria
     /// - Parameters:
-    ///   - hostname: Optional hostname to filter by. If nil, snapshots from all hosts are included.
-    ///   - tags: Optional array of tags to filter by. If nil, tag filtering is not applied.
-    public init(hostname: String? = nil, tags: [String]? = nil) {
+    ///   - hostname: Optional hostname to filter by
+    ///   - tags: Optional array of tags to filter by
+    public init(
+        hostname: String? = nil,
+        tags: [String]? = nil
+    ) {
         self.hostname = hostname
         self.tags = tags
     }
-
-    // MARK: Public
-
-    /// Optional hostname to filter snapshots by. If provided, only snapshots from this host will be
-    /// included.
-    public let hostname: String?
-
-    /// Optional array of tags to filter snapshots by. If provided, only snapshots containing all
-    /// specified tags will be included.
-    public let tags: [String]?
 }
 
 // MARK: - BackupProgress
 
-/// Represents the current progress of a backup operation.
-/// Provides detailed information about files processed, processing speed, and estimated completion
-/// time.
-public struct BackupProgress {
-    // MARK: Lifecycle
+/// Represents the current progress of a backup operation
+/// Provides detailed information about files processed and estimated completion
+public struct BackupProgress: Sendable {
+    // MARK: - Properties
 
-    /// Initialises a new BackupProgress instance with the current backup operation status.
+    /// Total number of files to process
+    public let totalFiles: Int
+
+    /// Number of files processed so far
+    public let processedFiles: Int
+
+    /// Current processing speed in bytes per second
+    public let speed: Int64
+
+    /// Total number of bytes processed
+    public let processedBytes: Int64
+
+    /// Estimated time remaining in seconds
+    /// nil if estimation is not yet available
+    public let estimatedTimeRemaining: TimeInterval?
+
+    // MARK: - Computed Properties
+
+    /// Percentage of files processed (0-100)
+    public var progressPercentage: Double {
+        guard totalFiles > 0 else { return 0 }
+        return Double(processedFiles) / Double(totalFiles) * 100
+    }
+
+    /// Formatted speed string (e.g., "1.2 MB/s")
+    public var formattedSpeed: String {
+        ByteCountFormatter.string(
+            fromByteCount: speed,
+            countStyle: .binary
+        ) + "/s"
+    }
+
+    // MARK: - Initialisation
+
+    /// Creates a new backup progress instance
     /// - Parameters:
-    ///   - totalFiles: Total number of files to process
-    ///   - processedFiles: Number of files processed so far
-    ///   - speed: Current processing speed in bytes per second
-    ///   - processedBytes: Total bytes processed so far
-    ///   - estimatedTimeRemaining: Estimated time remaining in seconds, if available
+    ///   - totalFiles: Total files to process
+    ///   - processedFiles: Files processed so far
+    ///   - speed: Current speed in bytes/second
+    ///   - processedBytes: Total bytes processed
+    ///   - estimatedTimeRemaining: Estimated seconds remaining
     public init(
         totalFiles: Int,
         processedFiles: Int,
         speed: Int64,
         processedBytes: Int64,
-        estimatedTimeRemaining: TimeInterval?
+        estimatedTimeRemaining: TimeInterval? = nil
     ) {
         self.totalFiles = totalFiles
         self.processedFiles = processedFiles
@@ -55,21 +92,4 @@ public struct BackupProgress {
         self.processedBytes = processedBytes
         self.estimatedTimeRemaining = estimatedTimeRemaining
     }
-
-    // MARK: Public
-
-    /// Total number of files that need to be processed in this backup operation
-    public let totalFiles: Int
-
-    /// Number of files that have been processed so far
-    public let processedFiles: Int
-
-    /// Current processing speed in bytes per second
-    public let speed: Int64
-
-    /// Total number of bytes processed so far
-    public let processedBytes: Int64
-
-    /// Estimated time remaining for the backup operation in seconds, if available
-    public let estimatedTimeRemaining: TimeInterval?
 }

@@ -1,7 +1,8 @@
 import Foundation
 
 /// Errors that can occur during service lifecycle operations
-@objc public enum ServiceLifecycleError: Int, ServiceErrorProtocol {
+@objc
+public enum ServiceLifecycleError: Int, ServiceErrorProtocol {
     /// Service not initialised
     case notInitialized(String)
 

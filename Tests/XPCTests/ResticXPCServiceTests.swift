@@ -14,17 +14,9 @@
 import Foundation
 import Testing
 
-// MARK: - Mock Implementations
+// MARK: - MockSecurityService
 
 final class MockSecurityService: SecurityServiceProtocol {
-    func validateXPCConnection(_: NSXPCConnection) async throws -> Bool {
-        validateXPCCalled = true
-        if shouldSucceed {
-            return true
-        }
-        throw SecurityError.xpcValidationFailed("Mock XPC validation failed")
-    }
-
     var requestPermissionCalled = false
     var createBookmarkCalled = false
     var resolveBookmarkCalled = false
@@ -36,6 +28,14 @@ final class MockSecurityService: SecurityServiceProtocol {
     var shouldSucceed = true
     var lastURL: URL?
     var lastBookmark: Data?
+
+    func validateXPCConnection(_: NSXPCConnection) async throws -> Bool {
+        validateXPCCalled = true
+        if shouldSucceed {
+            return true
+        }
+        throw SecurityError.xpcValidationFailed("Mock XPC validation failed")
+    }
 
     func validateXPCService() async throws -> Bool {
         validateXPCCalled = true
@@ -106,12 +106,10 @@ final class MockSecurityService: SecurityServiceProtocol {
     }
 }
 
-struct ResticXPCServiceTests {
-    // MARK: - Test Properties
+// MARK: - ResticXPCServiceTests
 
-    private var sut: ResticXPCService!
-    private var mockLogger: MockLogger!
-    private var mockSecurityService: MockSecurityService!
+struct ResticXPCServiceTests {
+    // MARK: Internal
 
     // MARK: - Setup and Teardown
 
@@ -191,4 +189,10 @@ struct ResticXPCServiceTests {
             )
         }
     }
+
+    // MARK: Private
+
+    private var sut: ResticXPCService!
+    private var mockLogger: MockLogger!
+    private var mockSecurityService: MockSecurityService!
 }

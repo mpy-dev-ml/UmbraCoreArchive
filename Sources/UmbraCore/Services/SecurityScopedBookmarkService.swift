@@ -31,7 +31,7 @@ public class SecurityScopedBookmarkService: NSObject {
                             config: LogConfig(
                                 metadata: [
                                     "id": bookmarkID,
-                                    "error": error.localizedDescription,
+                                    "error": error.localizedDescription
                                 ]
                             )
                         )
@@ -100,7 +100,7 @@ public class SecurityScopedBookmarkService: NSObject {
             let data = try url.bookmarkData(
                 options: [
                     .withSecurityScope,
-                    .securityScopeAllowOnlyReadAccess,
+                    .securityScopeAllowOnlyReadAccess
                 ],
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
@@ -128,27 +128,9 @@ public class SecurityScopedBookmarkService: NSObject {
             "bookmark.start_access"
         ) {
             let bookmark = try getBookmark(bookmarkID)
-
-            var isStale = false
-            let url = try URL(
-                resolvingBookmarkData: bookmark.data,
-                options: .withSecurityScope,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-
-            if isStale {
-                throw BookmarkError.staleBookmark(bookmarkID)
-            }
-
-            guard url.startAccessingSecurityScopedResource() else {
-                throw BookmarkError.accessDenied(url.path)
-            }
-
-            try updateBookmarkAccess(bookmarkID)
-            markActiveAccess(bookmarkID)
-            logBookmarkAccessed(bookmark)
-
+            let url = try resolveBookmarkURL(bookmark)
+            try validateAndStartAccess(url, bookmarkID: bookmarkID)
+            try updateAccessMetadata(bookmark: bookmark, bookmarkID: bookmarkID)
             return url
         }
     }
@@ -162,17 +144,8 @@ public class SecurityScopedBookmarkService: NSObject {
             "bookmark.stop_access"
         ) {
             let bookmark = try getBookmark(bookmarkID)
-
-            var isStale = false
-            let url = try URL(
-                resolvingBookmarkData: bookmark.data,
-                options: .withSecurityScope,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-
-            url.stopAccessingSecurityScopedResource()
-            clearActiveAccess(bookmarkID)
+            let url = try resolveBookmarkURL(bookmark)
+            try validateAndStopAccess(url, bookmarkID: bookmarkID)
             logBookmarkStopped(bookmark)
         }
     }
@@ -186,14 +159,27 @@ public class SecurityScopedBookmarkService: NSObject {
             "bookmark.remove"
         ) {
             let bookmark = try getBookmark(bookmarkID)
-
-            if isAccessActive(bookmarkID) {
-                throw BookmarkError.activeAccess(bookmarkID)
-            }
-
-            try deleteBookmark(bookmarkID)
-            logBookmarkRemoved(bookmark)
+            try validateBookmarkRemoval(bookmarkID)
+            try removeBookmarkData(bookmark, bookmarkID: bookmarkID)
         }
+    }
+
+    /// Validate bookmark can be removed
+    /// - Parameter bookmarkID: Bookmark identifier to validate
+    /// - Throws: BookmarkError if bookmark is in use
+    private func validateBookmarkRemoval(_ bookmarkID: String) throws {
+        if isAccessActive(bookmarkID) {
+            throw BookmarkError.activeAccess(bookmarkID)
+        }
+    }
+
+    /// Remove bookmark data and log
+    /// - Parameters:
+    ///   - bookmark: Bookmark data to remove
+    ///   - bookmarkID: Bookmark identifier
+    private func removeBookmarkData(_ bookmark: BookmarkData, bookmarkID: String) throws {
+        try deleteBookmark(bookmarkID)
+        logBookmarkRemoved(bookmark)
     }
 
     /// Get all bookmarks
@@ -298,6 +284,75 @@ public class SecurityScopedBookmarkService: NSObject {
         }
     }
 
+    /// Resolve bookmark URL from data
+    /// - Parameter bookmark: Bookmark data
+    /// - Returns: Resolved URL
+    private func resolveBookmarkURL(_ bookmark: BookmarkData) throws -> URL {
+        var isStale = false
+        let url = try URL(
+            resolvingBookmarkData: bookmark.data,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+
+        if isStale {
+            logger.warning(
+                "Bookmark data is stale",
+                config: LogConfig(
+                    metadata: [
+                        "id": bookmark.id,
+                        "path": bookmark.path
+                    ]
+                )
+            )
+        }
+
+        return url
+    }
+
+    /// Validate and start URL access
+    /// - Parameters:
+    ///   - url: URL to access
+    ///   - bookmarkID: Bookmark identifier
+    private func validateAndStartAccess(_ url: URL, bookmarkID: String) throws {
+        guard !isAccessActive(bookmarkID) else {
+            throw BookmarkError.alreadyAccessing(bookmarkID)
+        }
+
+        guard url.startAccessingSecurityScopedResource() else {
+            throw BookmarkError.accessDenied(bookmarkID)
+        }
+
+        activeAccess.insert(bookmarkID)
+    }
+
+    /// Update bookmark access metadata
+    /// - Parameters:
+    ///   - bookmark: Bookmark to update
+    ///   - bookmarkID: Bookmark identifier
+    private func updateAccessMetadata(bookmark: BookmarkData, bookmarkID: String) throws {
+        var updatedBookmark = bookmark
+        updatedBookmark.lastAccessedAt = Date()
+        updatedBookmark.accessCount += 1
+
+        bookmarks[bookmarkID] = updatedBookmark
+        logBookmarkAccessed(updatedBookmark)
+    }
+
+    /// Validate and stop URL access
+    /// - Parameters:
+    ///   - url: URL to stop accessing
+    ///   - bookmarkID: Bookmark identifier
+    private func validateAndStopAccess(_ url: URL, bookmarkID: String) throws {
+        guard isAccessActive(bookmarkID) else {
+            throw BookmarkError.notAccessing(bookmarkID)
+        }
+
+        url.stopAccessingSecurityScopedResource()
+        clearActiveAccess(bookmarkID)
+    }
+
     /// Log bookmark created
     private func logBookmarkCreated(
         _ bookmark: BookmarkData
@@ -308,7 +363,7 @@ public class SecurityScopedBookmarkService: NSObject {
                 metadata: [
                     "id": bookmark.id,
                     "path": bookmark.path,
-                    "readOnly": String(bookmark.isReadOnly),
+                    "readOnly": String(bookmark.isReadOnly)
                 ]
             )
         )
@@ -324,7 +379,7 @@ public class SecurityScopedBookmarkService: NSObject {
                 metadata: [
                     "id": bookmark.id,
                     "path": bookmark.path,
-                    "accessCount": String(bookmark.accessCount),
+                    "accessCount": String(bookmark.accessCount)
                 ]
             )
         )
@@ -339,7 +394,7 @@ public class SecurityScopedBookmarkService: NSObject {
             config: LogConfig(
                 metadata: [
                     "id": bookmark.id,
-                    "path": bookmark.path,
+                    "path": bookmark.path
                 ]
             )
         )
@@ -354,7 +409,7 @@ public class SecurityScopedBookmarkService: NSObject {
             config: LogConfig(
                 metadata: [
                     "id": bookmark.id,
-                    "path": bookmark.path,
+                    "path": bookmark.path
                 ]
             )
         )

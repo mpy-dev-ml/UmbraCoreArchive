@@ -19,7 +19,8 @@ import Foundation
 ///     bookmarks: [:]
 /// )
 /// ```
-@objc public class ResticCommand: NSObject, NSSecureCoding {
+@objc
+public class ResticCommand: NSObject, NSSecureCoding {
     // MARK: Lifecycle
 
     /// Initialize a new Restic command
@@ -29,7 +30,8 @@ import Foundation
     ///   - environment: Dictionary of environment variables
     ///   - workingDirectory: Optional working directory path
     ///   - bookmarks: Dictionary of security-scoped bookmarks
-    @objc public init(
+    @objc
+    public init(
         command: String,
         arguments: [String],
         environment: [String: String],
@@ -47,7 +49,8 @@ import Foundation
     /// Decodes and initializes a command from secure storage
     /// - Parameter coder: The coder to read from
     /// - Returns: A new ResticCommand instance, or nil if decoding fails
-    @objc public required init?(coder: NSCoder) {
+    @objc
+    public required init?(coder: NSCoder) {
         guard
             let command = coder.decodeObject(
                 of: NSString.self,
@@ -122,7 +125,8 @@ import Foundation
 
     /// Encodes the command for secure transmission
     /// - Parameter coder: The coder to write to
-    @objc public func encode(with coder: NSCoder) {
+    @objc
+    public func encode(with coder: NSCoder) {
         coder.encode(command, forKey: "command")
         coder.encode(arguments, forKey: "arguments")
         coder.encode(environment, forKey: "environment")

@@ -1,7 +1,8 @@
 import Foundation
 
 /// Errors that can occur during service state management
-@objc public enum ServiceStateError: Int, ServiceErrorProtocol {
+@objc
+public enum ServiceStateError: Int, ServiceErrorProtocol {
     /// Invalid service state
     case invalidState(
         service: String,
@@ -13,7 +14,7 @@ import Foundation
     case stateTransitionFailed(
         service: String,
         from: ServiceState,
-        to: ServiceState
+        targetState: ServiceState
     )
 
     /// State lock timeout
@@ -36,8 +37,8 @@ import Foundation
         switch self {
         case let .invalidState(service, current, expected):
             "Invalid state for service \(service): expected \(expected), but was \(current)"
-        case let .stateTransitionFailed(service, from, to):
-            "Failed to transition service \(service) from \(from) to \(to)"
+        case let .stateTransitionFailed(service, from, targetState):
+            "Failed to transition service \(service) from \(from) to \(targetState)"
         case let .stateLockTimeout(service, state):
             "Timeout waiting for service \(service) state lock in state \(state)"
         }

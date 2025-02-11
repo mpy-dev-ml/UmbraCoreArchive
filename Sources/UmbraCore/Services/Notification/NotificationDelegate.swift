@@ -147,7 +147,7 @@ public final class NotificationDelegateService: BaseSandboxedService {
 
     /// Initialize with dependencies
     /// - Parameter logger: Logger for tracking operations
-    public override init(logger: LoggerProtocol) {
+    override public init(logger: LoggerProtocol) {
         super.init(logger: logger)
     }
 

@@ -8,7 +8,7 @@ public class BaseSandboxedService: BaseService {
 
     /// Initialize with a logger
     /// - Parameter logger: Logger for tracking operations
-    public override init(logger: LoggerProtocol) {
+    override public init(logger: LoggerProtocol) {
         super.init(logger: logger)
     }
 

@@ -1,7 +1,8 @@
 import Foundation
 
 /// Errors that can occur during service operations
-@objc public enum ServiceOperationError: Int, ServiceErrorProtocol {
+@objc
+public enum ServiceOperationError: Int, ServiceErrorProtocol {
     /// Operation failed
     case operationFailed(
         service: String,

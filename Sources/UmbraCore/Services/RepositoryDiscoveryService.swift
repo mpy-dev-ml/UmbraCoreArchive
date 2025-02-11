@@ -38,26 +38,68 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
             throw RepositoryDiscoveryError.accessDenied(url)
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            proxy?.scanLocation(url, recursive: recursive) { urls, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
+        return try await performScan(at: url, recursive: recursive)
+    }
 
-                guard let urls else {
-                    continuation.resume(returning: [])
-                    return
-                }
+    /// Perform repository scan at location
+    /// - Parameters:
+    ///   - url: Location to scan
+    ///   - recursive: Whether to scan recursively
+    /// - Returns: Array of discovered repositories
+    private func performScan(
+        at url: URL,
+        recursive: Bool
+    ) async throws -> [DiscoveredRepository] {
+        try await withCheckedThrowingContinuation { continuation in
+            executeScan(url: url, recursive: recursive) { result in
+                handleScanResult(result, continuation: continuation)
+            }
+        }
+    }
 
-                Task {
-                    do {
-                        let repositories = try await self.processDiscoveredURLs(urls)
-                        continuation.resume(returning: repositories)
-                    } catch {
-                        continuation.resume(throwing: error)
+    /// Execute repository scan
+    /// - Parameters:
+    ///   - url: Location to scan
+    ///   - recursive: Whether to scan recursively
+    ///   - completion: Completion handler with scan result
+    private func executeScan(
+        url: URL,
+        recursive: Bool,
+        completion: @escaping (Result<[URL]?, Error>) -> Void
+    ) {
+        proxy?.scanLocation(url, recursive: recursive) { urls, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+            completion(.success(urls))
+        }
+    }
+
+    /// Handle scan result
+    /// - Parameters:
+    ///   - result: Scan result
+    ///   - continuation: Async continuation
+    private func handleScanResult(
+        _ result: Result<[URL]?, Error>,
+        continuation: CheckedContinuation<[DiscoveredRepository], Error>
+    ) {
+        Task {
+            do {
+                switch result {
+                case let .success(urls):
+                    guard let urls else {
+                        continuation.resume(returning: [])
+                        return
                     }
+                    let repositories = try await processDiscoveredURLs(urls)
+                    continuation.resume(returning: repositories)
+
+                case let .failure(error):
+                    continuation.resume(throwing: error)
                 }
+            } catch {
+                continuation.resume(throwing: error)
             }
         }
     }
@@ -65,14 +107,43 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
     public func verifyRepository(_ repository: DiscoveredRepository) async throws -> Bool {
         logger.info("Verifying repository at \(repository.url.path)")
 
-        return try await withCheckedThrowingContinuation { continuation in
-            proxy?.verifyRepository(at: repository.url) { isValid, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume(returning: isValid)
+        try await withCheckedThrowingContinuation { continuation in
+            executeVerification(for: repository) { result in
+                handleVerificationResult(result, continuation: continuation)
             }
+        }
+    }
+
+    /// Execute repository verification
+    /// - Parameters:
+    ///   - repository: Repository to verify
+    ///   - completion: Completion handler with verification result
+    private func executeVerification(
+        for repository: DiscoveredRepository,
+        completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        proxy?.verifyRepository(at: repository.url) { isValid, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+            completion(.success(isValid))
+        }
+    }
+
+    /// Handle verification result
+    /// - Parameters:
+    ///   - result: Verification result
+    ///   - continuation: Async continuation
+    private func handleVerificationResult(
+        _ result: Result<Bool, Error>,
+        continuation: CheckedContinuation<Bool, Error>
+    ) {
+        switch result {
+        case let .success(isValid):
+            continuation.resume(returning: isValid)
+        case let .failure(error):
+            continuation.resume(throwing: error)
         }
     }
 
@@ -80,13 +151,42 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         logger.info("Indexing repository at \(repository.url.path)")
 
         try await withCheckedThrowingContinuation { continuation in
-            proxy?.indexRepository(at: repository.url) { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume()
+            executeIndexing(for: repository) { result in
+                handleIndexingResult(result, continuation: continuation)
             }
+        }
+    }
+
+    /// Execute repository indexing
+    /// - Parameters:
+    ///   - repository: Repository to index
+    ///   - completion: Completion handler with indexing result
+    private func executeIndexing(
+        for repository: DiscoveredRepository,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        proxy?.indexRepository(at: repository.url) { error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+            completion(.success(()))
+        }
+    }
+
+    /// Handle indexing result
+    /// - Parameters:
+    ///   - result: Indexing result
+    ///   - continuation: Async continuation
+    private func handleIndexingResult(
+        _ result: Result<Void, Error>,
+        continuation: CheckedContinuation<Void, Error>
+    ) {
+        switch result {
+        case .success:
+            continuation.resume()
+        case let .failure(error):
+            continuation.resume(throwing: error)
         }
     }
 
@@ -138,26 +238,50 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         return bookmark
     }
 
+    /// Process discovered URLs into repositories
+    /// - Parameter urls: Array of discovered URLs
+    /// - Returns: Array of valid repositories
     private func processDiscoveredURLs(_ urls: [URL]) async throws -> [DiscoveredRepository] {
-        var repositories: [DiscoveredRepository] = []
+        let validRepositories = await validateAndCreateRepositories(from: urls)
+        return validRepositories.compactMap { $0 }
+    }
 
-        for url in urls {
-            guard let metadata = try? await getRepositoryMetadata(for: url) else {
-                continue
+    /// Validate and create repositories from URLs
+    /// - Parameter urls: Array of URLs to process
+    /// - Returns: Array of optional repositories
+    private func validateAndCreateRepositories(
+        from urls: [URL]
+    ) async -> [DiscoveredRepository?] {
+        await withTaskGroup(of: DiscoveredRepository?.self) { group in
+            for url in urls {
+                group.addTask {
+                    try? await self.createRepository(from: url)
+                }
             }
 
-            let repository = DiscoveredRepository(
-                url: url,
-                type: .local,
-                discoveredAt: Date(),
-                isVerified: false,
-                metadata: metadata
-            )
+            var repositories: [DiscoveredRepository?] = []
+            for await repository in group {
+                repositories.append(repository)
+            }
+            return repositories
+        }
+    }
 
-            repositories.append(repository)
+    /// Create repository from URL
+    /// - Parameter url: URL to create repository from
+    /// - Returns: Created repository if valid
+    private func createRepository(from url: URL) async throws -> DiscoveredRepository {
+        guard let metadata = try? await getRepositoryMetadata(for: url) else {
+            throw RepositoryDiscoveryError.invalidRepository(url)
         }
 
-        return repositories
+        return DiscoveredRepository(
+            url: url,
+            type: .local,
+            discoveredAt: Date(),
+            isVerified: false,
+            metadata: metadata
+        )
     }
 
     private func getRepositoryMetadata(for url: URL) async throws -> RepositoryMetadata {
@@ -173,14 +297,20 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
                     return
                 }
 
-                let repositoryMetadata = RepositoryMetadata(
-                    size: metadata["size"] as? UInt64,
-                    lastModified: metadata["lastModified"] as? Date,
-                    snapshotCount: metadata["snapshotCount"] as? Int
-                )
-
+                let repositoryMetadata = createRepositoryMetadata(from: metadata)
                 continuation.resume(returning: repositoryMetadata)
             }
         }
+    }
+
+    /// Create repository metadata from dictionary
+    /// - Parameter metadata: Dictionary containing metadata values
+    /// - Returns: Structured repository metadata
+    private func createRepositoryMetadata(from metadata: [String: Any]) -> RepositoryMetadata {
+        RepositoryMetadata(
+            size: metadata["size"] as? UInt64,
+            lastModified: metadata["lastModified"] as? Date,
+            snapshotCount: metadata["snapshotCount"] as? Int
+        )
     }
 }

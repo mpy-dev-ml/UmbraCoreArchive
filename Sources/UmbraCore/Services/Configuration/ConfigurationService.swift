@@ -108,52 +108,54 @@ public final class ConfigurationService: BaseSandboxedService {
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(type, forKey: .type)
-
-            switch type {
-            case .string:
-                guard let stringValue = value as? String else {
-                    throw ConfigurationError.invalidValueType(expected: String.self, actual: type(of: value))
-                }
-                try container.encode(stringValue, forKey: .value)
-            case .integer:
-                guard let intValue = value as? Int else {
-                    throw ConfigurationError.invalidValueType(expected: Int.self, actual: type(of: value))
-                }
-                try container.encode(intValue, forKey: .value)
-            case .double:
-                guard let doubleValue = value as? Double else {
-                    throw ConfigurationError.invalidValueType(expected: Double.self, actual: type(of: value))
-                }
-                try container.encode(doubleValue, forKey: .value)
-            case .boolean:
-                guard let boolValue = value as? Bool else {
-                    throw ConfigurationError.invalidValueType(expected: Bool.self, actual: type(of: value))
-                }
-                try container.encode(boolValue, forKey: .value)
-            case .date:
-                guard let dateValue = value as? Date else {
-                    throw ConfigurationError.invalidValueType(expected: Date.self, actual: type(of: value))
-                }
-                try container.encode(dateValue, forKey: .value)
-            case .data:
-                guard let dataValue = value as? Data else {
-                    throw ConfigurationError.invalidValueType(expected: Data.self, actual: type(of: value))
-                }
-                try container.encode(dataValue, forKey: .value)
-            case .array:
-                guard let arrayValue = value as? [Any] else {
-                    throw ConfigurationError.invalidValueType(expected: Array<Any>.self, actual: type(of: value))
-                }
-                try container.encode(arrayValue, forKey: .value)
-            case .dictionary:
-                guard let dictValue = value as? [String: Any] else {
-                    throw ConfigurationError.invalidValueType(expected: Dictionary<String, Any>.self, actual: type(of: value))
-                }
-                try container.encode(dictValue, forKey: .value)
-            }
+            try encodeValue(to: container)
         }
 
         // MARK: Private
+
+        private func encodeValue(to container: KeyedEncodingContainer<CodingKeys>) throws {
+            try validateAndEncode(for: type, to: container)
+        }
+
+        private func validateAndEncode(
+            for type: ValueType,
+            to container: KeyedEncodingContainer<CodingKeys>
+        ) throws {
+            switch type {
+            case .string:
+                try encodeTypedValue(String.self, to: container)
+            case .integer:
+                try encodeTypedValue(Int.self, to: container)
+            case .double:
+                try encodeTypedValue(Double.self, to: container)
+            case .boolean:
+                try encodeTypedValue(Bool.self, to: container)
+            case .date:
+                try encodeTypedValue(Date.self, to: container)
+            case .data:
+                try encodeTypedValue(Data.self, to: container)
+            case .array:
+                try encodeTypedValue([Any].self, to: container)
+            case .dictionary:
+                try encodeTypedValue([String: Any].self, to: container)
+            }
+        }
+
+        private func encodeTypedValue<T>(
+            _ type: T.Type,
+            to container: KeyedEncodingContainer<CodingKeys>
+        ) throws {
+            guard let typedValue = value as? T else {
+                let errorMessage = """
+                    Expected type \(type), but got \(Swift.type(of: value))
+                """
+                throw ConfigurationError.invalidValueType(
+                    expected: type,
+                    actual: Swift.type(of: value)
+                )
+            }
+            try container.encode(typedValue, forKey: .value)
+        }
 
         // MARK: - Codable Implementation
 

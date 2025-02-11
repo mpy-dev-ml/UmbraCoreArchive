@@ -7,7 +7,9 @@ extension XPCServiceDelegate {
     /// Start tracking an operation
     func startTracking(_ operation: Operation) {
         queue.async { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
             activeOperations[operation.identifier] = operation
             logger.info(
                 "Started tracking operation",
@@ -22,7 +24,9 @@ extension XPCServiceDelegate {
     /// Stop tracking an operation
     func stopTracking(_ operation: Operation) {
         queue.async { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
             activeOperations.removeValue(forKey: operation.identifier)
             logger.info(
                 "Stopped tracking operation",
@@ -37,7 +41,9 @@ extension XPCServiceDelegate {
     /// Cancel all active operations
     func cancelAllOperations() {
         queue.async { [weak self] in
-            guard let self = self else { return }
+            guard let self else {
+                return
+            }
             for operation in activeOperations.values {
                 cancelOperation(operation)
             }

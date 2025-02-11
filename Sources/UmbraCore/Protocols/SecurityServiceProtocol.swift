@@ -28,20 +28,23 @@ import Foundation
 ///     print("Security operation failed: \(error)")
 /// }
 /// ```
-@objc public protocol SecurityServiceProtocol: Sendable: Sendable: NSObjectProtocol {
+@objc
+public protocol SecurityServiceProtocol: Sendable: Sendable: NSObjectProtocol {
     /// Request permission to access a URL
     ///
     /// - Parameter url: URL for which permission is requested
     /// - Returns: Whether permission was granted
     /// - Throws: SecurityError if permission request fails
-    @objc func requestPermission(for url: URL) async throws -> Bool
+    @objc
+    func requestPermission(for url: URL) async throws -> Bool
 
     /// Create a security-scoped bookmark for a URL
     ///
     /// - Parameter url: URL for which to create a bookmark
     /// - Returns: Bookmark data
     /// - Throws: SecurityError if bookmark creation fails
-    @objc func createBookmark(for url: URL) throws -> Data
+    @objc
+    func createBookmark(for url: URL) throws -> Data
 
     /// Validate a security-scoped bookmark
     ///
@@ -50,16 +53,19 @@ import Foundation
     ///   - url: URL for which the bookmark was created
     /// - Returns: Whether the bookmark is valid
     /// - Throws: SecurityError if validation fails
-    @objc func validateBookmark(_ bookmark: Data, for url: URL) throws -> Bool
+    @objc
+    func validateBookmark(_ bookmark: Data, for url: URL) throws -> Bool
 
     /// Start accessing a URL
     ///
     /// - Parameter url: URL to access
     /// - Throws: SecurityError if access fails
-    @objc func startAccessing(_ url: URL) throws
+    @objc
+    func startAccessing(_ url: URL) throws
 
     /// Stop accessing a URL
     ///
     /// - Parameter url: URL to stop accessing
-    @objc func stopAccessing(_ url: URL)
+    @objc
+    func stopAccessing(_ url: URL)
 }

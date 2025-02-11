@@ -107,7 +107,7 @@ public final class PerformanceMetrics: BaseSandboxedService {
 
     // MARK: - Public Methods
 
-    /// Analyze metrics for type and window
+    /// Analyse metrics for a specific type and time window
     /// - Parameters:
     ///   - type: Metric type
     ///   - window: Time window
@@ -117,71 +117,23 @@ public final class PerformanceMetrics: BaseSandboxedService {
         window: TimeWindow
     ) -> AnalysisResult {
         // Get metrics for window
-        let metrics = monitor.getMetrics(for: type).filter { metric in
-            metric.timestamp >= window.startDate &&
-                metric.timestamp <= window.endDate
-        }
+        let metrics = getMetricsInWindow(type: type, window: window)
 
         guard !metrics.isEmpty else {
-            return AnalysisResult(
-                average: 0,
-                minimum: 0,
-                maximum: 0,
-                standardDeviation: 0,
-                percentiles: [:],
-                sampleCount: 0
-            )
+            return createEmptyAnalysisResult()
         }
 
-        // Calculate statistics
         let values = metrics.map(\.value)
-        let count = values.count
-        let sum = values.reduce(0, +)
-        let average = sum / Double(count)
-        let minimum = values.min() ?? 0
-        let maximum = values.max() ?? 0
+        let statistics = calculateBasicStatistics(values)
+        let standardDeviation = calculateStandardDeviation(values, average: statistics.average)
+        let percentiles = calculatePercentiles(values)
 
-        // Calculate standard deviation
-        let squaredDifferences = values.map { pow($0 - average, 2) }
-        let variance = squaredDifferences.reduce(0, +) / Double(count)
-        let standardDeviation = sqrt(variance)
-
-        // Calculate percentiles
-        let sortedValues = values.sorted()
-        var percentiles: [Double: Double] = [:]
-
-        for percentile in [50.0, 75.0, 90.0, 95.0, 99.0] {
-            let index = Int(ceil(Double(count) * percentile / 100.0)) - 1
-            percentiles[percentile] = sortedValues[max(0, min(index, count - 1))]
-        }
-
-        // Create result
-        let result = AnalysisResult(
-            average: average,
-            minimum: minimum,
-            maximum: maximum,
+        return createAnalysisResult(
+            statistics: statistics,
             standardDeviation: standardDeviation,
             percentiles: percentiles,
-            sampleCount: count
+            sampleCount: values.count
         )
-
-        // Log analysis
-        logger.debug(
-            """
-            Analyzed metrics:
-            Type: \(type.rawValue)
-            Window: \(window)
-            Average: \(average)
-            Min/Max: \(minimum)/\(maximum)
-            StdDev: \(standardDeviation)
-            Samples: \(count)
-            """,
-            file: #file,
-            function: #function,
-            line: #line
-        )
-
-        return result
     }
 
     /// Get operation trends
@@ -222,10 +174,8 @@ public final class PerformanceMetrics: BaseSandboxedService {
         }
 
         // Calculate averages
-        for (date, values) in buckets {
-            if !values.isEmpty {
-                trends[date] = values.reduce(0, +) / Double(values.count)
-            }
+        for (date, values) in buckets where !values.isEmpty {
+            trends[date] = values.reduce(0, +) / Double(values.count)
         }
 
         // Log trends
@@ -293,6 +243,110 @@ public final class PerformanceMetrics: BaseSandboxedService {
         )
 
         return anomalies
+    }
+
+    // MARK: - Private Analysis Methods
+
+    private func getMetricsInWindow(
+        type: PerformanceMonitor.MetricType,
+        window: TimeWindow
+    ) -> [PerformanceMonitor.Metric] {
+        monitor.getMetrics(for: type).filter { metric in
+            metric.timestamp >= window.startDate &&
+                metric.timestamp <= window.endDate
+        }
+    }
+
+    private func createEmptyAnalysisResult() -> AnalysisResult {
+        AnalysisResult(
+            average: 0,
+            minimum: 0,
+            maximum: 0,
+            standardDeviation: 0,
+            percentiles: [:],
+            sampleCount: 0
+        )
+    }
+
+    private struct BasicStatistics {
+        let average: Double
+        let minimum: Double
+        let maximum: Double
+    }
+
+    private func calculateBasicStatistics(_ values: [Double]) -> BasicStatistics {
+        let count = values.count
+        let sum = values.reduce(0, +)
+
+        return BasicStatistics(
+            average: sum / Double(count),
+            minimum: values.min() ?? 0,
+            maximum: values.max() ?? 0
+        )
+    }
+
+    private func calculateStandardDeviation(_ values: [Double], average: Double) -> Double {
+        let count = Double(values.count)
+        let squaredDifferences = values.map { pow($0 - average, 2) }
+        let variance = squaredDifferences.reduce(0, +) / count
+        return sqrt(variance)
+    }
+
+    private func calculatePercentiles(_ values: [Double]) -> [Double: Double] {
+        let sortedValues = values.sorted()
+        let count = values.count
+        var percentiles: [Double: Double] = [:]
+
+        for percentile in [50.0, 75.0, 90.0, 95.0, 99.0] {
+            let index = Int(ceil(Double(count) * percentile / 100.0)) - 1
+            percentiles[percentile] = sortedValues[max(0, min(index, count - 1))]
+        }
+
+        return percentiles
+    }
+
+    private func createAnalysisResult(
+        statistics: BasicStatistics,
+        standardDeviation: Double,
+        percentiles: [Double: Double],
+        sampleCount: Int
+    ) -> AnalysisResult {
+        let result = AnalysisResult(
+            average: statistics.average,
+            minimum: statistics.minimum,
+            maximum: statistics.maximum,
+            standardDeviation: standardDeviation,
+            percentiles: percentiles,
+            sampleCount: sampleCount
+        )
+
+        logAnalysisResult(result)
+        return result
+    }
+
+    private func logAnalysisResult(_ result: AnalysisResult) {
+        logger.debug(
+            """
+            Analysed metrics:
+            Average: \(result.average)
+            Min: \(result.minimum)
+            Max: \(result.maximum)
+            StdDev: \(result.standardDeviation)
+            Samples: \(result.sampleCount)
+            Percentiles:
+            \(formatPercentiles(result.percentiles))
+            """,
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
+
+    private func formatPercentiles(_ percentiles: [Double: Double]) -> String {
+        percentiles
+            .sorted { $0.key < $1.key }
+            .map { "  \($0.key)th: \($0.value)" }
+            .joined(separator: "\n")
     }
 
     // MARK: Private

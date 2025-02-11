@@ -158,7 +158,7 @@ public final class PermissionValidator {
                 description: "Required permission not found",
                 context: [
                     "type": type.description,
-                    "required": accessLevel.description,
+                    "required": accessLevel.description
                 ]
             )
             issues.append(issue)
@@ -172,7 +172,7 @@ public final class PermissionValidator {
                 description: "Insufficient access level",
                 context: [
                     "current": currentLevel.description,
-                    "required": accessLevel.description,
+                    "required": accessLevel.description
                 ]
             )
             issues.append(issue)
@@ -297,52 +297,100 @@ public final class ResourceAvailabilityChecker: ResourceAvailabilityChecking {
     public func isResourceAvailable(_ type: PermissionManager.PermissionType) async -> Bool {
         switch type {
         case .fileSystem:
-            // Check both iCloud and local filesystem availability
-            FileManager.default.isUbiquitousItemAvailable &&
-                FileManager.default.isReadableFile(atPath: NSHomeDirectory())
-
+            checkFileSystemAvailability()
         case .keychain:
-            // Check keychain availability
-            FileManager.default.isReadableFile(
-                atPath: (NSHomeDirectory() as NSString)
-                    .appendingPathComponent("Library/Keychains")
-            )
-
+            checkKeychainAvailability()
         case .network:
-            // Note: This should use proper reachability checking
-            true
-
+            checkNetworkAvailability()
         case .camera:
-            // Note: This should check AVFoundation authorization
-            true
-
+            checkCameraAvailability()
         case .microphone:
-            // Note: This should check AVFoundation authorization
-            true
-
+            checkMicrophoneAvailability()
         case .location:
-            // Note: This should check CoreLocation authorization
-            true
-
+            checkLocationAvailability()
         case .notifications:
-            // Note: This should check UNUserNotificationCenter authorization
-            true
-
+            checkNotificationsAvailability()
         case .calendar:
-            // Note: This should check EventKit authorization
-            true
-
+            checkCalendarAvailability()
         case .contacts:
-            // Note: This should check Contacts framework authorization
-            true
-
+            checkContactsAvailability()
         case .photos:
-            // Note: This should check Photos framework authorization
-            true
-
-        case .custom:
-            // Custom types require specific handling
-            false
+            checkPhotosAvailability()
         }
+    }
+
+    // MARK: Private
+
+    /// Check filesystem availability
+    /// - Returns: Whether filesystem is available
+    private func checkFileSystemAvailability() -> Bool {
+        // Check both iCloud and local filesystem availability
+        FileManager.default.isUbiquitousItemAvailable &&
+            FileManager.default.isReadableFile(atPath: NSHomeDirectory())
+    }
+
+    /// Check keychain availability
+    /// - Returns: Whether keychain is available
+    private func checkKeychainAvailability() -> Bool {
+        FileManager.default.isReadableFile(
+            atPath: (NSHomeDirectory() as NSString)
+                .appendingPathComponent("Library/Keychains")
+        )
+    }
+
+    /// Check network availability
+    /// - Returns: Whether network is available
+    private func checkNetworkAvailability() -> Bool {
+        // TODO: Implement proper reachability checking
+        true
+    }
+
+    /// Check camera availability
+    /// - Returns: Whether camera is available
+    private func checkCameraAvailability() -> Bool {
+        // TODO: Implement AVFoundation authorization check
+        true
+    }
+
+    /// Check microphone availability
+    /// - Returns: Whether microphone is available
+    private func checkMicrophoneAvailability() -> Bool {
+        // TODO: Implement AVFoundation authorization check
+        true
+    }
+
+    /// Check location services availability
+    /// - Returns: Whether location services are available
+    private func checkLocationAvailability() -> Bool {
+        // TODO: Implement CoreLocation authorization check
+        true
+    }
+
+    /// Check notifications availability
+    /// - Returns: Whether notifications are available
+    private func checkNotificationsAvailability() -> Bool {
+        // TODO: Implement UNUserNotificationCenter authorization check
+        true
+    }
+
+    /// Check calendar availability
+    /// - Returns: Whether calendar is available
+    private func checkCalendarAvailability() -> Bool {
+        // TODO: Implement EventKit authorization check
+        true
+    }
+
+    /// Check contacts availability
+    /// - Returns: Whether contacts are available
+    private func checkContactsAvailability() -> Bool {
+        // TODO: Implement Contacts framework authorization check
+        true
+    }
+
+    /// Check photos availability
+    /// - Returns: Whether photos are available
+    private func checkPhotosAvailability() -> Bool {
+        // TODO: Implement Photos framework authorization check
+        true
     }
 }

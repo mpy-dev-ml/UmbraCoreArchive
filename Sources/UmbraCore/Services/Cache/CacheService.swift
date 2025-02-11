@@ -187,9 +187,7 @@ public final class CacheService: BaseSandboxedService {
             let entry: CacheEntry<T> = try await load(from: entryURL)
 
             // Check expiration
-            if let expirationDate = entry.expirationDate,
-               expirationDate < Date()
-            {
+            if let expirationDate = entry.expirationDate, expirationDate < Date() {
                 try? await removeValue(forKey: key)
                 return nil
             }
@@ -376,8 +374,7 @@ public final class CacheService: BaseSandboxedService {
                 // Check if entry is expired
                 if let entry: CacheEntry<Data> = try? await load(from: url),
                    let expirationDate = entry.expirationDate,
-                   expirationDate < Date()
-                {
+                   expirationDate < Date() {
                     // Remove file
                     try FileManager.default.removeItem(at: url)
                     removedSize += entry.size

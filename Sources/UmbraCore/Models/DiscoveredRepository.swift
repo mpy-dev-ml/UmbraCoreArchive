@@ -4,48 +4,62 @@ import Foundation
 
 /// A discovered Restic repository in the filesystem
 ///
-/// This type represents a Restic repository that has been found during a filesystem scan.
-/// It contains all necessary information about the repository, including its location,
-/// type, and associated metadata.
-///
-/// ## Overview
-/// The `DiscoveredRepository` type is used throughout the repository discovery feature
-/// to track and manage repositories that have been found. It implements `Identifiable`
-/// and `Hashable` to support use in SwiftUI views and collections.
-///
-/// ## Example Usage
-/// ```swift
-/// let repository = DiscoveredRepository(
-///     url: repositoryURL,
-///     type: .local,
-///     discoveredAt: Date(),
-///     isVerified: false,
-///     metadata: metadata
-/// )
-/// ```
-///
-/// ## Topics
-/// ### Creating a Repository
-/// - ``init(id:url:type:discoveredAt:isVerified:metadata:)``
-///
-/// ### Properties
-/// - ``id``
-/// - ``url``
-/// - ``type``
-/// - ``discoveredAt``
-/// - ``isVerified``
-/// - ``metadata``
-public struct DiscoveredRepository: Identifiable, Hashable {
-    // MARK: Lifecycle
+/// Represents a Restic repository found during filesystem scanning, containing
+/// essential information about its location, type, and associated metadata.
+@frozen
+public struct DiscoveredRepository:
+    Identifiable,
+    Hashable,
+    Sendable {
+    // MARK: - Properties
 
-    /// Creates a new discovered repository instance
+    /// Unique identifier for the repository
+    public let id: UUID
+
+    /// Location where the repository was discovered
+    public let url: URL
+
+    /// Type of repository (local, SFTP, etc.)
+    public let type: RepositoryType
+
+    /// When the repository was discovered
+    public let discoveredAt: Date
+
+    /// Whether repository verification succeeded
+    public let isVerified: Bool
+
+    /// Additional repository information
+    public let metadata: RepositoryMetadata
+
+    // MARK: - Computed Properties
+
+    /// Formatted repository size string (e.g., "1.2 GB")
+    public var formattedSize: String {
+        guard let size = metadata.size else { return "Unknown" }
+        return ByteCountFormatter.string(
+            fromByteCount: Int64(size),
+            countStyle: .binary
+        )
+    }
+
+    /// Relative time description of discovery (e.g., "2 hours ago")
+    public var discoveredTimeAgo: String {
+        RelativeDateTimeFormatter().localizedString(
+            for: discoveredAt,
+            relativeTo: Date()
+        )
+    }
+
+    // MARK: - Initialisation
+
+    /// Creates a new discovered repository
     /// - Parameters:
-    ///   - id: Unique identifier for the repository
-    ///   - url: The URL where the repository was discovered
-    ///   - type: The type of repository
-    ///   - discoveredAt: Timestamp of discovery
-    ///   - isVerified: Whether the repository has been verified
-    ///   - metadata: Additional repository metadata
+    ///   - id: Unique identifier (defaults to new UUID)
+    ///   - url: Repository location
+    ///   - type: Repository type
+    ///   - discoveredAt: Discovery timestamp
+    ///   - isVerified: Verification status
+    ///   - metadata: Additional information
     public init(
         id: UUID = UUID(),
         url: URL,
@@ -61,26 +75,6 @@ public struct DiscoveredRepository: Identifiable, Hashable {
         self.isVerified = isVerified
         self.metadata = metadata
     }
-
-    // MARK: Public
-
-    /// Unique identifier for the repository
-    public let id: UUID
-
-    /// The URL where the repository was discovered
-    public let url: URL
-
-    /// The type of repository (local, SFTP, etc.)
-    public let type: RepositoryType
-
-    /// Timestamp when the repository was discovered
-    public let discoveredAt: Date
-
-    /// Whether the repository has been verified as a valid Restic repository
-    public let isVerified: Bool
-
-    /// Additional metadata found during discovery
-    public let metadata: RepositoryMetadata
 
     // MARK: - Equatable
 
@@ -99,39 +93,46 @@ public struct DiscoveredRepository: Identifiable, Hashable {
 
 /// Additional metadata about a discovered repository
 ///
-/// This type encapsulates optional metadata that may be available for a discovered
-/// repository. All properties are optional as they might not be available or
-/// calculable for all repositories.
-///
-/// ## Overview
-/// The `RepositoryMetadata` type provides additional context about a repository,
-/// including its size, last modification date, and number of snapshots. This
-/// information is collected during the discovery process but may not always be
-/// available or may be expensive to calculate.
-///
-/// ## Example Usage
-/// ```swift
-/// let metadata = RepositoryMetadata(
-///     size: 1024 * 1024 * 1024, // 1GB
-///     lastModified: Date(),
-///     snapshotCount: 42
-/// )
-/// ```
-///
-/// ## Topics
-/// ### Creating Metadata
-/// - ``init(size:lastModified:snapshotCount:)``
-///
-/// ### Properties
-/// - ``size``
-/// - ``lastModified``
-/// - ``snapshotCount``
-public struct RepositoryMetadata: Hashable {
-    // MARK: Lifecycle
+/// Optional metadata that may be available for a discovered repository.
+/// Properties are optional as they might not be available or may be
+/// expensive to calculate for all repositories.
+@frozen
+public struct RepositoryMetadata:
+    Hashable,
+    Sendable {
+    // MARK: - Properties
 
-    /// Creates a new repository metadata instance
+    /// Repository size in bytes
+    public let size: UInt64?
+
+    /// Last modification timestamp
+    public let lastModified: Date?
+
+    /// Number of snapshots
+    public let snapshotCount: Int?
+
+    // MARK: - Computed Properties
+
+    /// Whether any metadata is available
+    public var hasMetadata: Bool {
+        size != nil || lastModified != nil || snapshotCount != nil
+    }
+
+    /// Formatted last modified date
+    public var formattedLastModified: String? {
+        guard let date = lastModified else { return nil }
+        return DateFormatter.localizedString(
+            from: date,
+            dateStyle: .medium,
+            timeStyle: .short
+        )
+    }
+
+    // MARK: - Initialisation
+
+    /// Creates new repository metadata
     /// - Parameters:
-    ///   - size: Size of the repository in bytes
+    ///   - size: Size in bytes
     ///   - lastModified: Last modified date
     ///   - snapshotCount: Number of snapshots
     public init(
@@ -143,15 +144,4 @@ public struct RepositoryMetadata: Hashable {
         self.lastModified = lastModified
         self.snapshotCount = snapshotCount
     }
-
-    // MARK: Public
-
-    /// Size of the repository in bytes (if available)
-    public let size: UInt64?
-
-    /// Last modified date of the repository (if available)
-    public let lastModified: Date?
-
-    /// Number of snapshots found (if available)
-    public let snapshotCount: Int?
 }

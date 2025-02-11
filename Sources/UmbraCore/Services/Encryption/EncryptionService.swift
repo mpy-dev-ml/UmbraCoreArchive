@@ -33,12 +33,12 @@ public class EncryptionService: NSObject {
             keySize: Int = 256,
             useSecureEnclave: Bool = true,
             salt: Data? = nil,
-            iv: Data? = nil
+            initializationVector: Data? = nil
         ) {
             self.keySize = keySize
             self.useSecureEnclave = useSecureEnclave
             self.salt = salt
-            self.iv = iv
+            self.initializationVector = initializationVector
         }
 
         // MARK: Public
@@ -49,8 +49,8 @@ public class EncryptionService: NSObject {
         public let useSecureEnclave: Bool
         /// Salt for key derivation
         public let salt: Data?
-        /// Initialization vector
-        public let iv: Data?
+        /// Initialization vector for encryption
+        public let initializationVector: Data?
     }
 
     /// Encryption result
@@ -60,11 +60,11 @@ public class EncryptionService: NSObject {
         /// Initialize with values
         public init(
             data: Data,
-            iv: Data,
+            initializationVector: Data,
             salt: Data
         ) {
             self.data = data
-            self.iv = iv
+            self.initializationVector = initializationVector
             self.salt = salt
         }
 
@@ -72,9 +72,9 @@ public class EncryptionService: NSObject {
 
         /// Encrypted data
         public let data: Data
-        /// Initialization vector used
-        public let iv: Data
-        /// Salt used
+        /// Initialization vector used for encryption
+        public let initializationVector: Data
+        /// Salt used for key derivation
         public let salt: Data
     }
 
@@ -92,7 +92,7 @@ public class EncryptionService: NSObject {
         ) {
             // Generate salt and IV if not provided
             let salt = options.salt ?? generateRandomBytes(32)
-            let iv = options.iv ?? generateRandomBytes(16)
+            let initializationVector = options.initializationVector ?? generateRandomBytes(16)
 
             // Derive key using PBKDF2
             let derivedKey = try deriveKey(
@@ -111,14 +111,14 @@ public class EncryptionService: NSObject {
             let encryptedData = try AES.GCM.seal(
                 data,
                 using: symmetricKey,
-                nonce: AES.GCM.Nonce(data: iv)
+                nonce: AES.GCM.Nonce(data: initializationVector)
             ).combined ?? Data()
 
             self.logEncryption(dataSize: data.count)
 
             return EncryptionResult(
                 data: encryptedData,
-                iv: iv,
+                initializationVector: initializationVector,
                 salt: salt
             )
         }
@@ -129,7 +129,7 @@ public class EncryptionService: NSObject {
     public func decrypt(
         _ encryptedData: Data,
         withKey key: Data,
-        iv _: Data,
+        initializationVector _: Data,
         salt: Data,
         options: Options = Options()
     ) throws -> Data {
@@ -242,8 +242,7 @@ public class EncryptionService: NSObject {
         useSecureEnclave: Bool
     ) throws -> SymmetricKey {
         if useSecureEnclave,
-           let key = try? createSecureEnclaveKey(fromData: data)
-        {
+           let key = try? createSecureEnclaveKey(fromData: data) {
             return key
         }
 
@@ -269,8 +268,8 @@ public class EncryptionService: NSObject {
                 kSecAttrTokenID: kSecAttrTokenIDSecureEnclave,
                 kSecPrivateKeyAttrs: [
                     kSecAttrIsPermanent: true,
-                    kSecAttrAccessControl: access as Any,
-                ],
+                    kSecAttrAccessControl: access as Any
+                ]
             ] as CFDictionary,
             &error
         ) else {
@@ -288,7 +287,7 @@ public class EncryptionService: NSObject {
             "Encrypted data",
             config: LogConfig(
                 metadata: [
-                    "size": String(dataSize),
+                    "size": String(dataSize)
                 ]
             )
         )
@@ -302,7 +301,7 @@ public class EncryptionService: NSObject {
             "Decrypted data",
             config: LogConfig(
                 metadata: [
-                    "size": String(dataSize),
+                    "size": String(dataSize)
                 ]
             )
         )

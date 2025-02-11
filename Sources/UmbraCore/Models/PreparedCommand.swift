@@ -1,7 +1,8 @@
 import Foundation
 
 /// A prepared command ready for execution
-@objc public class PreparedCommand: NSObject {
+@objc
+public class PreparedCommand: NSObject {
     // MARK: Lifecycle
 
     /// Initialize a new prepared command
@@ -10,7 +11,8 @@ import Foundation
     ///   - arguments: Arguments to pass to the command
     ///   - environment: Environment variables for the command
     ///   - workingDirectory: Working directory for the command
-    @objc public init(
+    @objc
+    public init(
         command: String,
         arguments: [String],
         environment: [String: String],

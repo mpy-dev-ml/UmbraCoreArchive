@@ -158,9 +158,9 @@ public final class PerformanceReportExporter: BaseSandboxedService {
                     "value": metric.value,
                     "unit": metric.unit,
                     "timestamp": metric.timestamp.ISO8601Format(),
-                    "context": metric.context,
+                    "context": metric.context
                 ]
-            },
+            }
         ]
 
         return try JSONSerialization.data(

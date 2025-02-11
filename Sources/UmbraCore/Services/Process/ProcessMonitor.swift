@@ -141,7 +141,7 @@ public class ProcessMonitor: NSObject {
             // Log monitoring start
             let metadata: [String: String] = [
                 "pid": String(pid),
-                "name": info.name,
+                "name": info.name
             ]
             let config = LogConfig(metadata: metadata)
             logger.info("Started monitoring process", config: config)
@@ -175,7 +175,7 @@ public class ProcessMonitor: NSObject {
             let metadata: [String: String] = [
                 "pid": String(pid),
                 "name": monitor.info.name,
-                "duration": String(stats.duration),
+                "duration": String(stats.duration)
             ]
             let config = LogConfig(metadata: metadata)
             logger.info("Stopped monitoring process", config: config)
@@ -284,7 +284,7 @@ public class ProcessMonitor: NSObject {
     ) {
         let metadata: [String: String] = [
             "pid": String(pid),
-            "error": String(describing: error),
+            "error": String(describing: error)
         ]
         let config = LogConfig(metadata: metadata)
         logger.error(
@@ -330,7 +330,7 @@ public class ProcessMonitor: NSObject {
                 // Log error
                 let metadata: [String: String] = [
                     "pid": String(pid),
-                    "error": String(describing: error),
+                    "error": String(describing: error)
                 ]
                 let config = LogConfig(metadata: metadata)
                 logger.error("Failed to update process info", config: config)

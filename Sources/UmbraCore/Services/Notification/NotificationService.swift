@@ -36,6 +36,20 @@ public final class NotificationService: BaseSandboxedService {
         public static func < (lhs: Priority, rhs: Priority) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
+
+        @available(macOS 12.0, *)
+        var interruptionLevel: UNNotificationInterruptionLevel {
+            switch self {
+            case .low:
+                .passive
+            case .normal:
+                .active
+            case .high:
+                .timeSensitive
+            case .critical:
+                .critical
+            }
+        }
     }
 
     /// Notification category
@@ -84,93 +98,91 @@ public final class NotificationService: BaseSandboxedService {
         public let options: UNNotificationActionOptions
     }
 
+    /// Configuration for a notification request
+    public struct NotificationConfiguration {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            identifier: String,
+            title: String,
+            body: String,
+            categoryIdentifier: String? = nil,
+            userInfo: [AnyHashable: Any] = [:],
+            priority: Priority = .normal,
+            date: Date = Date()
+        ) {
+            self.identifier = identifier
+            self.title = title
+            self.body = body
+            self.categoryIdentifier = categoryIdentifier
+            self.userInfo = userInfo
+            self.priority = priority
+            self.date = date
+        }
+
+        // MARK: Public
+
+        /// Unique identifier for the notification
+        public let identifier: String
+
+        /// Notification title
+        public let title: String
+
+        /// Notification body text
+        public let body: String
+
+        /// Category identifier for custom actions
+        public let categoryIdentifier: String?
+
+        /// Additional user information
+        public let userInfo: [AnyHashable: Any]
+
+        /// Priority level
+        public let priority: Priority
+
+        /// Trigger date
+        public let date: Date
+    }
+
     // MARK: - Public Methods
 
     /// Schedule notification
     /// - Parameters:
-    ///   - title: Notification title
-    ///   - body: Notification body
-    ///   - categoryIdentifier: Optional category identifier
-    ///   - userInfo: Optional user info
-    ///   - priority: Priority level
-    ///   - date: Trigger date
+    ///   - configuration: Notification configuration
     /// - Returns: Notification identifier
     /// - Throws: Error if scheduling fails
     @discardableResult
     public func scheduleNotification(
-        title: String,
-        body: String,
-        categoryIdentifier: String? = nil,
-        userInfo: [AnyHashable: Any] = [:],
-        priority: Priority = .normal,
-        date: Date
+        configuration: NotificationConfiguration
     ) async throws -> String {
         try validateUsable(for: "scheduleNotification")
 
         return try await performanceMonitor.trackDuration(
             "notification.schedule"
         ) {
-            // Create content
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body = body
-            content.userInfo = userInfo
-            content.sound = .default
-
-            if let categoryIdentifier {
-                content.categoryIdentifier = categoryIdentifier
-            }
-
-            // Set interruption level
-            if #available(macOS 12.0, *) {
-                switch priority {
-                case .low:
-                    content.interruptionLevel = .passive
-                case .normal:
-                    content.interruptionLevel = .active
-                case .high:
-                    content.interruptionLevel = .timeSensitive
-                case .critical:
-                    content.interruptionLevel = .critical
-                }
-            }
-
-            // Create trigger
-            let components = Calendar.current.dateComponents(
-                [.year, .month, .day, .hour, .minute, .second],
-                from: date
-            )
-            let trigger = UNCalendarNotificationTrigger(
-                dateMatching: components,
-                repeats: false
-            )
-
-            // Create request
-            let identifier = UUID().uuidString
-            let request = UNNotificationRequest(
-                identifier: identifier,
-                content: content,
-                trigger: trigger
-            )
+            // Create notification request
+            let request = createNotificationRequest(configuration: configuration)
 
             // Schedule request
             try await center.add(request)
 
+            // Log operation
             logger.info(
                 """
                 Scheduled notification:
-                ID: \(identifier)
-                Title: \(title)
-                Category: \(categoryIdentifier ?? "none")
-                Priority: \(priority)
-                Date: \(date)
+                ID: \(configuration.identifier)
+                Title: \(configuration.title)
+                Category: \(configuration.categoryIdentifier ?? "none")
+                Priority: \(configuration.priority)
+                Date: \(configuration.date)
                 """,
                 file: #file,
                 function: #function,
                 line: #line
             )
 
-            return identifier
+            return configuration.identifier
         }
     }
 
@@ -305,5 +317,67 @@ public final class NotificationService: BaseSandboxedService {
                 )
             }
         }
+    }
+
+    /// Create a notification request with the specified parameters
+    /// - Parameters:
+    ///   - configuration: Notification configuration
+    /// - Returns: Configured notification request
+    private func createNotificationRequest(
+        configuration: NotificationConfiguration
+    ) -> UNNotificationRequest {
+        // Create content
+        let content = createNotificationContent(
+            title: configuration.title,
+            body: configuration.body,
+            categoryIdentifier: configuration.categoryIdentifier,
+            userInfo: configuration.userInfo,
+            priority: configuration.priority
+        )
+
+        // Create trigger
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: max(0, configuration.date.timeIntervalSinceNow),
+            repeats: false
+        )
+
+        // Create request
+        return UNNotificationRequest(
+            identifier: configuration.identifier,
+            content: content,
+            trigger: trigger
+        )
+    }
+
+    /// Create notification content with the specified parameters
+    /// - Parameters:
+    ///   - title: Notification title
+    ///   - body: Notification body
+    ///   - categoryIdentifier: Optional category identifier
+    ///   - userInfo: Optional user info
+    ///   - priority: Priority level
+    /// - Returns: Configured notification content
+    private func createNotificationContent(
+        title: String,
+        body: String,
+        categoryIdentifier: String?,
+        userInfo: [AnyHashable: Any],
+        priority: Priority
+    ) async throws -> UNNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.userInfo = userInfo
+        content.sound = .default
+
+        if let categoryIdentifier {
+            content.categoryIdentifier = categoryIdentifier
+        }
+
+        if #available(macOS 12.0, *) {
+            content.interruptionLevel = priority.interruptionLevel
+        }
+
+        return content
     }
 }

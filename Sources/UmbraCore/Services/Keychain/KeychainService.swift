@@ -192,7 +192,7 @@ public final class KeychainService: BaseSandboxedService {
 
             // Build attributes
             let attributes = [
-                kSecValueData as String: data,
+                kSecValueData as String: data
             ]
 
             // Update item

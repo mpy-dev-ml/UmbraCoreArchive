@@ -101,15 +101,15 @@ public struct SandboxDiagnostics {
         public let status: Status
     }
 
-    /// Status
+    /// Status of a diagnostic check
     public enum Status {
-        /// OK
-        case ok
-        /// Warning
+        /// Operation completed successfully
+        case successful
+        /// Warning condition detected
         case warning
-        /// Error
+        /// Error condition detected
         case error
-        /// Unknown
+        /// Status could not be determined
         case unknown
     }
 
@@ -185,7 +185,7 @@ public struct SandboxDiagnostics {
                 Item(
                     key: "Container Directory",
                     value: containerURL.path,
-                    status: .ok
+                    status: .successful
                 )
             )
         } else {
@@ -203,14 +203,14 @@ public struct SandboxDiagnostics {
             Item(
                 key: "Temporary Directory",
                 value: NSTemporaryDirectory(),
-                status: .ok
+                status: .successful
             )
         )
 
         return Section(
             title: "File System Access",
             items: items,
-            status: items.contains { $0.status == .error } ? .error : .ok
+            status: items.contains { $0.status == .error } ? .error : .successful
         )
     }
 
@@ -273,13 +273,13 @@ public struct SandboxDiagnostics {
     private func generateSummary(_ sections: [Section]) -> String {
         let errorCount = sections.filter { $0.status == .error }.count
         let warningCount = sections.filter { $0.status == .warning }.count
-        let okCount = sections.filter { $0.status == .ok }.count
+        let successfulCount = sections.filter { $0.status == .successful }.count
 
         return """
         Sandbox Diagnostics Summary:
         - \(errorCount) errors
         - \(warningCount) warnings
-        - \(okCount) ok
+        - \(successfulCount) successful
         """
     }
 }

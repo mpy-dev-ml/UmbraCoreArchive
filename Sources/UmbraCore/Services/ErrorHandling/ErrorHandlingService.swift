@@ -119,67 +119,22 @@ public final class ErrorHandlingService: BaseSandboxedService {
         return try await performanceMonitor.trackDuration(
             "error.handle.\(context.operation)"
         ) {
-            // Log error
-            logger.error(
-                """
-                Error occurred:
-                Operation: \(context.operation)
-                Error: \(context.error)
-                File: \(context.file)
-                Function: \(context.function)
-                Line: \(context.line)
-                Metadata: \(context.metadata)
-                """,
-                file: context.file,
-                function: context.function,
-                line: context.line
-            )
+            // Log initial error
+            logErrorOccurrence(context)
 
-            // Find handler
+            // Find and execute handler
             let errorType = String(describing: type(of: context.error))
-            let handler = queue.sync { handlers[errorType] }
-
-            guard let handler else {
-                logger.warning(
-                    "No handler found for error type: \(errorType)",
-                    file: context.file,
-                    function: context.function,
-                    line: context.line
-                )
+            guard let handler = queue.sync({ handlers[errorType] }) else {
+                logNoHandlerWarning(errorType: errorType, context: context)
                 return .terminate
             }
 
-            // Handle error
-            do {
-                let strategy = try await handler(context)
-
-                logger.info(
-                    """
-                    Error handled:
-                    Operation: \(context.operation)
-                    Type: \(errorType)
-                    Strategy: \(String(describing: strategy))
-                    """,
-                    file: context.file,
-                    function: context.function,
-                    line: context.line
-                )
-
-                return strategy
-            } catch {
-                logger.error(
-                    """
-                    Error handler failed:
-                    Operation: \(context.operation)
-                    Type: \(errorType)
-                    Error: \(error)
-                    """,
-                    file: context.file,
-                    function: context.function,
-                    line: context.line
-                )
-                throw error
-            }
+            // Execute handler and handle result
+            return try await executeHandler(
+                handler,
+                for: context,
+                errorType: errorType
+            )
         }
     }
 
@@ -281,6 +236,114 @@ public final class ErrorHandlingService: BaseSandboxedService {
             }
             return .terminate
         }, forType: "CocoaError")
+    }
+
+    /// Log the occurrence of an error
+    /// - Parameter context: Error context
+    private func logErrorOccurrence(_ context: ErrorContext) {
+        logger.error(
+            """
+            Error occurred:
+            Operation: \(context.operation)
+            Error: \(context.error)
+            File: \(context.file)
+            Function: \(context.function)
+            Line: \(context.line)
+            Metadata: \(context.metadata)
+            """,
+            file: context.file,
+            function: context.function,
+            line: context.line
+        )
+    }
+
+    /// Log a warning when no handler is found for an error type
+    /// - Parameters:
+    ///   - errorType: Type of error that has no handler
+    ///   - context: Error context
+    private func logNoHandlerWarning(errorType: String, context: ErrorContext) {
+        logger.warning(
+            "No handler found for error type: \(errorType)",
+            file: context.file,
+            function: context.function,
+            line: context.line
+        )
+    }
+
+    /// Execute an error handler and process its result
+    /// - Parameters:
+    ///   - handler: Error handler to execute
+    ///   - context: Error context
+    ///   - errorType: String representation of the error type
+    /// - Returns: Recovery strategy
+    /// - Throws: Error if handler execution fails
+    private func executeHandler(
+        _ handler: @escaping ErrorHandler,
+        for context: ErrorContext,
+        errorType: String
+    ) async throws -> RecoveryStrategy {
+        do {
+            let strategy = try await handler(context)
+            logSuccessfulHandling(
+                context: context,
+                errorType: errorType,
+                strategy: strategy
+            )
+            return strategy
+        } catch {
+            logHandlerFailure(
+                context: context,
+                errorType: errorType,
+                error: error
+            )
+            throw error
+        }
+    }
+
+    /// Log successful error handling
+    /// - Parameters:
+    ///   - context: Error context
+    ///   - errorType: String representation of the error type
+    ///   - strategy: Recovery strategy that was chosen
+    private func logSuccessfulHandling(
+        context: ErrorContext,
+        errorType: String,
+        strategy: RecoveryStrategy
+    ) {
+        logger.info(
+            """
+            Error handled:
+            Operation: \(context.operation)
+            Type: \(errorType)
+            Strategy: \(String(describing: strategy))
+            """,
+            file: context.file,
+            function: context.function,
+            line: context.line
+        )
+    }
+
+    /// Log error handler failure
+    /// - Parameters:
+    ///   - context: Error context
+    ///   - errorType: String representation of the error type
+    ///   - error: Error that occurred during handling
+    private func logHandlerFailure(
+        context: ErrorContext,
+        errorType: String,
+        error: Error
+    ) {
+        logger.error(
+            """
+            Error handler failed:
+            Operation: \(context.operation)
+            Type: \(errorType)
+            Error: \(error)
+            """,
+            file: context.file,
+            function: context.function,
+            line: context.line
+        )
     }
 
     /// Retry an operation

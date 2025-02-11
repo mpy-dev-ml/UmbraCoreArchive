@@ -1,7 +1,8 @@
 import Foundation
 
 /// Development implementation of BookmarkServiceProtocol for testing and debugging
-@objc public final class DevelopmentBookmarkService: BaseSandboxedService, BookmarkServiceProtocol {
+@objc
+public final class DevelopmentBookmarkService: BaseSandboxedService, BookmarkServiceProtocol {
     // MARK: Lifecycle
 
     // MARK: - Initialization

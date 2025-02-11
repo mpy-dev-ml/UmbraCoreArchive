@@ -3,7 +3,8 @@ import Foundation
 // MARK: - SecurityServiceProtocol
 
 /// Protocol defining security service operations
-@objc public protocol SecurityServiceProtocol: SandboxCompliant {
+@objc
+public protocol SecurityServiceProtocol: SandboxCompliant {
     // MARK: - Bookmark Management
 
     /// Create a security-scoped bookmark for a URL
@@ -57,7 +58,8 @@ import Foundation
 // MARK: - SandboxCompliant
 
 /// Protocol for sandbox compliance
-@objc public protocol SandboxCompliant {
+@objc
+public protocol SandboxCompliant {
     /// Request access to a URL
     /// - Parameter url: URL to request access to
     /// - Returns: true if access was granted

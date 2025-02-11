@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - ServiceError + LocalizedError
 
-extension ServiceError {
+public extension ServiceError {
     /// Formats an error message with service and details
     private func formatError(
         _ message: String,
@@ -12,7 +12,7 @@ extension ServiceError {
         "\(message) - Service: \(service), \(details)"
     }
 
-    public var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case let .notInitialized(service):
             "Service not initialised: \(service)"
@@ -155,7 +155,7 @@ extension ServiceError {
         }
     }
 
-    public var recoverySuggestion: String? {
+    var recoverySuggestion: String? {
         switch self {
         case .notInitialized:
             "Initialise the service before using it"

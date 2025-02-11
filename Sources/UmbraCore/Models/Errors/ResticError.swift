@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - ResticErrorProtocol
+
 /// A type that represents a Restic error with exit code and context information
 ///
 /// This protocol defines the properties and methods that a Restic error type must implement.
@@ -22,15 +24,20 @@ public extension ResticErrorProtocol {
         // Use raw value if available (for enums)
         if let rawRepresentable = self as? RawRepresentable,
            let intValue = rawRepresentable.rawValue as? Int {
-            return Int32(intValue)
+            return Int32(
+                intValue
+            )
         }
         return -1
     }
+
     /// Additional context about the error
     var context: [String: Any]? {
         nil
     }
 }
+
+// MARK: - ResticError
 
 /// Utility for creating Restic errors from exit codes
 public enum ResticError {
@@ -53,6 +60,7 @@ public enum ResticError {
         }
         return nil
     }
+
     /// Creates a descriptive error message from an exit code
     ///
     /// This method returns a human-readable error message based on the exit code.
@@ -64,6 +72,8 @@ public enum ResticError {
     }
 }
 
+// MARK: - ResticError
+
 /// Represents errors that can occur during restic operations.
 public enum ResticError: Error {
     case commandError(ResticCommandError)
@@ -72,45 +82,52 @@ public enum ResticError: Error {
     case systemError(ResticSystemError)
 }
 
+// MARK: LocalizedError
+
 extension ResticError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case .commandError(let error): error.localizedDescription
-        case .operationError(let error): error.localizedDescription
-        case .repositoryError(let error): error.localizedDescription
-        case .systemError(let error): error.localizedDescription
+        case let .commandError(error): error.localizedDescription
+        case let .operationError(error): error.localizedDescription
+        case let .repositoryError(error): error.localizedDescription
+        case let .systemError(error): error.localizedDescription
         }
     }
+
     public var failureReason: String? {
         switch self {
-        case .commandError(let error): error.failureReason
-        case .operationError(let error): error.failureReason
-        case .repositoryError(let error): error.failureReason
-        case .systemError(let error): error.failureReason
+        case let .commandError(error): error.failureReason
+        case let .operationError(error): error.failureReason
+        case let .repositoryError(error): error.failureReason
+        case let .systemError(error): error.failureReason
         }
     }
+
     public var recoverySuggestion: String? {
         switch self {
-        case .commandError(let error): error.recoverySuggestion
-        case .operationError(let error): error.recoverySuggestion
-        case .repositoryError(let error): error.recoverySuggestion
-        case .systemError(let error): error.recoverySuggestion
+        case let .commandError(error): error.recoverySuggestion
+        case let .operationError(error): error.recoverySuggestion
+        case let .repositoryError(error): error.recoverySuggestion
+        case let .systemError(error): error.recoverySuggestion
         }
     }
 }
 
+// MARK: ResticErrorProtocol
+
 extension ResticError: ResticErrorProtocol {
     public var underlyingError: Error? {
         switch self {
-        case .commandError(let error): error
-        case .operationError(let error): error
-        case .repositoryError(let error): error
-        case .systemError(let error): error
+        case let .commandError(error): error
+        case let .operationError(error): error
+        case let .repositoryError(error): error
+        case let .systemError(error): error
         }
     }
+
     public var isRecoverable: Bool {
         switch self {
-        case .commandError(let error as ResticErrorProtocol),
+        case let .commandError(error as ResticErrorProtocol),
              .operationError(let error as ResticErrorProtocol),
              .repositoryError(let error as ResticErrorProtocol),
              .systemError(let error as ResticErrorProtocol):
@@ -118,9 +135,10 @@ extension ResticError: ResticErrorProtocol {
         default: false
         }
     }
+
     public var requiresUserIntervention: Bool {
         switch self {
-        case .commandError(let error as ResticErrorProtocol),
+        case let .commandError(error as ResticErrorProtocol),
              .operationError(let error as ResticErrorProtocol),
              .repositoryError(let error as ResticErrorProtocol),
              .systemError(let error as ResticErrorProtocol):
@@ -128,9 +146,10 @@ extension ResticError: ResticErrorProtocol {
         default: true
         }
     }
+
     public var shouldRetry: Bool {
         switch self {
-        case .commandError(let error as ResticErrorProtocol),
+        case let .commandError(error as ResticErrorProtocol),
              .operationError(let error as ResticErrorProtocol),
              .repositoryError(let error as ResticErrorProtocol),
              .systemError(let error as ResticErrorProtocol):

@@ -378,28 +378,58 @@ private extension XPCServiceDelegate {
         let url = URL(fileURLWithPath: path)
 
         if let bookmark {
-            var isStale = false
-            let bookmarkURL = try URL(
-                resolvingBookmarkData: bookmark,
-                options: .withSecurityScope,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-
-            guard bookmarkURL.startAccessingSecurityScopedResource() else {
-                throw XPCError.securityViolation(
-                    reason: "Failed to access security-scoped resource"
-                )
-            }
-
-            defer {
-                bookmarkURL.stopAccessingSecurityScopedResource()
-            }
-
-            return try operation(bookmarkURL)
+            return try accessWithBookmark(bookmark, operation: operation)
         } else {
             return try operation(url)
         }
+    }
+
+    /// Access file using security bookmark
+    /// - Parameters:
+    ///   - bookmark: Security bookmark data
+    ///   - operation: Operation to perform
+    /// - Returns: Operation result
+    private func accessWithBookmark<T>(
+        _ bookmark: Data,
+        operation: (URL) throws -> T
+    ) throws -> T {
+        let bookmarkURL = try resolveBookmark(bookmark)
+        return try accessSecurityScopedResource(bookmarkURL, operation: operation)
+    }
+
+    /// Resolve bookmark data to URL
+    /// - Parameter bookmark: Bookmark data to resolve
+    /// - Returns: Resolved URL
+    private func resolveBookmark(_ bookmark: Data) throws -> URL {
+        var isStale = false
+        return try URL(
+            resolvingBookmarkData: bookmark,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+    }
+
+    /// Access security-scoped resource
+    /// - Parameters:
+    ///   - url: URL to access
+    ///   - operation: Operation to perform
+    /// - Returns: Operation result
+    private func accessSecurityScopedResource<T>(
+        _ url: URL,
+        operation: (URL) throws -> T
+    ) throws -> T {
+        guard url.startAccessingSecurityScopedResource() else {
+            throw XPCError.securityViolation(
+                reason: "Failed to access security-scoped resource"
+            )
+        }
+
+        defer {
+            url.stopAccessingSecurityScopedResource()
+        }
+
+        return try operation(url)
     }
 
     // MARK: - Resource Management
@@ -407,7 +437,12 @@ private extension XPCServiceDelegate {
     /// Check resource usage
     func checkResourceUsage() async throws {
         let usage = try await resourceMonitor.getCurrentUsage()
+        try validateResourceLimits(usage)
+    }
 
+    /// Validate resource usage against limits
+    /// - Parameter usage: Current resource usage
+    private func validateResourceLimits(_ usage: [String: Double]) throws {
         for (resource, limit) in configuration.resourceLimits {
             guard let currentUsage = usage[resource] else {
                 continue

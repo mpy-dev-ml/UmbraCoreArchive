@@ -117,7 +117,7 @@ final class XPCHealthMonitor {
                 "Started XPC health monitoring",
                 metadata: [
                     "check_interval": String(configuration.checkInterval),
-                    "max_response_time": String(configuration.maxResponseTime),
+                    "max_response_time": String(configuration.maxResponseTime)
                 ]
             )
         }
@@ -236,7 +236,7 @@ final class XPCHealthMonitor {
                 "XPC connection health check degraded: \(reason)",
                 metadata: [
                     "status": "degraded",
-                    "reason": reason,
+                    "reason": reason
                 ]
             )
 
@@ -246,7 +246,7 @@ final class XPCHealthMonitor {
                 metadata: [
                     "status": "unhealthy",
                     "reason": reason,
-                    "consecutive_failures": String(consecutiveFailures),
+                    "consecutive_failures": String(consecutiveFailures)
                 ]
             )
         }
@@ -262,7 +262,7 @@ final class XPCHealthMonitor {
             object: self,
             userInfo: [
                 "result": result,
-                "consecutive_failures": consecutiveFailures,
+                "consecutive_failures": consecutiveFailures
             ]
         )
     }
@@ -276,7 +276,7 @@ final class XPCHealthMonitor {
         logger.warning(
             "Attempting to recover unhealthy XPC connection",
             metadata: [
-                "consecutive_failures": String(consecutiveFailures),
+                "consecutive_failures": String(consecutiveFailures)
             ]
         )
 
@@ -304,7 +304,7 @@ final class XPCHealthMonitor {
             "XPC connection state changed in health monitor",
             metadata: [
                 "old_state": oldState.description,
-                "new_state": newState.description,
+                "new_state": newState.description
             ]
         )
     }

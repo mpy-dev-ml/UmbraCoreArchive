@@ -139,7 +139,7 @@ public struct BackupValidator {
                 config: LogConfig(
                     metadata: [
                         "name": configuration.name,
-                        "issues": String(issues.count),
+                        "issues": String(issues.count)
                     ]
                 )
             )
@@ -265,8 +265,7 @@ public struct BackupValidator {
                     forPath: storage.url.path
                 )
                 if let freeSize = attributes[.systemFreeSize] as? Int64,
-                   freeSize < quota
-                {
+                   freeSize < quota {
                     issues.append(
                         ValidationIssue(
                             type: .storage,

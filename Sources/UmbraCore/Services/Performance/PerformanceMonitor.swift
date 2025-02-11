@@ -1,31 +1,20 @@
 /// Service for monitoring performance metrics
 @objc
 public class PerformanceMonitor: NSObject {
-    // MARK: Lifecycle
-
-    // MARK: - Initialization
-
-    /// Initialize performance monitor
-    /// - Parameter logger: Logger for performance events
-    public init(logger: Logger) {
-        self.logger = logger
-        super.init()
-    }
-
-    // MARK: Public
-
     // MARK: - Types
 
-    /// Performance metric
+    /// Performance metric data structure
     public struct Metric {
-        // MARK: Lifecycle
+        /// Metric identifier
+        public let id: String
+        /// Start time of the operation
+        public let startTime: Date
+        /// Duration in seconds
+        public let duration: TimeInterval
+        /// Additional contextual data
+        public let metadata: [String: String]
 
-        /// Initialize with values
-        /// - Parameters:
-        ///   - id: Metric identifier
-        ///   - startTime: Start time
-        ///   - duration: Duration in seconds
-        ///   - metadata: Additional metadata
+        /// Initialize with metric values
         public init(
             id: String,
             startTime: Date,
@@ -37,30 +26,22 @@ public class PerformanceMonitor: NSObject {
             self.duration = duration
             self.metadata = metadata
         }
-
-        // MARK: Public
-
-        /// Metric identifier
-        public let id: String
-        /// Start time
-        public let startTime: Date
-        /// Duration in seconds
-        public let duration: TimeInterval
-        /// Additional metadata
-        public let metadata: [String: String]
     }
 
-    /// Performance statistics
+    /// Performance statistics summary
     public struct Statistics {
-        // MARK: Lifecycle
+        /// Total duration across all samples
+        public let totalDuration: TimeInterval
+        /// Average duration per sample
+        public let averageDuration: TimeInterval
+        /// Shortest recorded duration
+        public let minDuration: TimeInterval
+        /// Longest recorded duration
+        public let maxDuration: TimeInterval
+        /// Number of samples analysed
+        public let sampleCount: Int
 
-        /// Initialize with values
-        /// - Parameters:
-        ///   - totalDuration: Total duration in seconds
-        ///   - averageDuration: Average duration in seconds
-        ///   - minDuration: Minimum duration in seconds
-        ///   - maxDuration: Maximum duration in seconds
-        ///   - sampleCount: Number of samples
+        /// Initialize with calculated statistics
         public init(
             totalDuration: TimeInterval,
             averageDuration: TimeInterval,
@@ -74,178 +55,204 @@ public class PerformanceMonitor: NSObject {
             self.maxDuration = maxDuration
             self.sampleCount = sampleCount
         }
+    }
 
-        // MARK: Public
+    // MARK: - Properties
 
-        /// Total duration in seconds
-        public let totalDuration: TimeInterval
-        /// Average duration in seconds
-        public let averageDuration: TimeInterval
-        /// Minimum duration in seconds
-        public let minDuration: TimeInterval
-        /// Maximum duration in seconds
-        public let maxDuration: TimeInterval
-        /// Number of samples
-        public let sampleCount: Int
+    private let logger: Logger
+    private let queue = DispatchQueue(
+        label: "dev.mpy.rBUM.PerformanceMonitor",
+        attributes: .concurrent
+    )
+    private var metrics: [String: [Metric]] = [:]
+
+    // MARK: - Initialization
+
+    /// Initialize performance monitor
+    public init(logger: Logger) {
+        self.logger = logger
+        super.init()
     }
 
     // MARK: - Public Methods
 
     /// Track duration of an operation
-    /// - Parameters:
-    ///   - id: Operation identifier
-    ///   - metadata: Additional metadata
-    ///   - operation: Operation to track
-    /// - Returns: Operation result
-    /// - Throws: Operation error
     public func trackDuration<T>(
         _ id: String,
         metadata: [String: String] = [:],
         operation: () async throws -> T
     ) async rethrows -> T {
         let startTime = Date()
-        var finalMetadata = metadata
 
         do {
             let result = try await operation()
             let duration = Date().timeIntervalSince(startTime)
 
-            finalMetadata["status"] = "success"
-            finalMetadata["duration"] = String(format: "%.3f", duration)
-
-            let metric = Metric(
+            await recordSuccess(
                 id: id,
                 startTime: startTime,
                 duration: duration,
-                metadata: finalMetadata
+                metadata: metadata
             )
-            recordMetric(metric)
 
             return result
         } catch {
             let duration = Date().timeIntervalSince(startTime)
 
-            finalMetadata["status"] = "error"
-            finalMetadata["error"] = String(describing: error)
-            finalMetadata["duration"] = String(format: "%.3f", duration)
-
-            let metric = Metric(
+            await recordError(
                 id: id,
                 startTime: startTime,
                 duration: duration,
-                metadata: finalMetadata
+                error: error,
+                metadata: metadata
             )
-            recordMetric(metric)
-
             throw error
         }
     }
 
-    /// Get statistics for operation
-    /// - Parameter id: Operation identifier
-    /// - Returns: Performance statistics
-    public func getStatistics(
-        for id: String
-    ) -> Statistics? {
+    /// Get performance statistics for an operation
+    public func getStatistics(for id: String) -> Statistics? {
         queue.sync { [weak self] in
             guard let self,
                   let metrics = metrics[id],
                   !metrics.isEmpty
-            else {
-                return nil
-            }
+            else { return nil }
 
-            let durations = metrics.map(\.duration)
-            let total = durations.reduce(0, +)
-            let count = durations.count
-
-            let stats = Statistics(
-                totalDuration: total,
-                averageDuration: total / Double(count),
-                minDuration: durations.min() ?? 0,
-                maxDuration: durations.max() ?? 0,
-                sampleCount: count
-            )
-
-            let metadata: [String: String] = [
-                "id": id,
-                "total": String(format: "%.3f", stats.totalDuration),
-                "average": String(format: "%.3f", stats.averageDuration),
-                "samples": String(stats.sampleCount),
-            ]
-            let config = LogConfig(metadata: metadata)
-            logger.debug("Retrieved performance statistics", config: config)
-
-            return stats
+            return calculateAndLogStatistics(id: id, metrics: metrics)
         }
     }
 
-    /// Reset statistics for operation
-    /// - Parameter id: Operation identifier
-    public func resetStatistics(
-        for id: String
-    ) {
+    /// Reset statistics for an operation
+    public func resetStatistics(for id: String) {
         queue.async(flags: .barrier) { [weak self] in
-            guard let self else {
-                return
-            }
+            guard let self else { return }
 
-            let metadata: [String: String] = [
-                "id": id,
-                "metrics_count": String(
-                    metrics[id]?.count ?? 0
-                ),
-            ]
-            let config = LogConfig(metadata: metadata)
-
+            let count = metrics[id]?.count ?? 0
             metrics.removeValue(forKey: id)
-            logger.debug(
-                "Reset performance statistics",
-                config: config
-            )
+            logReset(id: id, count: count)
         }
     }
-
-    // MARK: Private
-
-    /// Queue for synchronizing operations
-    private let queue: DispatchQueue = .init(
-        label: "dev.mpy.rBUM.PerformanceMonitor",
-        attributes: .concurrent
-    )
-
-    /// Active metrics
-    private var metrics: [String: [Metric]] = [:]
-
-    /// Logger for performance events
-    private let logger: Logger
 
     // MARK: - Private Methods
 
-    /// Record performance metric
-    /// - Parameter metric: Metric to record
-    private func recordMetric(_ metric: Metric) {
-        queue.async(flags: .barrier) { [weak self] in
-            guard let self else {
-                return
+    private func recordSuccess(
+        id: String,
+        startTime: Date,
+        duration: TimeInterval,
+        metadata: [String: String]
+    ) async {
+        var finalMetadata = metadata
+        finalMetadata["status"] = "success"
+        finalMetadata["duration"] = formatDuration(duration)
+
+        let metric = Metric(
+            id: id,
+            startTime: startTime,
+            duration: duration,
+            metadata: finalMetadata
+        )
+        await storeMetric(metric)
+    }
+
+    private func recordError(
+        id: String,
+        startTime: Date,
+        duration: TimeInterval,
+        error: Error,
+        metadata: [String: String]
+    ) async {
+        var finalMetadata = metadata
+        finalMetadata["status"] = "error"
+        finalMetadata["error"] = String(describing: error)
+        finalMetadata["duration"] = formatDuration(duration)
+
+        let metric = Metric(
+            id: id,
+            startTime: startTime,
+            duration: duration,
+            metadata: finalMetadata
+        )
+        await storeMetric(metric)
+    }
+
+    private func calculateAndLogStatistics(
+        id: String,
+        metrics: [Metric]
+    ) -> Statistics {
+        let durations = metrics.map(\.duration)
+        let total = durations.reduce(0, +)
+        let count = durations.count
+
+        let stats = Statistics(
+            totalDuration: total,
+            averageDuration: total / Double(count),
+            minDuration: durations.min() ?? 0,
+            maxDuration: durations.max() ?? 0,
+            sampleCount: count
+        )
+
+        logStatistics(id: id, stats: stats)
+        return stats
+    }
+
+    private func storeMetric(_ metric: Metric) async {
+        await withCheckedContinuation { continuation in
+            queue.async(flags: .barrier) { [weak self] in
+                guard let self else {
+                    continuation.resume()
+                    return
+                }
+
+                var metrics = metrics[metric.id] ?? []
+                metrics.append(metric)
+                self.metrics[metric.id] = metrics
+
+                logMetric(metric)
+                continuation.resume()
             }
-
-            var metrics = metrics[metric.id] ?? []
-            metrics.append(metric)
-            self.metrics[metric.id] = metrics
-
-            var metadata = metric.metadata
-            metadata["id"] = metric.id
-            metadata["duration"] = String(
-                format: "%.3f",
-                metric.duration
-            )
-
-            let config = LogConfig(metadata: metadata)
-            logger.debug(
-                "Recorded performance metric",
-                config: config
-            )
         }
     }
+
+    // MARK: - Logging Methods
+
+    private func logMetric(_ metric: Metric) {
+        let config = LogConfig(metadata: metric.metadata)
+        logger.debug(
+            "Recorded metric: \(metric.id)",
+            config: config
+        )
+    }
+
+    private func logStatistics(id: String, stats: Statistics) {
+        let metadata: [String: String] = [
+            "id": id,
+            "total": formatDuration(stats.totalDuration),
+            "average": formatDuration(stats.averageDuration),
+            "min": formatDuration(stats.minDuration),
+            "max": formatDuration(stats.maxDuration),
+            "samples": String(stats.sampleCount)
+        ]
+        let config = LogConfig(metadata: metadata)
+        logger.debug("Retrieved statistics", config: config)
+    }
+
+    private func logReset(id: String, count: Int) {
+        let metadata: [String: String] = [
+            "id": id,
+            "cleared_metrics": String(count)
+        ]
+        let config = LogConfig(metadata: metadata)
+        logger.debug("Reset statistics", config: config)
+    }
+
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        String(format: "%.3f", duration)
+    }
+}
+
+// MARK: - LogConfig
+
+/// Configuration for metric logging
+private struct LogConfig {
+    let metadata: [String: String]
 }

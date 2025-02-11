@@ -3,7 +3,7 @@ import Foundation
 // MARK: - RepositoryServiceProtocol
 
 /// Protocol for managing repositories
-public protocol RepositoryServiceProtocol { : Sendable: Sendable
+public protocol RepositoryServiceProtocol: Sendable {
     /// Create a new repository
     /// - Parameter repository: Repository to create
     /// - Throws: RepositoryError if creation fails

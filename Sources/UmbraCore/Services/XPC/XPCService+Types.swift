@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - XPCConnectionState
+
 /// XPC connection states
 enum XPCConnectionState: CustomStringConvertible {
     case disconnected
@@ -7,25 +9,23 @@ enum XPCConnectionState: CustomStringConvertible {
     case connected
     case disconnecting
 
+    // MARK: Internal
+
     var description: String {
         switch self {
-        case .disconnected: return "disconnected"
-        case .connecting: return "connecting"
-        case .connected: return "connected"
-        case .disconnecting: return "disconnecting"
+        case .disconnected: "disconnected"
+        case .connecting: "connecting"
+        case .connected: "connected"
+        case .disconnecting: "disconnecting"
         }
     }
 }
 
+// MARK: - XPCConfiguration
+
 /// XPC service configuration
 struct XPCConfiguration {
-    let serviceName: String
-    let interfaceProtocol: Protocol
-    let validateAuditSession: Bool
-    let autoReconnect: Bool
-    let maxRetryAttempts: Int
-    let retryDelay: TimeInterval
-    let connectionTimeout: TimeInterval
+    // MARK: Lifecycle
 
     init(
         serviceName: String,
@@ -44,7 +44,19 @@ struct XPCConfiguration {
         self.retryDelay = retryDelay
         self.connectionTimeout = connectionTimeout
     }
+
+    // MARK: Internal
+
+    let serviceName: String
+    let interfaceProtocol: Protocol
+    let validateAuditSession: Bool
+    let autoReconnect: Bool
+    let maxRetryAttempts: Int
+    let retryDelay: TimeInterval
+    let connectionTimeout: TimeInterval
 }
+
+// MARK: - XPCError
 
 /// XPC service errors
 enum XPCError: LocalizedError {
@@ -55,20 +67,22 @@ enum XPCError: LocalizedError {
     case reconnectionFailed(reason: Reason)
     case timeout(reason: Reason)
 
+    // MARK: Internal
+
     var errorDescription: String? {
         switch self {
-        case .serviceUnavailable(let reason):
-            return "Service unavailable: \(reason.description)"
-        case .invalidState(let reason):
-            return "Invalid state: \(reason.description)"
-        case .notConnected(let reason):
-            return "Not connected: \(reason.description)"
-        case .invalidProxy(let reason):
-            return "Invalid proxy: \(reason.description)"
-        case .reconnectionFailed(let reason):
-            return "Reconnection failed: \(reason.description)"
-        case .timeout(let reason):
-            return "Operation timed out: \(reason.description)"
+        case let .serviceUnavailable(reason):
+            "Service unavailable: \(reason.description)"
+        case let .invalidState(reason):
+            "Invalid state: \(reason.description)"
+        case let .notConnected(reason):
+            "Not connected: \(reason.description)"
+        case let .invalidProxy(reason):
+            "Invalid proxy: \(reason.description)"
+        case let .reconnectionFailed(reason):
+            "Reconnection failed: \(reason.description)"
+        case let .timeout(reason):
+            "Operation timed out: \(reason.description)"
         }
     }
 }

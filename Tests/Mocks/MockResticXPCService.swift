@@ -10,6 +10,14 @@ import Foundation
 
 /// A mock XPC service used for testing and initialization to break circular dependencies
 public final class MockResticXPCService: NSObject, ResticXPCServiceProtocol {
+    // MARK: Lifecycle
+
+    override public init() {
+        super.init()
+    }
+
+    // MARK: Public
+
     public var isHealthy: Bool = true
     public var isConnected: Bool = true
     public var shouldFailConnection: Bool = false
@@ -25,10 +33,6 @@ public final class MockResticXPCService: NSObject, ResticXPCServiceProtocol {
     public private(set) var usedUsername: String?
     public private(set) var usedPassword: String?
     public var snapshotsToReturn: [String] = []
-
-    override public init() {
-        super.init()
-    }
 
     public func ping() async -> Bool {
         isHealthy && isConnected

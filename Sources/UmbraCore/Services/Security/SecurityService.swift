@@ -32,7 +32,7 @@ public final class SecurityService: BaseSandboxedService, SecurityServiceProtoco
 
     /// Initialize with logger
     /// - Parameter logger: Logger for tracking operations
-    public override init(logger: LoggerProtocol) {
+    override public init(logger: LoggerProtocol) {
         super.init(logger: logger)
     }
 

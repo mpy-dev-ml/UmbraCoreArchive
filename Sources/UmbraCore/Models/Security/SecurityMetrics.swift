@@ -3,18 +3,41 @@ import os.log
 
 // MARK: - SecurityMetrics
 
-/// Collects and manages security-related metrics for monitoring and debugging
+/// Tracks and analyses security-related metrics for monitoring and debugging
 @available(macOS 13.0, *)
 public actor SecurityMetrics {
-    // MARK: Lifecycle
+    // MARK: - Types
+
+    /// Type of security metric being recorded
+    private enum MetricType: String {
+        case access
+        case permission
+        case bookmark
+        case xpc
+        case session
+    }
+
+    // MARK: - Properties
+
+    private let logger: Logger
+    private let queue: DispatchQueue
+    private let maxHistorySize: Int
+
+    private(set) var accessCount = 0
+    private(set) var permissionCount = 0
+    private(set) var bookmarkCount = 0
+    private(set) var xpcCount = 0
+    private(set) var failureCount = 0
+    private(set) var activeAccessCount = 0
+    private(set) var operationHistory: [SecurityOperation] = []
 
     // MARK: - Initialization
 
     /// Creates a new security metrics tracker
     /// - Parameters:
-    ///   - logger: Logger for recording metric events
-    ///   - label: Queue label (defaults to bundle identifier)
-    ///   - maxHistory: Maximum operations to keep in history (default: 100)
+    ///   - logger: Logger for recording events
+    ///   - label: Queue label for synchronisation
+    ///   - maxHistory: Maximum operations in history
     public init(
         logger: Logger,
         label: String = Bundle.main.bundleIdentifier ?? "com.umbra.core",
@@ -28,104 +51,66 @@ public actor SecurityMetrics {
         maxHistorySize = maxHistory
     }
 
-    // MARK: Public
-
-    // MARK: - Recording Methods
+    // MARK: - Public Methods
 
     /// Records an access attempt
-    /// - Parameters:
-    ///   - success: Whether access was successful
-    ///   - error: Optional error message
-    ///   - metadata: Additional context
     public func recordAccess(
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
     ) {
-        queue.async {
-            self.accessCount += 1
-            if !success {
-                self.failureCount += 1
-            }
-            self.logMetric(
-                type: "access",
-                success: success,
-                error: error,
-                metadata: metadata
-            )
-        }
+        recordMetric(
+            type: .access,
+            counter: { self.accessCount += 1 },
+            success: success,
+            error: error,
+            metadata: metadata
+        )
     }
 
     /// Records a permission request
-    /// - Parameters:
-    ///   - success: Whether permission was granted
-    ///   - error: Optional error message
-    ///   - metadata: Additional context
     public func recordPermission(
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
     ) {
-        queue.async {
-            self.permissionCount += 1
-            if !success {
-                self.failureCount += 1
-            }
-            self.logMetric(
-                type: "permission",
-                success: success,
-                error: error,
-                metadata: metadata
-            )
-        }
+        recordMetric(
+            type: .permission,
+            counter: { self.permissionCount += 1 },
+            success: success,
+            error: error,
+            metadata: metadata
+        )
     }
 
     /// Records a bookmark operation
-    /// - Parameters:
-    ///   - success: Whether operation succeeded
-    ///   - error: Optional error message
-    ///   - metadata: Additional context
     public func recordBookmark(
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
     ) {
-        queue.async {
-            self.bookmarkCount += 1
-            if !success {
-                self.failureCount += 1
-            }
-            self.logMetric(
-                type: "bookmark",
-                success: success,
-                error: error,
-                metadata: metadata
-            )
-        }
+        recordMetric(
+            type: .bookmark,
+            counter: { self.bookmarkCount += 1 },
+            success: success,
+            error: error,
+            metadata: metadata
+        )
     }
 
     /// Records an XPC service interaction
-    /// - Parameters:
-    ///   - success: Whether interaction succeeded
-    ///   - error: Optional error message
-    ///   - metadata: Additional context
     public func recordXPC(
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
     ) {
-        queue.async {
-            self.xpcCount += 1
-            if !success {
-                self.failureCount += 1
-            }
-            self.logMetric(
-                type: "xpc",
-                success: success,
-                error: error,
-                metadata: metadata
-            )
-        }
+        recordMetric(
+            type: .xpc,
+            counter: { self.xpcCount += 1 },
+            success: success,
+            error: error,
+            metadata: metadata
+        )
     }
 
     // MARK: - Session Management
@@ -135,7 +120,7 @@ public actor SecurityMetrics {
         queue.async {
             self.activeAccessCount += 1
             self.logMetric(
-                type: "session",
+                type: .session,
                 success: true,
                 metadata: ["action": "start"]
             )
@@ -147,99 +132,96 @@ public actor SecurityMetrics {
         queue.async {
             self.activeAccessCount = max(0, self.activeAccessCount - 1)
             self.logMetric(
-                type: "session",
+                type: .session,
                 success: true,
                 metadata: ["action": "end"]
             )
         }
     }
 
-    // MARK: Internal
+    // MARK: - Private Methods
 
-    // MARK: - Metrics
-
-    /// Total number of access attempts (successful and failed)
-    private(set) var accessCount: Int = 0
-
-    /// Total number of permission requests
-    private(set) var permissionCount: Int = 0
-
-    /// Total number of bookmark operations
-    private(set) var bookmarkCount: Int = 0
-
-    /// Total number of XPC service interactions
-    private(set) var xpcCount: Int = 0
-
-    /// Total number of security operation failures
-    private(set) var failureCount: Int = 0
-
-    /// Current number of active access sessions
-    private(set) var activeAccessCount: Int = 0
-
-    /// Chronological history of security operations
-    private(set) var operationHistory: [SecurityOperation] = []
-
-    // MARK: Private
-
-    /// Logger instance for recording metric events
-    private let logger: Logger
-
-    /// Queue for synchronizing metric updates
-    private let queue: DispatchQueue
-
-    /// Maximum number of operations to keep in history
-    private let maxHistorySize: Int
-
-    // MARK: - History Management
-
-    /// Adds an operation to history
-    /// - Parameter operation: Operation to record
-    private func addToHistory(_ operation: SecurityOperation) {
-        operationHistory.append(operation)
-        if operationHistory.count > maxHistorySize {
-            operationHistory.removeFirst()
+    private func recordMetric(
+        type: MetricType,
+        counter: () -> Void,
+        success: Bool,
+        error: String?,
+        metadata: [String: String]
+    ) {
+        queue.async {
+            counter()
+            if !success {
+                self.failureCount += 1
+            }
+            self.logMetric(
+                type: type,
+                success: success,
+                error: error,
+                metadata: metadata
+            )
         }
     }
 
-    // MARK: - Private Methods
-
-    /// Logs a metric event with metadata
-    /// - Parameters:
-    ///   - type: Type of metric
-    ///   - success: Whether operation succeeded
-    ///   - error: Optional error message
-    ///   - metadata: Additional context
     private func logMetric(
-        type: String,
+        type: MetricType,
         success: Bool,
         error: String? = nil,
         metadata: [String: String] = [:]
     ) {
-        var logMetadata = [
-            "type": type,
-            "success": String(success),
-            "timestamp": Date().ISO8601Format(),
-        ]
+        var logMetadata = createBaseMetadata(
+            type: type,
+            success: success
+        )
 
-        // Add error if present
         if let error {
             logMetadata["error"] = error
         }
 
-        // Add custom metadata
         logMetadata.merge(metadata) { current, _ in current }
-
-        // Create log configuration
         let config = LogConfig(metadata: logMetadata)
 
-        // Log with appropriate level
+        logWithAppropriateLevel(
+            type: type,
+            success: success,
+            error: error,
+            config: config
+        )
+    }
+
+    private func createBaseMetadata(
+        type: MetricType,
+        success: Bool
+    ) -> [String: String] {
+        [
+            "type": type.rawValue,
+            "success": String(success),
+            "timestamp": Date().ISO8601Format()
+        ]
+    }
+
+    private func logWithAppropriateLevel(
+        type: MetricType,
+        success: Bool,
+        error: String?,
+        config: LogConfig
+    ) {
         if success {
-            logger.info("\(type) operation completed", config: config)
-        } else {
-            logger.error(
-                "\(type) operation failed: \(error ?? "Unknown error")",
+            logger.info(
+                "\(type.rawValue) operation completed",
                 config: config
             )
+        } else {
+            logger.error(
+                "\(type.rawValue) operation failed: \(error ?? "Unknown error")",
+                config: config
+            )
+        }
+    }
+
+    private func addToHistory(_ operation: SecurityOperation) {
+        operationHistory.append(operation)
+        if operationHistory.count > maxHistorySize {
+            operationHistory.removeFirst()
         }
     }
 }
@@ -248,6 +230,5 @@ public actor SecurityMetrics {
 
 /// Configuration for metric logging
 private struct LogConfig {
-    /// Metadata for the log entry
     let metadata: [String: String]
 }

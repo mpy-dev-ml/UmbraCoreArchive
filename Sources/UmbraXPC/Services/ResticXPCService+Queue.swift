@@ -91,29 +91,30 @@ extension ResticXPCService {
             OperationState.pending,
             OperationState.queued
         ]
-        
+
         guard validStates.contains(operation.state) else {
             throw ResticXPCError.invalidOperationState
         }
-        
+
         operationQueue.addOperation(operation)
     }
-    
+
     func cancelOperation(_ identifier: UUID) throws {
         let validStates = [
             OperationState.queued,
             OperationState.running,
             OperationState.suspended
         ]
-        
+
         guard let operation = findOperation(identifier),
-              validStates.contains(operation.state) else {
+              validStates.contains(operation.state)
+        else {
             throw ResticXPCError.operationNotFound
         }
-        
+
         operation.cancel()
     }
-    
+
     private func findOperation(_ identifier: UUID) -> ResticOperation? {
         operationQueue.operations.first { operation in
             guard let resticOperation = operation as? ResticOperation else {

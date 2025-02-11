@@ -6,7 +6,7 @@ import os.log
 /// Protocol for services that require logging capabilities.
 /// This protocol provides a standardised way to handle logging across the application,
 /// ensuring consistent log formatting and level-appropriate messaging.
-public protocol LoggingService { : Sendable: Sendable
+public protocol LoggingService: Sendable {
     /// The logger instance used by this service.
     /// This property should be configured during service initialization
     /// and remain constant throughout the service's lifecycle.

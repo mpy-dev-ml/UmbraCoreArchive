@@ -168,14 +168,14 @@ extension ResticXPCService {
             return [
                 NSURLErrorTimedOut,
                 NSURLErrorNetworkConnectionLost,
-                NSURLErrorNotConnectedToInternet,
+                NSURLErrorNotConnectedToInternet
             ].contains(nsError.code)
 
         case POSIXError.errorDomain:
             return [
                 EAGAIN,
                 EBUSY,
-                ETIMEDOUT,
+                ETIMEDOUT
             ].contains(POSIXErrorCode(rawValue: nsError.code)?.rawValue ?? 0)
 
         default:

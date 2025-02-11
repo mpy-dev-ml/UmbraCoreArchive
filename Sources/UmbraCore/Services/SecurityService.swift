@@ -84,7 +84,8 @@ public final class SecurityService: SecurityServiceProtocol {
         )
     }
 
-    @objc private func applicationWillTerminate(_: Notification) {
+    @objc
+    private func applicationWillTerminate(_: Notification) {
         bookmarkQueue.sync(flags: .barrier) {
             activeBookmarks.removeAll()
         }

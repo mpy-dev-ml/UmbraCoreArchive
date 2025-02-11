@@ -6,7 +6,7 @@ import os.log
 extension XPCService {
     /// Perform connection setup and validation
     func performConnect() async throws {
-        guard let self = self else {
+        guard let self else {
             throw XPCError.serviceUnavailable(
                 reason: .serviceInstanceDeallocated
             )
@@ -68,7 +68,7 @@ extension XPCService {
 
     /// Wait for connection to establish
     func waitForConnection(
-        _ connection: NSXPCConnection
+        _: NSXPCConnection
     ) async throws {
         try await withTimeout(configuration.connectionTimeout) {
             // Implement connection verification
@@ -79,8 +79,9 @@ extension XPCService {
 
     /// Perform disconnection cleanup
     func performDisconnect() {
-        guard let self = self,
-              connectionState == .connected else {
+        guard let self,
+              connectionState == .connected
+        else {
             return
         }
 
@@ -96,7 +97,7 @@ extension XPCService {
 
     /// Create remote proxy object
     func createRemoteProxy<T>() throws -> T {
-        guard let self = self else {
+        guard let self else {
             throw XPCError.serviceUnavailable(
                 reason: .serviceInstanceDeallocated
             )
@@ -121,8 +122,9 @@ extension XPCService {
 
     /// Validate connection state for proxy creation
     func validateProxyCreation() throws {
-        guard let connection = connection,
-              connectionState == .connected else {
+        guard let connection,
+              connectionState == .connected
+        else {
             throw XPCError.notConnected(
                 reason: .noActiveConnection
             )

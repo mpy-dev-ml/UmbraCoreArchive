@@ -157,7 +157,7 @@ public final class XPCClient {
             "xpc_command_execution",
             metadata: [
                 "command": command,
-                "working_directory": workingDirectory,
+                "working_directory": workingDirectory
             ]
         ) {
             guard let proxy = try await serviceProxy else {

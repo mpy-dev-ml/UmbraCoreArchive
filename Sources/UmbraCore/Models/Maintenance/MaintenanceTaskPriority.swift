@@ -125,7 +125,7 @@ public extension TaskConfiguration {
             allowsParallel: true,
             isInterruptible: true,
             dependencies: [.healthCheck]
-        ),
+        )
     ]
 }
 

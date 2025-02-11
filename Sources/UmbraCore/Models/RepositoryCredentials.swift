@@ -1,7 +1,8 @@
 import Foundation
 
 /// Class for storing repository access credentials
-@objc public class RepositoryCredentials: NSObject, NSSecureCoding {
+@objc
+public class RepositoryCredentials: NSObject, NSSecureCoding {
     // MARK: Lifecycle
 
     /// Initialize new repository credentials
@@ -9,7 +10,8 @@ import Foundation
     ///   - password: Repository password
     ///   - username: Optional username
     ///   - sshKeyPath: Optional SSH key path
-    @objc public init(
+    @objc
+    public init(
         password: String,
         username: String? = nil,
         sshKeyPath: String? = nil
@@ -20,7 +22,8 @@ import Foundation
         super.init()
     }
 
-    @objc public required init?(coder: NSCoder) {
+    @objc
+    public required init?(coder: NSCoder) {
         guard let password = coder.decodeObject(of: NSString.self, forKey: "password") as String?
         else {
             return nil
@@ -47,7 +50,8 @@ import Foundation
     /// SSH key path (optional)
     @objc public let sshKeyPath: String?
 
-    @objc public func encode(with coder: NSCoder) {
+    @objc
+    public func encode(with coder: NSCoder) {
         coder.encode(password, forKey: "password")
         coder.encode(username, forKey: "username")
         coder.encode(sshKeyPath, forKey: "sshKeyPath")

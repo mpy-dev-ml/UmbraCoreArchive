@@ -12,16 +12,13 @@ import os.log
 /// Mock logger for testing
 @objc
 public class MockLogger: NSObject, LoggerProtocol {
+    // MARK: Public
+
     // MARK: - Types
 
     /// Logged message
     public struct LoggedMessage: Equatable {
-        /// Message text
-        public let message: String
-        /// Log level
-        public let level: Level
-        /// Message metadata
-        public let metadata: [String: String]
+        // MARK: Lifecycle
 
         /// Initialize with values
         public init(
@@ -33,6 +30,15 @@ public class MockLogger: NSObject, LoggerProtocol {
             self.level = level
             self.metadata = metadata
         }
+
+        // MARK: Public
+
+        /// Message text
+        public let message: String
+        /// Log level
+        public let level: Level
+        /// Message metadata
+        public let metadata: [String: String]
     }
 
     /// Log level
@@ -44,16 +50,8 @@ public class MockLogger: NSObject, LoggerProtocol {
         case critical = 4
     }
 
-    // MARK: - Properties
-
     /// Logged messages
     public private(set) var messages: [LoggedMessage] = []
-
-    /// Queue for synchronizing access
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbra.mock-logger",
-        attributes: .concurrent
-    )
 
     // MARK: - LoggerProtocol
 
@@ -148,6 +146,14 @@ public class MockLogger: NSObject, LoggerProtocol {
             messages.filter { $0.message.contains(text) }
         }
     }
+
+    // MARK: Private
+
+    /// Queue for synchronizing access
+    private let queue = DispatchQueue(
+        label: "dev.mpy.umbra.mock-logger",
+        attributes: .concurrent
+    )
 
     // MARK: - Private Methods
 
