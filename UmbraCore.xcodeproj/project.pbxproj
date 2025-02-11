@@ -25,7 +25,6 @@
 		8D1EA2C82D5A3F2800397485 /* MaintenanceSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA2892D5A3F2800397485 /* MaintenanceSchedule.swift */; };
 		8D1EA2C92D5A3F2800397485 /* BackupTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA2842D5A3F2800397485 /* BackupTypes.swift */; };
 		8D1EA2CA2D5A3F2800397485 /* SecurityOperationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA2A32D5A3F2800397485 /* SecurityOperationStatus.swift */; };
-		8D1EA2CB2D5A3F2800397485 /* ResticError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA29C2D5A3F2800397485 /* ResticError.swift */; };
 		8D1EA2CC2D5A3F2800397485 /* PreparedCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA29A2D5A3F2800397485 /* PreparedCommand.swift */; };
 		8D1EA2CD2D5A3F2800397485 /* PerformanceAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA2912D5A3F2800397485 /* PerformanceAlert.swift */; };
 		8D1EA2CE2D5A3F2800397485 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA2AB2D5A3F2800397485 /* Snapshot.swift */; };
@@ -115,6 +114,15 @@
 		8D1EA3972D5A408500397485 /* SecurityError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA32F2D5A408500397485 /* SecurityError.swift */; };
 		8D1EA3982D5A408500397485 /* PermissionValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA3192D5A408500397485 /* PermissionValidator.swift */; };
 		8D1EA3992D5A408500397485 /* ResourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA3282D5A408500397485 /* ResourceMonitor.swift */; };
+		8D1EA39C2D5B394900397485 /* ServiceErrorTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA39B2D5B394900397485 /* ServiceErrorTypes.swift */; };
+		8D1EA39D2D5B394900397485 /* ServiceError+LocalizedError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA39A2D5B394900397485 /* ServiceError+LocalizedError.swift */; };
+		8D1EA3A52D5B39B300397485 /* ServiceDependencyError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA39E2D5B39B200397485 /* ServiceDependencyError.swift */; };
+		8D1EA3A62D5B39B300397485 /* ServiceError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA39F2D5B39B200397485 /* ServiceError.swift */; };
+		8D1EA3A72D5B39B300397485 /* ServiceOperationError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA3A22D5B39B200397485 /* ServiceOperationError.swift */; };
+		8D1EA3A82D5B39B300397485 /* ServiceLifecycleError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA3A12D5B39B200397485 /* ServiceLifecycleError.swift */; };
+		8D1EA3A92D5B39B300397485 /* ServiceErrorProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA3A02D5B39B200397485 /* ServiceErrorProtocol.swift */; };
+		8D1EA3AA2D5B39B300397485 /* ServiceStateError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA3A32D5B39B200397485 /* ServiceStateError.swift */; };
+		8D1EA3AC2D5B39EE00397485 /* LoggerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1EA3AB2D5B39EE00397485 /* LoggerProtocol.swift */; };
 		8D9DA1B02D5933C700A91A47 /* UmbraCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8D9DA1A52D5933C700A91A47 /* UmbraCore.framework */; };
 		8D9DA1D02D59543900A91A47 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 8D9DA1C12D59543900A91A47 /* README.md */; };
 		8D9DA1D12D59543900A91A47 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 8D9DA1C12D59543900A91A47 /* README.md */; };
@@ -201,7 +209,6 @@
 		8D1EA2972D5A3F2800397485 /* SystemResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemResources.swift; sourceTree = "<group>"; };
 		8D1EA29A2D5A3F2800397485 /* PreparedCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreparedCommand.swift; sourceTree = "<group>"; };
 		8D1EA29B2D5A3F2800397485 /* ProgressTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTracker.swift; sourceTree = "<group>"; };
-		8D1EA29C2D5A3F2800397485 /* ResticError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResticError.swift; sourceTree = "<group>"; };
 		8D1EA29D2D5A3F2800397485 /* SecurityMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityMetrics.swift; sourceTree = "<group>"; };
 		8D1EA29F2D5A3F2800397485 /* SecurityOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOperation.swift; sourceTree = "<group>"; };
 		8D1EA2A12D5A3F2800397485 /* SecurityOperationRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityOperationRecorder.swift; sourceTree = "<group>"; };
@@ -294,6 +301,15 @@
 		8D1EA3402D5A408500397485 /* XPCError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCError.swift; sourceTree = "<group>"; };
 		8D1EA3412D5A408500397485 /* XPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCProtocol.swift; sourceTree = "<group>"; };
 		8D1EA3422D5A408500397485 /* XPCService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCService.swift; sourceTree = "<group>"; };
+		8D1EA39A2D5B394900397485 /* ServiceError+LocalizedError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServiceError+LocalizedError.swift"; sourceTree = "<group>"; };
+		8D1EA39B2D5B394900397485 /* ServiceErrorTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceErrorTypes.swift; sourceTree = "<group>"; };
+		8D1EA39E2D5B39B200397485 /* ServiceDependencyError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceDependencyError.swift; sourceTree = "<group>"; };
+		8D1EA39F2D5B39B200397485 /* ServiceError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceError.swift; sourceTree = "<group>"; };
+		8D1EA3A02D5B39B200397485 /* ServiceErrorProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceErrorProtocol.swift; sourceTree = "<group>"; };
+		8D1EA3A12D5B39B200397485 /* ServiceLifecycleError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLifecycleError.swift; sourceTree = "<group>"; };
+		8D1EA3A22D5B39B200397485 /* ServiceOperationError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceOperationError.swift; sourceTree = "<group>"; };
+		8D1EA3A32D5B39B200397485 /* ServiceStateError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceStateError.swift; sourceTree = "<group>"; };
+		8D1EA3AB2D5B39EE00397485 /* LoggerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggerProtocol.swift; sourceTree = "<group>"; };
 		8D9DA1A52D5933C700A91A47 /* UmbraCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UmbraCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D9DA1AF2D5933C700A91A47 /* UmbraCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UmbraCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D9DA1C12D59543900A91A47 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -743,6 +759,19 @@
 			path = XPC;
 			sourceTree = "<group>";
 		};
+		8D1EA3A42D5B39B200397485 /* Service */ = {
+			isa = PBXGroup;
+			children = (
+				8D1EA39E2D5B39B200397485 /* ServiceDependencyError.swift */,
+				8D1EA39F2D5B39B200397485 /* ServiceError.swift */,
+				8D1EA3A02D5B39B200397485 /* ServiceErrorProtocol.swift */,
+				8D1EA3A12D5B39B200397485 /* ServiceLifecycleError.swift */,
+				8D1EA3A22D5B39B200397485 /* ServiceOperationError.swift */,
+				8D1EA3A32D5B39B200397485 /* ServiceStateError.swift */,
+			);
+			path = Service;
+			sourceTree = "<group>";
+		};
 		8D9DA19B2D5933C700A91A47 = {
 			isa = PBXGroup;
 			children = (
@@ -774,6 +803,9 @@
 		8D9DA1C22D59543900A91A47 /* Errors */ = {
 			isa = PBXGroup;
 			children = (
+				8D1EA3A42D5B39B200397485 /* Service */,
+				8D1EA39A2D5B394900397485 /* ServiceError+LocalizedError.swift */,
+				8D1EA39B2D5B394900397485 /* ServiceErrorTypes.swift */,
 				8D1EA2772D5A3E7600397485 /* Maintenance */,
 				8D1EA2782D5A3E7600397485 /* Performance */,
 				8D1EA27A2D5A3E7600397485 /* SandboxError.swift */,
@@ -791,6 +823,7 @@
 		8D9DA1C32D59543900A91A47 /* Logging */ = {
 			isa = PBXGroup;
 			children = (
+				8D1EA3AB2D5B39EE00397485 /* LoggerProtocol.swift */,
 				8D1EA2812D5A3EDF00397485 /* Maintenance */,
 				8D1EA2822D5A3EDF00397485 /* Performance */,
 				8D1EA2832D5A3EDF00397485 /* Security */,
@@ -811,7 +844,6 @@
 				8D1EA2992D5A3F2800397485 /* Performance */,
 				8D1EA29A2D5A3F2800397485 /* PreparedCommand.swift */,
 				8D1EA29B2D5A3F2800397485 /* ProgressTracker.swift */,
-				8D1EA29C2D5A3F2800397485 /* ResticError.swift */,
 				8D1EA2A92D5A3F2800397485 /* Security */,
 				8D1EA2AA2D5A3F2800397485 /* SidebarItem.swift */,
 				8D1EA2AB2D5A3F2800397485 /* Snapshot.swift */,
@@ -1121,6 +1153,7 @@
 				8D9DA1FE2D59669900A91A47 /* RepositoryCredentials.swift in Sources */,
 				8D9DA1FF2D59669900A91A47 /* RepositoryStatus.swift in Sources */,
 				8D9DA2002D59669900A91A47 /* ResticCommand.swift in Sources */,
+				8D1EA3AC2D5B39EE00397485 /* LoggerProtocol.swift in Sources */,
 				8D9DA2012D59669900A91A47 /* ResticSnapshot.swift in Sources */,
 				8D9DA2022D59669900A91A47 /* SecurityScopedAccess.swift in Sources */,
 				8D9DA2032D59669900A91A47 /* ProcessError.swift in Sources */,
@@ -1201,6 +1234,8 @@
 				8D1EA37B2D5A408500397485 /* KeychainQueryBuilder.swift in Sources */,
 				8D1EA37C2D5A408500397485 /* PermissionError.swift in Sources */,
 				8D1EA37D2D5A408500397485 /* BaseService.swift in Sources */,
+				8D1EA39C2D5B394900397485 /* ServiceErrorTypes.swift in Sources */,
+				8D1EA39D2D5B394900397485 /* ServiceError+LocalizedError.swift in Sources */,
 				8D1EA37E2D5A408500397485 /* ValidationPreset.swift in Sources */,
 				8D1EA37F2D5A408500397485 /* ServiceFactory.swift in Sources */,
 				8D1EA3802D5A408500397485 /* ResourceCache.swift in Sources */,
@@ -1230,6 +1265,12 @@
 				8D1EA3982D5A408500397485 /* PermissionValidator.swift in Sources */,
 				8D1EA3992D5A408500397485 /* ResourceMonitor.swift in Sources */,
 				8D9DA2412D59681300A91A47 /* ResticXPCService+Commands.swift in Sources */,
+				8D1EA3A52D5B39B300397485 /* ServiceDependencyError.swift in Sources */,
+				8D1EA3A62D5B39B300397485 /* ServiceError.swift in Sources */,
+				8D1EA3A72D5B39B300397485 /* ServiceOperationError.swift in Sources */,
+				8D1EA3A82D5B39B300397485 /* ServiceLifecycleError.swift in Sources */,
+				8D1EA3A92D5B39B300397485 /* ServiceErrorProtocol.swift in Sources */,
+				8D1EA3AA2D5B39B300397485 /* ServiceStateError.swift in Sources */,
 				8D9DA2422D59681300A91A47 /* ResticXPCService+Resources.swift in Sources */,
 				8D9DA2432D59681300A91A47 /* ResticXPCService+HealthCheck.swift in Sources */,
 				8D9DA2442D59681300A91A47 /* ResticXPCService+Validation.swift in Sources */,
@@ -1255,7 +1296,6 @@
 				8D1EA2C82D5A3F2800397485 /* MaintenanceSchedule.swift in Sources */,
 				8D1EA2C92D5A3F2800397485 /* BackupTypes.swift in Sources */,
 				8D1EA2CA2D5A3F2800397485 /* SecurityOperationStatus.swift in Sources */,
-				8D1EA2CB2D5A3F2800397485 /* ResticError.swift in Sources */,
 				8D1EA2CC2D5A3F2800397485 /* PreparedCommand.swift in Sources */,
 				8D1EA2CD2D5A3F2800397485 /* PerformanceAlert.swift in Sources */,
 				8D1EA2CE2D5A3F2800397485 /* Snapshot.swift in Sources */,
