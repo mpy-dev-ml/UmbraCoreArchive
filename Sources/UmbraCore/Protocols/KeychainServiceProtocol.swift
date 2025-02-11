@@ -20,22 +20,20 @@ public protocol KeychainServiceProtocol: NSObjectProtocol {
     @objc
     func save(_ data: Data, for key: String, accessGroup: String?) throws
 
-    /// Retrieve data from the keychain with sandbox-compliant access
+    /// Retrieve data from the keychain
     /// - Parameters:
-    ///   - key: Unique identifier for the keychain item
-    ///   - accessGroup: Optional access group for XPC service sharing
-    /// - Returns: Retrieved data if found, nil if item doesn't exist
-    /// - Throws: KeychainError if retrieval fails or sandbox denies access
+    ///   - key: Key to retrieve data for
+    ///   - accessGroup: Optional access group
+    /// - Returns: Data if found, nil if not found
+    /// - Throws: KeychainError if operation fails
     /// - Note: Must handle both main app and XPC service access patterns
-    @objc
     func retrieve(for key: String, accessGroup: String?) throws -> Data?
 
     /// Delete data from the keychain with sandbox-compliant access
     /// - Parameters:
-    ///   - key: Unique identifier for the keychain item to delete
-    ///   - accessGroup: Optional access group for XPC service sharing
-    /// - Throws: KeychainError if deletion fails or sandbox denies access
-    /// - Note: Must clean up items from both main app and XPC service
+    ///   - key: Key to delete data for
+    ///   - accessGroup: Optional access group
+    /// - Throws: KeychainError if operation fails
     @objc
     func delete(for key: String, accessGroup: String?) throws
 
@@ -46,10 +44,9 @@ public protocol KeychainServiceProtocol: NSObjectProtocol {
     @objc
     func configureXPCSharing(accessGroup: String) throws
 
-    /// Validate XPC service keychain access
-    /// - Parameter accessGroup: The access group to validate
-    /// - Returns: true if XPC service has proper keychain access
+    /// Validate XPC access to keychain
+    /// - Parameter accessGroup: Access group to validate
+    /// - Returns: True if access is valid
     /// - Throws: KeychainError if validation fails
-    @objc
     func validateXPCAccess(accessGroup: String) throws -> Bool
 }

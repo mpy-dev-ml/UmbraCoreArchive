@@ -51,7 +51,8 @@ public final class ProgressTracker: ProgressTrackerProtocol {
             operations[operationID] = OperationState(
                 startTime: Date(),
                 progress: 0,
-                status: .running
+                status: OperationStatus.inProgress,
+                error: nil
             )
 
             notificationCenter.post(
@@ -74,6 +75,7 @@ public final class ProgressTracker: ProgressTrackerProtocol {
                 return
             }
             state.progress = progress
+            state.status = .inProgress
             operations[operationID] = state
 
             let userInfo: [String: Any] = [
@@ -99,6 +101,7 @@ public final class ProgressTracker: ProgressTrackerProtocol {
                 return
             }
             state.status = .failed(error)
+            state.error = error
             operations[operationID] = state
 
             let userInfo: [String: Any] = [
@@ -138,16 +141,29 @@ public final class ProgressTracker: ProgressTrackerProtocol {
 
 // MARK: - OperationState
 
-private struct OperationState {
+private struct OperationState: @unchecked Sendable {
     let startTime: Date
     var progress: Double
     var status: OperationStatus
+    var error: Error?
+
+    init(
+        startTime: Date = Date(),
+        progress: Double = 0,
+        status: OperationStatus = .inProgress,
+        error: Error? = nil
+    ) {
+        self.startTime = startTime
+        self.progress = progress
+        self.status = status
+        self.error = error
+    }
 }
 
 // MARK: - OperationStatus
 
 private enum OperationStatus {
-    case running
+    case inProgress
     case failed(Error)
 }
 

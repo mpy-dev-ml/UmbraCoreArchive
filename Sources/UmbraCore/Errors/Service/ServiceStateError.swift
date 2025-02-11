@@ -1,31 +1,24 @@
 import Foundation
 
 /// Errors that can occur during service state management
+@frozen
 @objc
-public enum ServiceStateError: Int, ServiceErrorProtocol {
-    /// Invalid service state
-    case invalidState(
-        service: String,
-        current: ServiceState,
-        expected: ServiceState
-    )
+public final class ServiceStateError: NSObject, ServiceErrorProtocol {
+    // MARK: - Error Types
 
-    /// State transition failed
-    case stateTransitionFailed(
-        service: String,
-        from: ServiceState,
-        targetState: ServiceState
-    )
+    private enum ErrorType {
+        case invalidState(service: String, current: ServiceState, expected: ServiceState)
+        case stateTransitionFailed(service: String, from: ServiceState, target: ServiceState)
+        case stateLockTimeout(service: String, state: ServiceState)
+    }
 
-    /// State lock timeout
-    case stateLockTimeout(service: String, state: ServiceState)
+    // MARK: - Properties
 
-    // MARK: Public
+    private let errorType: ErrorType
 
-    // MARK: - ServiceErrorProtocol
-
+    /// Service name associated with the error
     public var serviceName: String {
-        switch self {
+        switch errorType {
         case let .invalidState(service, _, _),
              let .stateTransitionFailed(service, _, _),
              let .stateLockTimeout(service, _):
@@ -33,25 +26,82 @@ public enum ServiceStateError: Int, ServiceErrorProtocol {
         }
     }
 
-    public var errorDescription: String? {
-        switch self {
-        case let .invalidState(service, current, expected):
-            "Invalid state for service \(service): expected \(expected), but was \(current)"
-        case let .stateTransitionFailed(service, from, targetState):
-            "Failed to transition service \(service) from \(from) to \(targetState)"
-        case let .stateLockTimeout(service, state):
-            "Timeout waiting for service \(service) state lock in state \(state)"
+    /// Current state when error occurred
+    public var currentState: ServiceState? {
+        switch errorType {
+        case let .invalidState(_, current, _):
+            current
+        case let .stateTransitionFailed(_, from, _):
+            from
+        case let .stateLockTimeout(_, state):
+            state
         }
     }
 
-    public var recoverySuggestion: String? {
-        switch self {
-        case .invalidState:
-            "Ensure service is in the correct state before performing operation"
-        case .stateTransitionFailed:
-            "Check service dependencies and configuration"
+    /// Expected or target state when error occurred
+    public var targetState: ServiceState? {
+        switch errorType {
+        case let .invalidState(_, _, expected):
+            expected
+        case let .stateTransitionFailed(_, _, target):
+            target
         case .stateLockTimeout:
-            "Try operation again or check for deadlocks"
+            nil
         }
+    }
+
+    // MARK: - ServiceErrorProtocol
+
+    public var errorCode: Int {
+        switch errorType {
+        case .invalidState: 1
+        case .stateTransitionFailed: 2
+        case .stateLockTimeout: 3
+        }
+    }
+
+    public static var errorDomain: String {
+        "dev.mpy.umbracore.service.state"
+    }
+
+    override public var localizedDescription: String {
+        switch errorType {
+        case let .invalidState(service, current, expected):
+            "Service '\(service)' in invalid state: expected '\(expected)', but was '\(current)'"
+        case let .stateTransitionFailed(service, from, target):
+            "Service '\(service)' failed to transition from '\(from)' to '\(target)'"
+        case let .stateLockTimeout(service, state):
+            "Service '\(service)' state lock timed out in state '\(state)'"
+        }
+    }
+
+    override public var recoverySuggestion: String? {
+        switch errorType {
+        case .invalidState:
+            "Ensure service is in the correct state before proceeding"
+        case .stateTransitionFailed:
+            "Check if the state transition is valid and all prerequisites are met"
+        case .stateLockTimeout:
+            "Check for deadlocks or increase the lock timeout duration"
+        }
+    }
+
+    // MARK: - Initialization
+
+    public convenience init(service: String, current: ServiceState, expected: ServiceState) {
+        self.init(type: .invalidState(service: service, current: current, expected: expected))
+    }
+
+    public convenience init(service: String, from: ServiceState, target: ServiceState) {
+        self.init(type: .stateTransitionFailed(service: service, from: from, target: target))
+    }
+
+    public convenience init(service: String, state: ServiceState) {
+        self.init(type: .stateLockTimeout(service: service, state: state))
+    }
+
+    private init(type: ErrorType) {
+        errorType = type
+        super.init()
     }
 }

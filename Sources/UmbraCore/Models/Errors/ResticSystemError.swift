@@ -77,11 +77,15 @@ public enum ResticSystemError: ResticErrorProtocol {
 
     public var command: String? {
         switch self {
-        case let .insufficientPermissions(path),
-             let .insufficientResources(details),
-             let .fileSystemError(path),
-             let .networkError(details),
-             let .systemTimeout(operation):
+        case let .insufficientPermissions(path):
+            Thread.callStackSymbols.first
+        case let .insufficientResources(details):
+            Thread.callStackSymbols.first
+        case let .fileSystemError(path):
+            Thread.callStackSymbols.first
+        case let .networkError(details):
+            Thread.callStackSymbols.first
+        case let .systemTimeout(operation):
             Thread.callStackSymbols.first
         }
     }

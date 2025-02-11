@@ -1,3 +1,7 @@
+# =========================
+# SwiftLint Configuration
+# =========================
+
 included:
   - Sources
 excluded:
@@ -41,6 +45,10 @@ identifier_name:
     - URL
     - url
     - log
+    - os
+    - at
+    - to
+    - in
 
 type_name:
   min_length:
@@ -48,8 +56,15 @@ type_name:
     error: 2
   excluded:
     - ID
+    - URL
 
+function_parameter_count:
+  warning: 6
+  error: 8
+
+# Opt-in Rules
 opt_in_rules:
+  # Existing rules
   - array_init
   - attributes
   - closure_end_indentation
@@ -90,6 +105,115 @@ opt_in_rules:
   - vertical_whitespace_closing_braces
   - vertical_whitespace_opening_braces
   - yoda_condition
+  
+  # New rules
+  - anonymous_argument_in_multiline_closure
+  - computed_accessors_order
+  - prefer_zero_over_explicit_init
+  - redundant_self_in_closure
+  - unavailable_function
+  - unowned_variable_capture
+  - void_function_in_ternary
+  - capture_variable
+  - closing_brace_spacing
+  - conditional_returns_on_newline
+  - contains_over_first_not_nil
+  - convenience_type
+  - discouraged_optional_boolean
+  - empty_enum_arguments
+  - explicit_type_interface
+  - extension_access_modifier
+  - fallthrough
+  - file_header
+  - file_name
+  - file_types_order
+  - first_where
+  - identical_operands
+  - implicit_return
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - legacy_objc_type
+  - let_var_whitespace
+  - literal_expression_end_indentation
+  - lower_acl_than_parent
+  - missing_docs
+  - modifier_order
+  - multiline_parameters_brackets
+  - number_separator
+  - object_literal
+  - operator_usage_whitespace
+  - optional_enum_case_matching
+  - overridden_super_call
+  - override_in_extension
+  - pattern_matching_keywords
+  - prefer_self_in_static_references
+  - prefer_self_type_over_type_of_self
+  - private_action
+  - private_outlet
+  - prohibited_interface_builder
+  - prohibited_super_call
+  - quick_discouraged_call
+  - quick_discouraged_focused_test
+  - quick_discouraged_pending_test
+  - reduce_into
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - required_deinit
+  - required_enum_case
+  - single_test_class
+  - sorted_first_last
+  - static_operator
+  - strong_iboutlet
+  - switch_case_on_newline
+  - test_case_accessibility
+  - toggle_bool
+  - trailing_closure
+  - type_contents_order
+  - unavailable_function
+  - unneeded_parentheses_in_closure_argument
+  - unowned_variable_capture
+  - untyped_error_in_catch
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_between_cases
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+  - weak_delegate
+  - xct_specific_matcher
+  - yoda_condition
+
+# Analyzer rules
+analyzer_rules:
+  - capture_variable
+  - explicit_self
+  - unused_declaration
+  - unused_import
+
+# Custom rules for British English
+custom_rules:
+  british_spelling:
+    name: "British Spelling"
+    regex: '(?i)(color|behavior|flavor|humor|labor|neighbour|rumor|splendor|harbor)'
+    message: "Use British English spelling (colour, behaviour, flavour, humour, labour, neighbour, rumour, splendour, harbour)"
+    severity: warning
+    match_kinds:
+      - comment
+      - string
+  
+  british_spelling_ise:
+    name: "British -ise Spelling"
+    regex: '(?i)(organize|authorize|customize|initialize|synchronize|standardize|minimize|maximize)'
+    message: "Use British English -ise spelling (organise, authorise, customise, initialise, synchronise, standardise, minimise, maximise)"
+    severity: warning
+    match_kinds:
+      - comment
+      - string
 
 disabled_rules:
   - todo
+  - trailing_whitespace  # Handled by SwiftFormat
+  - vertical_whitespace  # Handled by SwiftFormat
+
+# Deployment target
+deployment_target:
+  macOS_deployment_target: "14.0"

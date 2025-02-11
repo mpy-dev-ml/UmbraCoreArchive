@@ -10,7 +10,8 @@ import Foundation
 public struct DiscoveredRepository:
     Identifiable,
     Hashable,
-    Sendable {
+    Sendable
+{
     // MARK: - Properties
 
     /// Unique identifier for the repository
@@ -99,7 +100,8 @@ public struct DiscoveredRepository:
 @frozen
 public struct RepositoryMetadata:
     Hashable,
-    Sendable {
+    Sendable
+{
     // MARK: - Properties
 
     /// Repository size in bytes

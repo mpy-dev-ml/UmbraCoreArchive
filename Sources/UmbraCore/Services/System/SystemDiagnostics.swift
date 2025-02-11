@@ -215,7 +215,7 @@ public struct SystemDiagnostics {
                 Item(
                     key: "Available",
                     value: formatBytes(metrics.availableCapacity),
-                    status: .operational
+                    status: OperationStatus.operational
                 )
             )
 
@@ -223,7 +223,7 @@ public struct SystemDiagnostics {
                 Item(
                     key: "Total",
                     value: formatBytes(metrics.totalCapacity),
-                    status: .operational
+                    status: OperationStatus.operational
                 )
             )
 
@@ -240,10 +240,10 @@ public struct SystemDiagnostics {
                     Item(
                         key: "Error",
                         value: error.localizedDescription,
-                        status: .error
+                        status: OperationStatus.error
                     )
                 ],
-                status: .error
+                status: OperationStatus.error
             )
         }
     }

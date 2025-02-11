@@ -1,7 +1,8 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for tracking cache metrics
-public final class CacheMetrics: BaseSandboxedService {
+@objc
+public final class CacheMetrics: BaseSandboxedService, @unchecked Sendable {
     // MARK: Lifecycle
 
     // MARK: - Initialization
@@ -19,6 +20,7 @@ public final class CacheMetrics: BaseSandboxedService {
         self.directoryURL = directoryURL
         self.performanceMonitor = performanceMonitor
         super.init(logger: logger)
+        queue = DispatchQueue(label: "com.umbracore.cache.metrics", attributes: .concurrent)
     }
 
     // MARK: Public
@@ -71,15 +73,15 @@ public final class CacheMetrics: BaseSandboxedService {
 
     /// Track cache hit
     public func trackHit() {
-        queue.async(flags: .barrier) {
-            self.hitCount += 1
+        queue.async(flags: .barrier) { [weak self] in
+            self?.hitCount += 1
         }
     }
 
     /// Track cache miss
     public func trackMiss() {
-        queue.async(flags: .barrier) {
-            self.missCount += 1
+        queue.async(flags: .barrier) { [weak self] in
+            self?.missCount += 1
         }
     }
 
@@ -107,9 +109,9 @@ public final class CacheMetrics: BaseSandboxedService {
 
     /// Reset metrics
     public func resetMetrics() {
-        queue.async(flags: .barrier) {
-            self.hitCount = 0
-            self.missCount = 0
+        queue.async(flags: .barrier) { [weak self] in
+            self?.hitCount = 0
+            self?.missCount = 0
         }
 
         logger.debug(
@@ -126,11 +128,7 @@ public final class CacheMetrics: BaseSandboxedService {
     private let directoryURL: URL
 
     /// Queue for synchronizing operations
-    private let queue: DispatchQueue = .init(
-        label: "dev.mpy.umbracore.cache.metrics",
-        qos: .utility,
-        attributes: .concurrent
-    )
+    private let queue: DispatchQueue
 
     /// Performance monitor
     private let performanceMonitor: PerformanceMonitor
@@ -241,19 +239,19 @@ public final class CacheMetrics: BaseSandboxedService {
     /// Track performance metrics
     /// - Parameter metrics: Metrics to track
     private func trackPerformanceMetrics(_ metrics: Metrics) async {
-        try? await performanceMonitor.trackMetric(
+        try? await performanceMonitor.trackValue(
             "cache.size",
             value: Double(metrics.totalSize)
         )
-        try? await performanceMonitor.trackMetric(
+        try? await performanceMonitor.trackValue(
             "cache.entries",
             value: Double(metrics.entryCount)
         )
-        try? await performanceMonitor.trackMetric(
+        try? await performanceMonitor.trackValue(
             "cache.hit_rate",
             value: metrics.hitRate
         )
-        try? await performanceMonitor.trackMetric(
+        try? await performanceMonitor.trackValue(
             "cache.miss_rate",
             value: metrics.missRate
         )

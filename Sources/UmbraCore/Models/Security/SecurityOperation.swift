@@ -22,7 +22,7 @@ import Foundation
 ///     url: fileURL,
 ///     operationType: .access,
 ///     timestamp: Date(),
-///     status: .success
+///     status: OperationStatus.success
 /// )
 ///
 /// // Log the operation
@@ -75,7 +75,7 @@ public struct SecurityOperation: Hashable {
     ///     url: fileURL,
     ///     operationType: .bookmark,
     ///     timestamp: Date(),
-    ///     status: .failure,
+    ///     status: OperationStatus.failure,
     ///     error: """
     ///         Unable to resolve bookmark: data is stale or \
     ///         corrupted
@@ -179,14 +179,14 @@ public struct SecurityOperation: Hashable {
     ///     url: fileURL,
     ///     operationType: .access,
     ///     timestamp: Date(),
-    ///     status: .pending
+    ///     status: OperationStatus.pending
     /// )
     ///
     /// let op2 = SecurityOperation(
     ///     url: fileURL,
     ///     operationType: .access,
     ///     timestamp: Date(),
-    ///     status: .success
+    ///     status: OperationStatus.success
     /// )
     ///
     /// // Operations are equal despite different statuses

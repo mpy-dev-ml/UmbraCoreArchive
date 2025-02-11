@@ -3,8 +3,9 @@ import Foundation
 // MARK: - LockMetrics
 
 /// Metrics for repository lock operations
-public struct LockMetrics: Codable, CustomStringConvertible, Equatable {
-    // MARK: Lifecycle
+@frozen
+public struct LockMetrics: Codable, CustomStringConvertible, Equatable, Sendable {
+    // MARK: - Lifecycle
 
     public init(
         successfulAcquisitions: Int = 0,
@@ -30,7 +31,7 @@ public struct LockMetrics: Codable, CustomStringConvertible, Equatable {
         self.operationMetrics = operationMetrics
     }
 
-    // MARK: Public
+    // MARK: - Properties
 
     /// Total number of successful lock acquisitions
     public let successfulAcquisitions: Int
@@ -61,13 +62,44 @@ public struct LockMetrics: Codable, CustomStringConvertible, Equatable {
 
     /// Metrics broken down by operation type
     public let operationMetrics: [RepositoryOperation: OperationMetrics]
+
+    // MARK: - CustomStringConvertible
+
+    public var description: String {
+        """
+        Lock Metrics:
+        - Acquisitions: \(successfulAcquisitions) successful, \(failedAcquisitions) failed
+        - Acquisition Time: avg \(String(format: "%.2f", averageAcquisitionTime))s, max \(String(format: "%.2f", maxAcquisitionTime))s
+        - Hold Time: avg \(String(format: "%.2f", averageHoldTime))s, max \(String(format: "%.2f", maxHoldTime))s
+        - Stale Locks: \(staleLockCount)
+        - Timeouts: \(timeoutCount)
+        - Contention Rate: \(String(format: "%.1f%%", contentionRate * 100))
+        - Operations: \(operationMetrics.count)
+        """
+    }
+
+    // MARK: - Codable
+
+    private enum CodingKeys: String, CodingKey {
+        case successfulAcquisitions
+        case failedAcquisitions
+        case averageAcquisitionTime
+        case maxAcquisitionTime
+        case staleLockCount
+        case timeoutCount
+        case averageHoldTime
+        case maxHoldTime
+        case contentionRate
+        case operationMetrics
+    }
 }
 
 // MARK: - OperationMetrics
 
 /// Metrics for a specific operation type
-public struct OperationMetrics: Codable, CustomStringConvertible, Equatable {
-    // MARK: Lifecycle
+@frozen
+public struct OperationMetrics: Codable, CustomStringConvertible, Equatable, Sendable {
+    // MARK: - Lifecycle
 
     public init(
         successCount: Int = 0,
@@ -83,7 +115,7 @@ public struct OperationMetrics: Codable, CustomStringConvertible, Equatable {
         self.blockCount = blockCount
     }
 
-    // MARK: Public
+    // MARK: - Properties
 
     /// Number of successful operations
     public let successCount: Int
@@ -99,8 +131,25 @@ public struct OperationMetrics: Codable, CustomStringConvertible, Equatable {
 
     /// Number of times this operation was blocked by other operations
     public let blockCount: Int
-}
 
-public var description: String {
-    String(describing: self)
+    // MARK: - CustomStringConvertible
+
+    public var description: String {
+        """
+        Operation Metrics:
+        - Success/Failure: \(successCount)/\(failureCount)
+        - Duration: avg \(String(format: "%.2f", averageDuration))s, max \(String(format: "%.2f", maxDuration))s
+        - Blocks: \(blockCount)
+        """
+    }
+
+    // MARK: - Codable
+
+    private enum CodingKeys: String, CodingKey {
+        case successCount
+        case failureCount
+        case averageDuration
+        case maxDuration
+        case blockCount
+    }
 }

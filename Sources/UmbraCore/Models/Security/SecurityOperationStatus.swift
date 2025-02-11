@@ -28,7 +28,7 @@ import Foundation
 ///     url: fileURL,
 ///     operationType: .access,
 ///     timestamp: Date(),
-///     status: .pending
+///     status: OperationStatus.pending
 /// )
 ///
 /// // Handling different statuses
@@ -87,7 +87,7 @@ public enum SecurityOperationStatus: String {
     ///     url: fileURL,
     ///     operationType: .access,
     ///     timestamp: Date(),
-    ///     status: .success
+    ///     status: OperationStatus.success
     /// )
     ///
     /// // Successful permission grant
@@ -95,7 +95,7 @@ public enum SecurityOperationStatus: String {
     ///     url: resourceURL,
     ///     operationType: .permission,
     ///     timestamp: Date(),
-    ///     status: .success
+    ///     status: OperationStatus.success
     /// )
     /// ```
     ///
@@ -121,7 +121,7 @@ public enum SecurityOperationStatus: String {
     ///     url: bookmarkURL,
     ///     operationType: .bookmark,
     ///     timestamp: Date(),
-    ///     status: .failure,
+    ///     status: OperationStatus.failure,
     ///     error: """
     ///         Unable to resolve bookmark: data is stale or \
     ///         corrupted
@@ -133,7 +133,7 @@ public enum SecurityOperationStatus: String {
     ///     url: serviceURL,
     ///     operationType: .xpc,
     ///     timestamp: Date(),
-    ///     status: .failure,
+    ///     status: OperationStatus.failure,
     ///     error: """
     ///         XPC service connection timed out after \
     ///         30 seconds
@@ -163,7 +163,7 @@ public enum SecurityOperationStatus: String {
     ///     url: resourceURL,
     ///     operationType: .permission,
     ///     timestamp: Date(),
-    ///     status: .pending
+    ///     status: OperationStatus.pending
     /// )
     ///
     /// // Active XPC operation
@@ -171,7 +171,7 @@ public enum SecurityOperationStatus: String {
     ///     url: serviceURL,
     ///     operationType: .xpc,
     ///     timestamp: Date(),
-    ///     status: .pending
+    ///     status: OperationStatus.pending
     /// )
     /// ```
     ///

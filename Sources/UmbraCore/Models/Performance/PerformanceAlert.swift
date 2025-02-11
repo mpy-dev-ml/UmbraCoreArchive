@@ -3,7 +3,7 @@ import Foundation
 // MARK: - PerformanceThresholds
 
 /// Represents performance alert thresholds
-public struct PerformanceThresholds {
+public struct PerformanceThresholds: Sendable {
     // MARK: Lifecycle
 
     /// Initialises a new PerformanceThresholds instance with default or custom values
@@ -49,9 +49,9 @@ public struct PerformanceThresholds {
 // MARK: - PerformanceAlert
 
 /// Represents a performance alert
-public struct PerformanceAlert: Identifiable {
+public struct PerformanceAlert: Identifiable, Sendable {
     /// Severity levels for performance alerts
-    public enum AlertSeverity {
+    public enum AlertSeverity: Sendable {
         /// Warning-level alert
         case warning
 
@@ -60,7 +60,7 @@ public struct PerformanceAlert: Identifiable {
     }
 
     /// Types of performance alerts
-    public enum AlertType {
+    public enum AlertType: Sendable {
         /// High memory usage alert
         case highMemoryUsage
 

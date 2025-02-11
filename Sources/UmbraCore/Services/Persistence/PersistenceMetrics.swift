@@ -25,6 +25,29 @@ public final class PersistenceMetrics: BaseSandboxedService {
 
     // MARK: - Types
 
+    /// Storage metrics for persistence operations
+    @frozen
+    public struct PersistenceOperationMetrics {
+        // MARK: Lifecycle
+
+        /// Initialize with values
+        public init(
+            baseMetrics: OperationMetrics,
+            storageMetrics: StorageMetrics
+        ) {
+            self.baseMetrics = baseMetrics
+            self.storageMetrics = storageMetrics
+        }
+
+        // MARK: Public
+
+        /// Base operation metrics
+        public let baseMetrics: OperationMetrics
+
+        /// Storage-specific metrics
+        public let storageMetrics: StorageMetrics
+    }
+
     /// Storage metrics
     public struct StorageMetrics {
         // MARK: Lifecycle
@@ -145,9 +168,9 @@ public final class PersistenceMetrics: BaseSandboxedService {
         }
     }
 
-    /// Get operation metrics
-    /// - Returns: Operation metrics
-    public func getOperationMetrics() -> OperationMetrics {
+    /// Get metrics for persistence operations
+    /// - Returns: Metrics for persistence operations
+    public func getOperationMetrics() -> PersistenceOperationMetrics {
         queue.sync {
             // Calculate average durations
             var averageDurations: [String: TimeInterval] = [:]
@@ -158,10 +181,22 @@ public final class PersistenceMetrics: BaseSandboxedService {
             }
 
             // Create metrics
-            let metrics = OperationMetrics(
+            let baseMetrics = OperationMetrics(
                 operationCounts: operationCounts,
                 averageDurations: averageDurations,
                 errorCounts: errorCounts
+            )
+
+            let storageMetrics = StorageMetrics(
+                totalSize: 0,
+                fileCount: 0,
+                averageFileSize: 0,
+                directoryUsage: [:]
+            )
+
+            let metrics = PersistenceOperationMetrics(
+                baseMetrics: baseMetrics,
+                storageMetrics: storageMetrics
             )
 
             // Log metrics

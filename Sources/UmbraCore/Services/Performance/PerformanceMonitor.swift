@@ -1,3 +1,6 @@
+@unchecked Sendable
+import Foundation
+
 /// Service for monitoring performance metrics
 @objc
 public class PerformanceMonitor: NSObject {

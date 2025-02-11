@@ -30,8 +30,10 @@ final class OSLogAdapter {
         case .info:
             .info
         case .warning:
+            .default // Use .default for warnings as it's the closest match
+        case .error:
             .error
-        case .error, .critical:
+        case .critical:
             .fault
         }
 

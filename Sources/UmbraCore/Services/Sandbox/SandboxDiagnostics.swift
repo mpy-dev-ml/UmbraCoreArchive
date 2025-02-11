@@ -185,7 +185,7 @@ public struct SandboxDiagnostics {
                 Item(
                     key: "Container Directory",
                     value: containerURL.path,
-                    status: .successful
+                    status: OperationStatus.successful
                 )
             )
         } else {
@@ -193,7 +193,7 @@ public struct SandboxDiagnostics {
                 Item(
                     key: "Container Directory",
                     value: "Not available",
-                    status: .error
+                    status: OperationStatus.error
                 )
             )
         }
@@ -203,7 +203,7 @@ public struct SandboxDiagnostics {
             Item(
                 key: "Temporary Directory",
                 value: NSTemporaryDirectory(),
-                status: .successful
+                status: OperationStatus.successful
             )
         )
 
@@ -221,7 +221,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Network Access",
             items: [],
-            status: .unknown
+            status: OperationStatus.unknown
         )
     }
 
@@ -232,7 +232,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "IPC Communication",
             items: [],
-            status: .unknown
+            status: OperationStatus.unknown
         )
     }
 
@@ -243,7 +243,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Process Execution",
             items: [],
-            status: .unknown
+            status: OperationStatus.unknown
         )
     }
 
@@ -254,7 +254,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Resource Access",
             items: [],
-            status: .unknown
+            status: OperationStatus.unknown
         )
     }
 
@@ -265,7 +265,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Security Settings",
             items: [],
-            status: .unknown
+            status: OperationStatus.unknown
         )
     }
 

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents errors that can occur during backup operations.
-public enum ResticBackupError: ResticErrorProtocol {
+public enum ResticBackupError: Error, ResticErrorProtocol {
     case backupFailed(String)
     case backupCancelled(String)
     case backupInProgress(String)
@@ -12,16 +12,16 @@ public enum ResticBackupError: ResticErrorProtocol {
 
     public var errorDescription: String {
         switch self {
-        case let .backupFailed(path):
-            "Backup failed for path: \(path)"
-        case let .backupCancelled(path):
-            "Backup cancelled for path: \(path)"
-        case let .backupInProgress(path):
-            "Backup already in progress for path: \(path)"
-        case let .backupNotFound(path):
-            "Backup not found for path: \(path)"
-        case let .backupCorrupted(path):
-            "Backup is corrupted for path: \(path)"
+        case let .backupFailed(message):
+            "Backup failed: \(message)"
+        case let .backupCancelled(message):
+            "Backup cancelled: \(message)"
+        case let .backupInProgress(message):
+            "Backup in progress: \(message)"
+        case let .backupNotFound(message):
+            "Backup not found: \(message)"
+        case let .backupCorrupted(message):
+            "Backup corrupted: \(message)"
         }
     }
 
@@ -83,6 +83,21 @@ public enum ResticBackupError: ResticErrorProtocol {
              let .backupNotFound(path),
              let .backupCorrupted(path):
             Thread.callStackSymbols.first
+        }
+    }
+
+    public var exitCode: Int32 {
+        switch self {
+        case .backupFailed:
+            1
+        case .backupCancelled:
+            2
+        case .backupInProgress:
+            3
+        case .backupNotFound:
+            4
+        case .backupCorrupted:
+            5
         }
     }
 }

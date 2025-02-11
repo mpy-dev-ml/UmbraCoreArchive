@@ -97,6 +97,18 @@ public class SystemResources: NSObject, NSSecureCoding {
     /// System load averages for 1, 5, and 15 minutes
     @objc public let systemLoad: [Double]
 
+    // MARK: - NSObject
+
+    override public var description: String {
+        """
+        SystemResources(
+            memoryUsage: \(formattedAvailableMemory()),
+            cpuUsage: \(formattedCPUUsage()),
+            diskUsage: \(formattedAvailableDiskSpace())
+        )
+        """
+    }
+
     // MARK: - NSSecureCoding
 
     /// Encodes the SystemResources instance to an NSCoder.
@@ -148,20 +160,5 @@ public class SystemResources: NSObject, NSSecureCoding {
     public func formattedSystemLoad() -> String {
         let loadStrings = systemLoad.map { String(format: "%.2f", $0) }
         return loadStrings.joined(separator: ", ")
-    }
-}
-
-// MARK: CustomStringConvertible
-
-extension SystemResources: CustomStringConvertible {
-    public var description: String {
-        """
-        SystemResources(
-            memory: \(formattedAvailableMemory()),
-            disk: \(formattedAvailableDiskSpace()),
-            cpu: \(formattedCPUUsage()),
-            load: [\(formattedSystemLoad())]
-        )
-        """
     }
 }

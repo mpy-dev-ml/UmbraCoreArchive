@@ -242,7 +242,8 @@ public class EncryptionService: NSObject {
         useSecureEnclave: Bool
     ) throws -> SymmetricKey {
         if useSecureEnclave,
-           let key = try? createSecureEnclaveKey(fromData: data) {
+           let key = try? createSecureEnclaveKey(fromData: data)
+        {
             return key
         }
 

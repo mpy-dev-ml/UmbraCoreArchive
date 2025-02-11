@@ -1,3 +1,5 @@
+import Foundation
+
 // MARK: - ProcessMonitor
 
 /// Service for monitoring process execution and performance
@@ -8,7 +10,6 @@ public class ProcessMonitor: NSObject {
     // MARK: - Initialization
 
     /// Initialize with dependencies
-    @objc
     public init(
         performanceMonitor: PerformanceMonitor,
         logger: LoggerProtocol

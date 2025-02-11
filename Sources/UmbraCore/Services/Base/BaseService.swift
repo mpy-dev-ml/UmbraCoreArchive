@@ -4,7 +4,7 @@ import os.log
 // MARK: - BaseService
 
 /// Base class providing common service functionality
-open class BaseService: NSObject, LoggingService {
+open class BaseService: NSObject, LoggingServiceProtocol, @unchecked Sendable {
     // MARK: Lifecycle
 
     /// Initialize with a logger
@@ -27,11 +27,11 @@ open class BaseService: NSObject, LoggingService {
     ///   - action: The operation to execute
     /// - Returns: The result of the operation
     /// - Throws: The last error encountered if all attempts fail
-    public func withRetry<T>(
+    public func withRetry<T: Sendable>(
         attempts: Int = 3,
         delay: TimeInterval = 1.0,
         operation: String,
-        action: () async throws -> T
+        action: @Sendable () async throws -> T
     ) async throws -> T {
         var lastError: Error?
 
@@ -58,20 +58,24 @@ open class BaseService: NSObject, LoggingService {
             }
         }
 
-        throw lastError ?? ServiceError.operationFailed(operation)
+        throw lastError ?? ServiceError.operationFailed(
+            service: String(describing: type(of: self)),
+            operation: operation,
+            reason: "Operation failed after \(attempts) attempts"
+        )
     }
 
-    /// Execute an operation with timeout
+    /// Execute an operation with a timeout
     /// - Parameters:
-    ///   - timeout: Maximum time to wait in seconds
-    ///   - operation: Name of the operation for logging
-    ///   - action: The operation to execute
+    ///   - timeout: Maximum time to wait for operation
+    ///   - operation: Description of the operation
+    ///   - action: Operation to execute
     /// - Returns: The result of the operation
     /// - Throws: ServiceError.timeout if the operation exceeds the timeout
-    public func withTimeout<T>(
+    public func withTimeout<T: Sendable>(
         timeout: TimeInterval,
         operation: String,
-        action: () async throws -> T
+        action: @Sendable () async throws -> T
     ) async throws -> T {
         let task = Task {
             try await action()
@@ -83,35 +87,19 @@ open class BaseService: NSObject, LoggingService {
             task.cancel()
             logger.error(
                 """
-                Operation '\(operation)' timed out after \(timeout) seconds: \
-                \(error.localizedDescription)
+                Operation timed out after \(timeout) seconds
+                Operation: \(operation)
+                Error: \(error)
                 """,
                 file: #file,
                 function: #function,
                 line: #line
             )
-            throw ServiceError.timeout(operation)
-        }
-    }
-}
-
-// MARK: - ServiceError
-
-/// Common service errors
-public enum ServiceError: LocalizedError {
-    /// Operation failed after all retry attempts
-    case operationFailed(String)
-    /// Operation timed out
-    case timeout(String)
-
-    // MARK: Public
-
-    public var errorDescription: String? {
-        switch self {
-        case let .operationFailed(operation):
-            "Operation '\(operation)' failed after all retry attempts"
-        case let .timeout(operation):
-            "Operation '\(operation)' timed out"
+            throw ServiceError.timeout(
+                service: String(describing: type(of: self)),
+                operation: operation,
+                duration: timeout
+            )
         }
     }
 }

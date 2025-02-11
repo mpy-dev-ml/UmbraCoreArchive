@@ -1,7 +1,8 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for managing cache operations
-public final class CacheService: BaseSandboxedService {
+@objc
+public final class CacheService: BaseSandboxedService, @unchecked Sendable {
     // MARK: Lifecycle
 
     // MARK: - Initialization
@@ -39,40 +40,40 @@ public final class CacheService: BaseSandboxedService {
     // MARK: - Types
 
     /// Cache entry
-    public struct CacheEntry<T: Codable> {
-        // MARK: Lifecycle
+    public struct CacheEntry<T: Codable & Sendable>: Codable, Sendable {
+        // MARK: Properties
 
-        /// Initialize with values
+        /// The cached value
+        public let value: T
+
+        /// Size of the entry in bytes
+        public let size: Int
+
+        /// Timestamp when the entry was created
+        public let timestamp: Date
+
+        /// Additional metadata
+        public let metadata: [String: String]
+
+        // MARK: Initialization
+
+        /// Initialize a cache entry
+        /// - Parameters:
+        ///   - value: Value to cache
+        ///   - size: Size in bytes
+        ///   - timestamp: Creation timestamp
+        ///   - metadata: Optional metadata
         public init(
             value: T,
-            creationDate: Date = Date(),
-            expirationDate: Date? = nil,
-            size: Int64,
+            size: Int,
+            timestamp: Date = Date(),
             metadata: [String: String] = [:]
         ) {
             self.value = value
-            self.creationDate = creationDate
-            self.expirationDate = expirationDate
             self.size = size
+            self.timestamp = timestamp
             self.metadata = metadata
         }
-
-        // MARK: Public
-
-        /// Entry value
-        public let value: T
-
-        /// Creation date
-        public let creationDate: Date
-
-        /// Expiration date
-        public let expirationDate: Date?
-
-        /// Entry size in bytes
-        public let size: Int64
-
-        /// Entry metadata
-        public let metadata: [String: String]
     }
 
     /// Cache configuration
@@ -81,7 +82,7 @@ public final class CacheService: BaseSandboxedService {
 
         /// Initialize with values
         public init(
-            maxSize: Int64 = 100 * 1024 * 1024, // 100MB
+            maxSize: Int = 100 * 1024 * 1024, // 100MB
             defaultLifetime: TimeInterval? = nil,
             autoCleanup: Bool = true,
             cleanupInterval: TimeInterval = 300 // 5 minutes
@@ -95,7 +96,7 @@ public final class CacheService: BaseSandboxedService {
         // MARK: Public
 
         /// Maximum cache size in bytes
-        public let maxSize: Int64
+        public let maxSize: Int
 
         /// Default entry lifetime
         public let defaultLifetime: TimeInterval?
@@ -117,7 +118,7 @@ public final class CacheService: BaseSandboxedService {
     ///   - metadata: Optional entry metadata
     /// - Throws: Error if operation fails
     public func setValue(
-        _ value: some Codable,
+        _ value: some Codable & Sendable,
         forKey key: String,
         lifetime: TimeInterval? = nil,
         metadata: [String: String] = [:]
@@ -132,8 +133,7 @@ public final class CacheService: BaseSandboxedService {
 
             let entry = CacheEntry(
                 value: value,
-                expirationDate: expirationDate,
-                size: Int64(data.count),
+                size: data.count,
                 metadata: metadata
             )
 
@@ -170,7 +170,7 @@ public final class CacheService: BaseSandboxedService {
     /// - Parameter key: Cache key
     /// - Returns: Cache entry if available
     /// - Throws: Error if operation fails
-    public func getValue<T: Codable>(
+    public func getValue<T: Codable & Sendable>(
         forKey key: String
     ) async throws -> CacheEntry<T>? {
         try validateUsable(for: "getValue")
@@ -198,7 +198,7 @@ public final class CacheService: BaseSandboxedService {
                 Got cache entry:
                 Key: \(key)
                 Size: \(entry.size) bytes
-                Age: \(Date().timeIntervalSince(entry.creationDate))s
+                Age: \(Date().timeIntervalSince(entry.timestamp))s
                 """,
                 file: #file,
                 function: #function,
@@ -222,7 +222,7 @@ public final class CacheService: BaseSandboxedService {
             let attributes = try FileManager.default.attributesOfItem(
                 atPath: entryURL.path
             )
-            let size = attributes[.size] as? Int64 ?? 0
+            let size = attributes[.size] as? Int ?? 0
 
             // Remove file
             try FileManager.default.removeItem(at: entryURL)
@@ -299,7 +299,7 @@ public final class CacheService: BaseSandboxedService {
     private var cleanupTimer: Timer?
 
     /// Current cache size
-    private var currentSize: Int64 = 0
+    private var currentSize: Int = 0
 
     // MARK: - Private Methods
 
@@ -317,12 +317,12 @@ public final class CacheService: BaseSandboxedService {
                 includingPropertiesForKeys: [.fileSizeKey]
             )
 
-            var totalSize: Int64 = 0
+            var totalSize = 0
             for url in contents {
                 let attributes = try FileManager.default.attributesOfItem(
                     atPath: url.path
                 )
-                totalSize += attributes[.size] as? Int64 ?? 0
+                totalSize += attributes[.size] as? Int ?? 0
             }
 
             currentSize = totalSize
@@ -367,14 +367,15 @@ public final class CacheService: BaseSandboxedService {
                 includingPropertiesForKeys: [.fileSizeKey]
             )
 
-            var removedSize: Int64 = 0
+            var removedSize = 0
             var removedCount = 0
 
             for url in contents {
                 // Check if entry is expired
                 if let entry: CacheEntry<Data> = try? await load(from: url),
                    let expirationDate = entry.expirationDate,
-                   expirationDate < Date() {
+                   expirationDate < Date()
+                {
                     // Remove file
                     try FileManager.default.removeItem(at: url)
                     removedSize += entry.size
@@ -408,15 +409,15 @@ public final class CacheService: BaseSandboxedService {
 
     /// Save entry to file
     private func save(
-        _ entry: CacheEntry<some Codable>,
+        _ entry: CacheEntry<some Codable & Sendable>,
         to url: URL
     ) async throws {
         let data = try JSONEncoder().encode(entry)
-        try data.write(to: url, options: .atomic)
+        try data.write(to: url, options: .atomicWrite)
     }
 
     /// Load entry from file
-    private func load<T: Codable>(from url: URL) async throws -> CacheEntry<T> {
+    private func load<T: Codable & Sendable>(from url: URL) async throws -> CacheEntry<T> {
         let data = try Data(contentsOf: url)
         return try JSONDecoder().decode(CacheEntry<T>.self, from: data)
     }

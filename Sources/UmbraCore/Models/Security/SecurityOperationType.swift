@@ -27,7 +27,7 @@ import Foundation
 ///     url: fileURL,
 ///     operationType: .access,
 ///     timestamp: Date(),
-///     status: .success
+///     status: OperationStatus.success
 /// )
 ///
 /// // Pattern matching in switch statements
@@ -72,7 +72,7 @@ public enum SecurityOperationType: String {
     ///     url: fileURL,
     ///     operationType: .access,
     ///     timestamp: Date(),
-    ///     status: .inProgress
+    ///     status: OperationStatus.inProgress
     /// )
     ///
     /// // Stopping resource access
@@ -80,7 +80,7 @@ public enum SecurityOperationType: String {
     ///     url: fileURL,
     ///     operationType: .access,
     ///     timestamp: Date(),
-    ///     status: .success
+    ///     status: OperationStatus.success
     /// )
     /// ```
     ///
@@ -105,7 +105,7 @@ public enum SecurityOperationType: String {
     ///     url: fileURL,
     ///     operationType: .permission,
     ///     timestamp: Date(),
-    ///     status: .inProgress
+    ///     status: OperationStatus.inProgress
     /// )
     ///
     /// // Revoking permissions
@@ -113,7 +113,7 @@ public enum SecurityOperationType: String {
     ///     url: fileURL,
     ///     operationType: .permission,
     ///     timestamp: Date(),
-    ///     status: .success
+    ///     status: OperationStatus.success
     /// )
     /// ```
     ///
@@ -138,7 +138,7 @@ public enum SecurityOperationType: String {
     ///     url: fileURL,
     ///     operationType: .bookmark,
     ///     timestamp: Date(),
-    ///     status: .inProgress
+    ///     status: OperationStatus.inProgress
     /// )
     ///
     /// // Resolving a bookmark
@@ -146,7 +146,7 @@ public enum SecurityOperationType: String {
     ///     url: fileURL,
     ///     operationType: .bookmark,
     ///     timestamp: Date(),
-    ///     status: .success
+    ///     status: OperationStatus.success
     /// )
     /// ```
     ///
@@ -171,7 +171,7 @@ public enum SecurityOperationType: String {
     ///     url: serviceURL,
     ///     operationType: .xpc,
     ///     timestamp: Date(),
-    ///     status: .inProgress
+    ///     status: OperationStatus.inProgress
     /// )
     ///
     /// // Handling XPC error
@@ -179,7 +179,7 @@ public enum SecurityOperationType: String {
     ///     url: serviceURL,
     ///     operationType: .xpc,
     ///     timestamp: Date(),
-    ///     status: .failure,
+    ///     status: OperationStatus.failure,
     ///     error: """
     ///         XPC connection interrupted. Please check service \
     ///         availability and try again.

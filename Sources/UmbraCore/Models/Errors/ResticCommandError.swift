@@ -1,62 +1,82 @@
 import Foundation
 
-/// Represents errors that can occur during command execution.
-public enum ResticCommandError: ResticErrorProtocol {
-    /// Indicates that the command execution failed.
-    case executionFailed(String)
-    /// Indicates that the command timed out.
-    case timeout(String)
-    /// Indicates that the command was interrupted.
-    case interrupted
-    /// Indicates that the command had invalid arguments.
-    case invalidArguments(String)
-    /// Indicates that the command is not supported.
-    case unsupportedCommand(String)
+/// Represents errors that can occur during command execution
+@objc
+public enum ResticCommandError: Int, ResticErrorProtocol, LocalizedError {
+    /// Indicates that the command execution failed
+    case executionFailed = 1
+    /// Indicates that the command timed out
+    case timeout = 124
+    /// Indicates that the command was interrupted
+    case interrupted = 130
+    /// Indicates that the command had invalid arguments
+    case invalidArguments = 64
+    /// Indicates that the command is not supported
+    case unsupportedCommand = 127
 
-    // MARK: Public
+    // MARK: - ResticErrorProtocol
 
-    public var errorDescription: String {
+    public static func from(exitCode: Int32) -> ResticCommandError? {
+        switch exitCode {
+        case 1: .executionFailed
+        case 124: .timeout
+        case 130: .interrupted
+        case 64: .invalidArguments
+        case 127: .unsupportedCommand
+        default: nil
+        }
+    }
+
+    public var context: [String: Any]? {
+        var context: [String: Any] = [:]
+        context["category"] = "command"
+        return context
+    }
+
+    // MARK: - LocalizedError
+
+    public var errorDescription: String? {
         switch self {
-        case let .executionFailed(details):
-            "Command execution failed: \(details)"
-        case let .timeout(command):
-            "Command timed out: \(command)"
+        case .executionFailed:
+            "Command execution failed"
+        case .timeout:
+            "Command timed out"
         case .interrupted:
             "Command was interrupted"
-        case let .invalidArguments(details):
-            "Invalid command arguments: \(details)"
-        case let .unsupportedCommand(command):
-            "Unsupported command: \(command)"
+        case .invalidArguments:
+            "Invalid command arguments"
+        case .unsupportedCommand:
+            "Unsupported command"
         }
     }
 
     public var failureReason: String? {
         switch self {
-        case let .executionFailed(details):
-            "The command failed to execute properly: \(details)"
-        case let .timeout(command):
-            "The command '\(command)' exceeded its time limit"
+        case .executionFailed:
+            "The command failed to execute properly"
+        case .timeout:
+            "The command exceeded its time limit"
         case .interrupted:
-            "The command was interrupted before completion"
-        case let .invalidArguments(details):
-            "The provided command arguments are invalid: \(details)"
-        case let .unsupportedCommand(command):
-            "The command '\(command)' is not supported"
+            "The command was interrupted by a signal"
+        case .invalidArguments:
+            "The command received invalid arguments"
+        case .unsupportedCommand:
+            "The command is not supported by this version"
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .executionFailed:
-            "Check system resources and try again"
+            "Check the command output for details"
         case .timeout:
-            "Consider increasing the timeout duration or optimizing the command"
+            "Try increasing the timeout duration"
         case .interrupted:
-            "Run the command again when ready"
+            "Try running the command again"
         case .invalidArguments:
-            "Check the command documentation and correct the arguments"
+            "Check the command arguments"
         case .unsupportedCommand:
-            "Use a supported command or update to a newer version"
+            "Check the supported commands list"
         }
     }
 }

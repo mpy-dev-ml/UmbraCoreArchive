@@ -23,10 +23,10 @@ public final class NetworkService: BaseSandboxedService {
 
     // MARK: - Properties
 
-    private let session: URLSession
-    private let performanceMonitor: PerformanceMonitor
+    public let session: URLSession
+    public let performanceMonitor: PerformanceMonitor
     private var activeTasks: [UUID: Task<Response, Error>] = [:]
-    private let taskQueue = DispatchQueue(label: "dev.mpy.umbracore.network.tasks")
+    public let taskQueue = DispatchQueue(label: "dev.mpy.umbracore.network.tasks")
 
     // MARK: - Public Methods
 

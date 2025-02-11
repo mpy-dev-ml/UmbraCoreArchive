@@ -126,7 +126,7 @@ public final class DevelopmentBookmarkService: BaseSandboxedService, BookmarkSer
     private let performanceTracker: PerformanceTracker = .init()
 
     /// Resource monitor
-    private let resourceMonitor: ResourceMonitor = .init()
+    private lazy var resourceMonitor: ResourceMonitor = .init(logger: logger)
 
     // MARK: - Private Methods
 

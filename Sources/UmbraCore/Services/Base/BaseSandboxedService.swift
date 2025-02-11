@@ -57,6 +57,41 @@ public class BaseSandboxedService: BaseService {
         }
     }
 
+    /// Validate if the service is usable for the given operation
+    /// - Parameter operation: Operation being validated
+    /// - Returns: True if service is usable
+    /// - Throws: ServiceError if service is not usable
+    func validateUsable(for operation: String) throws -> Bool {
+        guard isUsable else {
+            throw ServiceError.serviceNotUsable(
+                service: String(describing: type(of: self)),
+                operation: operation
+            )
+        }
+        return true
+    }
+
+    /// Execute an operation in the sandbox
+    /// - Parameters:
+    ///   - operation: Operation description
+    ///   - action: Action to execute
+    /// - Returns: Result of the action
+    /// - Throws: Error if operation fails
+    func executeSandboxed<T>(
+        operation: String,
+        action: () async throws -> T
+    ) async throws -> T {
+        try await sandboxQueue.sync {
+            guard try validateUsable(for: operation) else {
+                throw ServiceError.serviceNotUsable(
+                    service: String(describing: type(of: self)),
+                    operation: operation
+                )
+            }
+            return try await action()
+        }
+    }
+
     // MARK: Private
 
     /// Queue for synchronizing sandbox operations
@@ -65,29 +100,4 @@ public class BaseSandboxedService: BaseService {
         qos: .userInitiated,
         attributes: .concurrent
     )
-}
-
-// MARK: - SandboxError
-
-/// Sandbox-related errors
-public enum SandboxError: LocalizedError {
-    /// Sandbox compliance validation failed
-    case complianceValidationFailed(String)
-    /// Operation not permitted in sandbox
-    case operationNotPermitted(String)
-    /// Resource access denied by sandbox
-    case resourceAccessDenied(String)
-
-    // MARK: Public
-
-    public var errorDescription: String? {
-        switch self {
-        case let .complianceValidationFailed(operation):
-            "Sandbox compliance validation failed for operation '\(operation)'"
-        case let .operationNotPermitted(operation):
-            "Operation '\(operation)' is not permitted in sandbox"
-        case let .resourceAccessDenied(resource):
-            "Sandbox denied access to resource '\(resource)'"
-        }
-    }
 }

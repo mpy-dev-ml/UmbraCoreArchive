@@ -1,160 +1,222 @@
 import Foundation
 
-// MARK: - ResticErrorProtocol
+// MARK: - ResticError
 
-/// A type that represents a Restic error with exit code and context information
-///
-/// This protocol defines the properties and methods that a Restic error type must implement.
+/// Represents errors that can occur during Restic operations
+@frozen // Mark as frozen for better Swift 6 compatibility
 @objc
-public protocol ResticErrorProtocol: LocalizedError {
-    /// The exit code associated with the error
-    var exitCode: Int32 { get }
-    /// The command that was being executed when the error occurred
-    var command: String? { get }
-    /// Additional context about the error
-    var context: [String: Any]? { get }
-    /// Creates an error instance from an exit code if applicable
-    static func from(exitCode: Int32) -> Self?
-}
+public final class ResticError: NSObject, ResticErrorProtocol, LocalizedError, Sendable {
+    // MARK: - Error Types
 
-/// Default implementation for ResticErrorProtocol
-public extension ResticErrorProtocol {
-    /// The exit code associated with the error
-    var exitCode: Int32 {
-        // Use raw value if available (for enums)
-        if let rawRepresentable = self as? RawRepresentable,
-           let intValue = rawRepresentable.rawValue as? Int {
-            return Int32(
-                intValue
-            )
-        }
-        return -1
+    private enum ErrorType {
+        case commandError(Error?)
+        case operationError(Error?)
+        case repositoryError(String)
+        case configurationError(String)
+        case authenticationError(String)
+        case networkError(String)
+        case unknown(String)
     }
 
-    /// Additional context about the error
-    var context: [String: Any]? {
-        nil
-    }
-}
+    // MARK: - Properties
 
-// MARK: - ResticError
+    private let errorType: ErrorType
+    private var contextInfo: [String: Any]
 
-/// Utility for creating Restic errors from exit codes
-public enum ResticError {
-    /// Creates a specific Restic error type from an exit code
-    ///
-    /// This method tries each error type in priority order and returns the first matching error.
-    public static func from(exitCode: Int32) -> (any ResticErrorProtocol)? {
-        // Try each error type in priority order
-        if let error = ResticCommandError.from(exitCode: exitCode) {
-            return error
+    // MARK: - ResticErrorProtocol
+
+    public static func from(exitCode: Int32) -> ResticError? {
+        switch exitCode {
+        case 1: ResticError(type: .commandError(nil))
+        case 2: ResticError(type: .operationError(nil))
+        case 3: ResticError(type: .repositoryError("Repository access failed"))
+        case 4: ResticError(type: .configurationError("Invalid configuration"))
+        case 5: ResticError(type: .authenticationError("Authentication failed"))
+        case 6: ResticError(type: .networkError("Network error"))
+        default: nil
         }
-        if let error = ResticRepositoryError.from(exitCode: exitCode) {
-            return error
-        }
-        if let error = ResticOperationError.from(exitCode: exitCode) {
-            return error
-        }
-        if let error = ResticSystemError.from(exitCode: exitCode) {
-            return error
-        }
-        return nil
     }
 
-    /// Creates a descriptive error message from an exit code
-    ///
-    /// This method returns a human-readable error message based on the exit code.
-    public static func description(for exitCode: Int32) -> String {
-        if let error = from(exitCode: exitCode) {
-            return error.localizedDescription
-        }
-        return "Unknown error occurred (exit code: \(exitCode))"
+    public var command: String? {
+        context?["command"] as? String
     }
-}
 
-// MARK: - ResticError
+    public var context: [String: Any]? {
+        contextInfo
+    }
 
-/// Represents errors that can occur during restic operations.
-public enum ResticError: Error {
-    case commandError(ResticCommandError)
-    case operationError(ResticOperationError)
-    case repositoryError(ResticRepositoryError)
-    case systemError(ResticSystemError)
-}
+    public var errorCode: Int {
+        switch errorType {
+        case .commandError: 1
+        case .operationError: 2
+        case .repositoryError: 3
+        case .configurationError: 4
+        case .authenticationError: 5
+        case .networkError: 6
+        case .unknown: 7
+        }
+    }
 
-// MARK: LocalizedError
+    public static var errorDomain: String {
+        "dev.mpy.umbracore.restic"
+    }
 
-extension ResticError: LocalizedError {
+    // MARK: - LocalizedError
+
+    override public var localizedDescription: String {
+        switch errorType {
+        case let .commandError(error):
+            "Command execution failed: \(error?.localizedDescription ?? "Unknown error")"
+        case let .operationError(error):
+            "Operation failed: \(error?.localizedDescription ?? "Unknown error")"
+        case let .repositoryError(message):
+            "Repository error: \(message)"
+        case let .configurationError(message):
+            "Configuration error: \(message)"
+        case let .authenticationError(message):
+            "Authentication error: \(message)"
+        case let .networkError(message):
+            "Network error: \(message)"
+        case let .unknown(message):
+            "Unknown error: \(message)"
+        }
+    }
+
     public var errorDescription: String? {
-        switch self {
-        case let .commandError(error): error.localizedDescription
-        case let .operationError(error): error.localizedDescription
-        case let .repositoryError(error): error.localizedDescription
-        case let .systemError(error): error.localizedDescription
-        }
+        localizedDescription
     }
 
     public var failureReason: String? {
-        switch self {
-        case let .commandError(error): error.failureReason
-        case let .operationError(error): error.failureReason
-        case let .repositoryError(error): error.failureReason
-        case let .systemError(error): error.failureReason
+        switch errorType {
+        case let .commandError(error):
+            error?.localizedDescription
+        case let .operationError(error):
+            error?.localizedDescription
+        case let .repositoryError(message),
+             let .configurationError(message),
+             let .authenticationError(message),
+             let .networkError(message),
+             let .unknown(message):
+            message
         }
     }
 
     public var recoverySuggestion: String? {
-        switch self {
-        case let .commandError(error): error.recoverySuggestion
-        case let .operationError(error): error.recoverySuggestion
-        case let .repositoryError(error): error.recoverySuggestion
-        case let .systemError(error): error.recoverySuggestion
+        switch errorType {
+        case .commandError:
+            "Check the command syntax and try again"
+        case .operationError:
+            "Verify the operation parameters and retry"
+        case .repositoryError:
+            "Ensure the repository is accessible and properly configured"
+        case .configurationError:
+            "Review and correct the configuration settings"
+        case .authenticationError:
+            "Check your credentials and try again"
+        case .networkError:
+            "Check your network connection and try again"
+        case .unknown:
+            "Try the operation again or check the logs for more details"
         }
+    }
+
+    // MARK: - Initialization
+
+    public convenience init(command error: Error?) {
+        self.init(type: .commandError(error))
+    }
+
+    public convenience init(operation error: Error?) {
+        self.init(type: .operationError(error))
+    }
+
+    public convenience init(repository message: String) {
+        self.init(type: .repositoryError(message))
+    }
+
+    public convenience init(configuration message: String) {
+        self.init(type: .configurationError(message))
+    }
+
+    public convenience init(authentication message: String) {
+        self.init(type: .authenticationError(message))
+    }
+
+    public convenience init(network message: String) {
+        self.init(type: .networkError(message))
+    }
+
+    public convenience init(unknown message: String) {
+        self.init(type: .unknown(message))
+    }
+
+    private init(type: ErrorType, context: [String: Any] = [:]) {
+        errorType = type
+        contextInfo = context
+        super.init()
+    }
+
+    // MARK: - Context Management
+
+    public func with(context: [String: Any]) -> ResticError {
+        ResticError(type: errorType, context: context)
+    }
+
+    public func adding(context key: String, value: Any) -> ResticError {
+        var newContext = contextInfo
+        newContext[key] = value
+        return ResticError(type: errorType, context: newContext)
     }
 }
 
-// MARK: ResticErrorProtocol
+// MARK: - ResticErrorProtocol
 
-extension ResticError: ResticErrorProtocol {
-    public var underlyingError: Error? {
-        switch self {
-        case let .commandError(error): error
-        case let .operationError(error): error
-        case let .repositoryError(error): error
-        case let .systemError(error): error
+public extension ResticError {
+    var underlyingError: Error? {
+        switch errorType {
+        case let .commandError(error),
+             let .operationError(error):
+            error
+        default: nil
         }
     }
 
-    public var isRecoverable: Bool {
-        switch self {
-        case let .commandError(error as ResticErrorProtocol),
-             .operationError(let error as ResticErrorProtocol),
-             .repositoryError(let error as ResticErrorProtocol),
-             .systemError(let error as ResticErrorProtocol):
-            error.isRecoverable
-        default: false
+    var isRecoverable: Bool {
+        switch errorType {
+        case .commandError,
+             .operationError,
+             .repositoryError,
+             .configurationError,
+             .authenticationError,
+             .networkError,
+             .unknown:
+            false
         }
     }
 
-    public var requiresUserIntervention: Bool {
-        switch self {
-        case let .commandError(error as ResticErrorProtocol),
-             .operationError(let error as ResticErrorProtocol),
-             .repositoryError(let error as ResticErrorProtocol),
-             .systemError(let error as ResticErrorProtocol):
-            error.requiresUserIntervention
-        default: true
+    var requiresUserIntervention: Bool {
+        switch errorType {
+        case .commandError,
+             .operationError,
+             .repositoryError,
+             .configurationError,
+             .authenticationError,
+             .networkError,
+             .unknown:
+            true
         }
     }
 
-    public var shouldRetry: Bool {
-        switch self {
-        case let .commandError(error as ResticErrorProtocol),
-             .operationError(let error as ResticErrorProtocol),
-             .repositoryError(let error as ResticErrorProtocol),
-             .systemError(let error as ResticErrorProtocol):
-            error.shouldRetry
-        default: false
+    var shouldRetry: Bool {
+        switch errorType {
+        case .commandError,
+             .operationError,
+             .repositoryError,
+             .configurationError,
+             .authenticationError,
+             .networkError,
+             .unknown:
+            false
         }
     }
 }

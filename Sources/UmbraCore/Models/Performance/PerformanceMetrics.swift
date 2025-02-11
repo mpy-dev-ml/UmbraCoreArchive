@@ -1,5 +1,33 @@
 import Foundation
 
+// MARK: - MetricUnit
+
+/// Unit of measurement for metrics
+public enum MetricUnit: String, Codable {
+    /// Bytes
+    case bytes
+    /// Milliseconds
+    case milliseconds
+    /// Count
+    case count
+    /// Percentage
+    case percentage
+}
+
+// MARK: - OperationStatus
+
+/// Status of an operation
+public enum OperationStatus: String, Codable {
+    /// Operation succeeded
+    case success
+    /// Operation failed
+    case failure
+    /// Operation in progress
+    case inProgress
+    /// Operation cancelled
+    case cancelled
+}
+
 // MARK: - MetricMeasurement
 
 /// Represents a single performance metric measurement
@@ -49,23 +77,6 @@ public struct MonitoredOperation {
         }
         return endTime.timeIntervalSince(startTime) * 1000
     }
-}
-
-// MARK: - PerformanceReport
-
-/// Comprehensive performance report
-public struct PerformanceReport {
-    /// Time period of the report
-    public let period: DateInterval
-
-    /// List of operations during this period
-    public let operations: [MonitoredOperation]
-
-    /// List of metrics recorded during this period
-    public let metrics: [MetricMeasurement]
-
-    /// Summary statistics
-    public let statistics: PerformanceStatistics
 }
 
 // MARK: - PerformanceStatistics

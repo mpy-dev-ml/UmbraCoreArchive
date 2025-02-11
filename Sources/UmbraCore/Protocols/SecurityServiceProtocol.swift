@@ -29,7 +29,7 @@ import Foundation
 /// }
 /// ```
 @objc
-public protocol SecurityServiceProtocol: Sendable: Sendable: NSObjectProtocol {
+public protocol SecurityServiceProtocol: NSObjectProtocol, Sendable {
     /// Request permission to access a URL
     ///
     /// - Parameter url: URL for which permission is requested

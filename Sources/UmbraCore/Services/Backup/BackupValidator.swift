@@ -93,7 +93,7 @@ public struct BackupValidator {
     /// - Returns: Validation result
     /// - Throws: Error if validation fails
     public func validateConfiguration(
-        _ configuration: BackupConfiguration
+        _ configuration: BackupServiceProtocol.BackupConfiguration
     ) async throws -> ValidationResult {
         try await performanceMonitor.trackDuration(
             "backup.validate.configuration"
@@ -163,7 +163,7 @@ public struct BackupValidator {
 
     /// Validate basic configuration
     private func validateBasicConfiguration(
-        _ configuration: BackupConfiguration,
+        _ configuration: BackupServiceProtocol.BackupConfiguration,
         issues: inout [ValidationIssue]
     ) throws {
         if configuration.name.isEmpty {
@@ -196,7 +196,7 @@ public struct BackupValidator {
 
     /// Validate sources
     private func validateSources(
-        _ configuration: BackupConfiguration,
+        _ configuration: BackupServiceProtocol.BackupConfiguration,
         issues: inout [ValidationIssue]
     ) async throws {
         for source in configuration.sourcePaths {
@@ -230,7 +230,7 @@ public struct BackupValidator {
 
     /// Validate storage
     private func validateStorage(
-        _ configuration: BackupConfiguration,
+        _ configuration: BackupServiceProtocol.BackupConfiguration,
         issues: inout [ValidationIssue]
     ) async throws {
         for storage in configuration.storageLocations {
@@ -265,7 +265,8 @@ public struct BackupValidator {
                     forPath: storage.url.path
                 )
                 if let freeSize = attributes[.systemFreeSize] as? Int64,
-                   freeSize < quota {
+                   freeSize < quota
+                {
                     issues.append(
                         ValidationIssue(
                             type: .storage,
@@ -282,7 +283,7 @@ public struct BackupValidator {
 
     /// Validate compression
     private func validateCompression(
-        _ configuration: BackupConfiguration,
+        _ configuration: BackupServiceProtocol.BackupConfiguration,
         issues: inout [ValidationIssue]
     ) throws {
         switch configuration.compressionType {
@@ -306,7 +307,7 @@ public struct BackupValidator {
 
     /// Validate encryption
     private func validateEncryption(
-        _ configuration: BackupConfiguration,
+        _ configuration: BackupServiceProtocol.BackupConfiguration,
         issues: inout [ValidationIssue]
     ) throws {
         switch configuration.encryptionType {
@@ -337,7 +338,7 @@ public struct BackupValidator {
 
     /// Validate retention
     private func validateRetention(
-        _ configuration: BackupConfiguration,
+        _ configuration: BackupServiceProtocol.BackupConfiguration,
         issues: inout [ValidationIssue]
     ) throws {
         let policy = configuration.retentionPolicy

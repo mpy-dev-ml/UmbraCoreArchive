@@ -19,6 +19,7 @@ import Foundation
 /// The enum conforms to:
 /// - `LocalizedError` for user-friendly error messages
 /// - `Equatable` for error comparison and testing
+/// - `Sendable` for concurrent operations
 ///
 /// Example usage:
 /// ```swift
@@ -35,8 +36,8 @@ import Foundation
 ///         logger.error("Sandbox violation: \(message)")
 ///         handleSandboxViolation()
 ///
-///     case .bookmarkStale(let message):
-///         logger.error("Stale bookmark: \(message)")
+///     case .bookmarkStale:
+///         logger.error("Stale bookmark")
 ///         refreshBookmark()
 ///
 ///     default:
@@ -44,285 +45,53 @@ import Foundation
 ///         showErrorAlert(error)
 ///     }
 /// }
-///
-/// // Using error descriptions
-/// let error = SecurityError.accessDenied("File is locked")
-/// print(error.localizedDescription) // "Access denied: File is locked"
-///
-/// // Comparing errors
-/// if error == SecurityError.accessDenied("File is locked") {
-///     // Handle specific error case
-/// }
 /// ```
-///
-/// Implementation notes:
-/// 1. Always include descriptive error messages
-/// 2. Use appropriate error cases for context
-/// 3. Handle all error cases in switch statements
-/// 4. Provide recovery suggestions where possible
-public enum SecurityError: LocalizedError, Equatable {
-    /// Indicates that permission was denied by the system's security mechanism.
-    ///
-    /// This error occurs when:
-    /// - User denies permission request
-    /// - System policy prevents access
-    /// - Required entitlements are missing
-    /// - Security settings block access
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.permissionDenied(
-    ///     "User denied access to Documents folder"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Request permission again with clear purpose
-    /// - Guide user to Security preferences
-    /// - Check entitlements configuration
-    /// - Verify security settings
+@frozen
+public enum SecurityError: LocalizedError, Equatable, Sendable {
+    /// Permission was denied by the system's security mechanism
     case permissionDenied(String)
 
-    /// Indicates that creating a security-scoped bookmark failed.
-    ///
-    /// This error occurs when:
-    /// - URL is invalid or inaccessible
-    /// - Insufficient permissions
-    /// - Resource doesn't exist
-    /// - System cannot create bookmark
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.bookmarkCreationFailed(
-    ///     "Cannot create bookmark for inaccessible file"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Verify resource exists
-    /// - Check access permissions
-    /// - Validate URL format
-    /// - Request necessary permissions
+    /// Bookmark creation failed
     case bookmarkCreationFailed(String)
 
-    /// Indicates that resolving an existing security-scoped bookmark failed.
-    ///
-    /// This error occurs when:
-    /// - Bookmark data is corrupted
-    /// - Resource no longer exists
-    /// - Access permissions changed
-    /// - System cannot resolve bookmark
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.bookmarkResolutionFailed(
-    ///     "Bookmark data is corrupted or invalid"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Create new bookmark
-    /// - Verify resource location
-    /// - Check access permissions
-    /// - Clean up invalid bookmarks
+    /// Bookmark resolution failed
     case bookmarkResolutionFailed(String)
 
-    /// Indicates that a security-scoped bookmark has become stale.
-    ///
-    /// This error occurs when:
-    /// - Resource was moved or renamed
-    /// - File system changed
-    /// - Permissions were modified
-    /// - System state changed
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.bookmarkStale(
-    ///     "Bookmarked file was moved or renamed"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Recreate bookmark
-    /// - Update resource path
-    /// - Revalidate permissions
-    /// - Clean up stale data
-    case bookmarkStale(String)
+    /// Bookmark is stale and needs to be recreated
+    case bookmarkStale
 
-    /// Indicates that an operation would violate sandbox restrictions.
-    ///
-    /// This error occurs when:
-    /// - Attempting to access restricted resources
-    /// - Exceeding sandbox permissions
-    /// - Violating security boundaries
-    /// - Breaking sandbox containment
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.sandboxViolation(
-    ///     "Cannot access file outside sandbox"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Request user permission
-    /// - Use security-scoped bookmarks
-    /// - Check entitlements
-    /// - Follow sandbox guidelines
+    /// Sandbox violation occurred
     case sandboxViolation(String)
 
-    /// Indicates that access to a resource was denied.
-    ///
-    /// This error occurs when:
-    /// - Resource is protected
-    /// - Permissions are insufficient
-    /// - Security scope is invalid
-    /// - Access token expired
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.accessDenied(
-    ///     "File is locked by another process"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Request proper permissions
-    /// - Refresh security scope
-    /// - Check resource state
-    /// - Handle access conflicts
+    /// Access was denied
     case accessDenied(String)
 
-    /// Indicates that a required resource is not available or accessible.
-    ///
-    /// This error occurs when:
-    /// - Resource doesn't exist
-    /// - Resource is temporarily unavailable
-    /// - System cannot access resource
-    /// - Resource is locked
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.resourceUnavailable(
-    ///     "Network share is temporarily offline"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Check resource existence
-    /// - Wait and retry
-    /// - Use alternative resource
-    /// - Handle offline state
+    /// Resource is unavailable
     case resourceUnavailable(String)
 
-    /// Indicates that establishing an XPC connection failed.
-    ///
-    /// This error occurs when:
-    /// - XPC service is not running
-    /// - Connection timeout
-    /// - Invalid service name
-    /// - System prevents connection
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.xpcConnectionFailed(
-    ///     "Service is not responding"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Restart XPC service
-    /// - Check service status
-    /// - Verify service name
-    /// - Handle timeouts
+    /// Operation is not permitted
+    case operationNotPermitted(String)
+
+    /// Access validation failed
+    case accessValidationFailed(String)
+
+    /// XPC connection failed
     case xpcConnectionFailed(String)
 
-    /// Indicates that the XPC service encountered an error during operation.
-    ///
-    /// This error occurs when:
-    /// - Service crashes
-    /// - Internal service error
-    /// - Resource constraints
-    /// - Operation timeout
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.xpcServiceError(
-    ///     "Service terminated unexpectedly"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Restart operation
-    /// - Check service logs
-    /// - Monitor resources
-    /// - Handle timeouts
+    /// XPC service error occurred
     case xpcServiceError(String)
 
-    /// Indicates that the XPC service denied permission for the requested operation.
-    ///
-    /// This error occurs when:
-    /// - Service policy denies request
-    /// - Invalid credentials
-    /// - Operation not allowed
-    /// - Security policy violation
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.xpcPermissionDenied(
-    ///     "Operation requires elevated privileges"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Check credentials
-    /// - Verify permissions
-    /// - Update policy
-    /// - Request elevation
+    /// XPC permission was denied
     case xpcPermissionDenied(String)
 
-    /// Indicates that XPC message validation failed.
-    ///
-    /// This error occurs when:
-    /// - Invalid message format
-    /// - Missing required data
-    /// - Type mismatch
-    /// - Security validation fails
-    ///
-    /// Example:
-    /// ```swift
-    /// throw SecurityError.xpcValidationFailed(
-    ///     "Message missing required parameters"
-    /// )
-    /// ```
-    ///
-    /// Recovery suggestions:
-    /// - Validate message format
-    /// - Check required fields
-    /// - Verify data types
-    /// - Log validation details
+    /// XPC validation failed
     case xpcValidationFailed(String)
 
-    // MARK: Public
+    /// Keychain operation failed
+    case keychainError(String)
 
-    /// A localised description of the error suitable for user display.
-    ///
-    /// This property provides a human-readable description of the error,
-    /// including the specific error message provided when the error was created.
-    ///
-    /// The description format is: "[Error Type]: [Specific Message]"
-    ///
-    /// Example:
-    /// ```swift
-    /// let error = SecurityError.accessDenied("File is locked")
-    /// print(error.localizedDescription) // "Access denied: File is locked"
-    /// ```
-    ///
-    /// Usage notes:
-    /// - Use for user interface display
-    /// - Include in error alerts
-    /// - Log with error details
-    /// - Provide in support tickets
+    // MARK: - LocalizedError
+
     public var errorDescription: String? {
         switch self {
         case let .permissionDenied(message):
@@ -331,14 +100,18 @@ public enum SecurityError: LocalizedError, Equatable {
             "Failed to create bookmark: \(message)"
         case let .bookmarkResolutionFailed(message):
             "Failed to resolve bookmark: \(message)"
-        case let .bookmarkStale(message):
-            "Bookmark is stale: \(message)"
+        case .bookmarkStale:
+            "Bookmark is stale and needs to be recreated"
         case let .sandboxViolation(message):
             "Sandbox violation: \(message)"
         case let .accessDenied(message):
             "Access denied: \(message)"
         case let .resourceUnavailable(message):
             "Resource unavailable: \(message)"
+        case let .operationNotPermitted(message):
+            "Operation not permitted: \(message)"
+        case let .accessValidationFailed(message):
+            "Access validation failed: \(message)"
         case let .xpcConnectionFailed(message):
             "XPC connection failed: \(message)"
         case let .xpcServiceError(message):
@@ -347,6 +120,48 @@ public enum SecurityError: LocalizedError, Equatable {
             "XPC permission denied: \(message)"
         case let .xpcValidationFailed(message):
             "XPC validation failed: \(message)"
+        case let .keychainError(message):
+            "Keychain error: \(message)"
+        }
+    }
+
+    public var recoverySuggestion: String? {
+        switch self {
+        case .bookmarkStale:
+            "Request permission again to create a new bookmark"
+        case .permissionDenied:
+            "Try requesting permission again or select a different file"
+        case .sandboxViolation:
+            "Ensure the operation complies with sandbox restrictions"
+        case .accessDenied:
+            "Check file permissions and try again"
+        case .resourceUnavailable:
+            "Wait and try again, or check if the resource exists"
+        case .xpcConnectionFailed:
+            "Try restarting the application"
+        case .xpcServiceError:
+            "Check if the service is running and try again"
+        case .keychainError:
+            "Check keychain access and try again"
+        default:
+            nil
+        }
+    }
+
+    public var failureReason: String? {
+        switch self {
+        case .bookmarkStale:
+            "The security-scoped bookmark is no longer valid"
+        case .sandboxViolation:
+            "The operation violates sandbox restrictions"
+        case .xpcConnectionFailed:
+            "Could not establish XPC connection"
+        case .xpcServiceError:
+            "XPC service encountered an error"
+        case .keychainError:
+            "Keychain operation failed"
+        default:
+            nil
         }
     }
 }

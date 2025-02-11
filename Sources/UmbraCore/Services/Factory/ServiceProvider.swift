@@ -28,7 +28,11 @@ public final class ServiceProvider {
 
     /// Private initializer to enforce singleton
     private init() {
-        logger = LoggerFactory.createLogger(category: .services)
+        logger = OSLogger(
+            subsystem: "dev.mpy.umbra",
+            category: "services",
+            logger: OSLogger(subsystem: "dev.mpy.umbra", category: "bootstrap", logger: ConsoleLogger())
+        )
     }
 
     // MARK: Public
@@ -109,7 +113,7 @@ public final class ServiceProvider {
         }
 
         // Create new service
-        return try createNewService(type)
+        return try createService(type, key: key)
     }
 
     /// Register service factory
@@ -159,23 +163,24 @@ public final class ServiceProvider {
         return nil
     }
 
-    /// Create new service
-    private func createNewService<T>(_ type: T.Type) throws -> T {
-        let key = String(describing: type)
-
-        // Get factory
+    /// Get service factory
+    private func getFactory(for key: String) throwsthrows -> Any {
         guard let factory = factories[key] else {
-            throw ServiceError.factoryNotFound(key)
+            throw ServiceError.serviceNotFound(key)
         }
+        return factory
+    }
 
-        // Create service
+    /// Create service of type
+    private func createService<T>(_ type: T.Type, key: String) throws -> T {
+        let factory = try getFactory(for: key)
         guard let service = try factory() as? T else {
-            throw ServiceError.invalidServiceType(key)
+            throw try ServiceError.invalidServiceType(
+                expected: String(describing: T.self),
+                actual: String(describing: type(of: factory()))
+            )
         }
-
-        // Store service
         services[key] = service
-
         return service
     }
 }

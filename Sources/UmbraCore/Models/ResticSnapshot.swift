@@ -43,7 +43,8 @@ public final class ResticSnapshot: NSObject,
     NSSecureCoding,
     Codable,
     Identifiable,
-    Equatable, Hashable {
+    Equatable, Hashable
+{
     // MARK: Lifecycle
 
     /// Creates a new snapshot instance
@@ -207,7 +208,7 @@ public final class ResticSnapshot: NSObject,
             of: NSString.self,
             forKey: "parent"
         ) as String?
-        size = coder.decodeUInt64(forKey: "size")
+        size = UInt64(coder.decodeInt64(forKey: "size"))
         self.repositoryId = repositoryId
         super.init()
     }

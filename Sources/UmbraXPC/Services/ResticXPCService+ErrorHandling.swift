@@ -17,7 +17,7 @@ extension ResticXPCService {
 
         // Update operation status if provided
         if let operation {
-            updateOperation(operation, status: .failed, error: error)
+            updateOperation(operation, status: OperationStatus.failure, error: error)
         }
 
         // Handle specific error types

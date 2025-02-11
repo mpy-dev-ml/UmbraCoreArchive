@@ -1,3 +1,5 @@
+import Foundation
+
 // MARK: - XPCCommandConfig
 
 /// Configuration for XPC command execution

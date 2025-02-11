@@ -3,6 +3,7 @@ import Foundation
 // MARK: - ConfigurationService
 
 /// Service for managing configuration settings
+@objc
 public final class ConfigurationService: BaseSandboxedService {
     // MARK: Lifecycle
 
@@ -27,47 +28,59 @@ public final class ConfigurationService: BaseSandboxedService {
 
     // MARK: - Types
 
-    /// Configuration value type
-    public enum ValueType: String, Codable {
-        case string
-        case integer
-        case double
-        case boolean
-        case date
-        case data
-        case array
-        case dictionary
-    }
-
     /// Configuration value
-    public struct ConfigValue: Codable {
-        // MARK: Lifecycle
+    public struct ConfigValue: Codable, Sendable {
+        // MARK: - Properties
+
+        /// Value type
+        public let type: ValueType
+        /// Raw value
+        public let value: Any
+
+        // MARK: - Lifecycle
 
         /// Initialize with value
+        /// - Parameter value: Value to store
+        /// - Throws: Error if value type is not supported
         public init(value: Any) throws {
-            switch value {
-            case is String:
-                type = .string
-            case is Int:
-                type = .integer
-            case is Double:
-                type = .double
-            case is Bool:
+            if let bool = value as? Bool {
                 type = .boolean
-            case is Date:
-                type = .date
-            case is Data:
-                type = .data
-            case is [Any]:
+                self.value = bool
+            } else if let string = value as? String {
+                type = .string
+                self.value = string
+            } else if let number = value as? Double {
+                type = .number
+                self.value = number
+            } else if let array = value as? [Any] {
                 type = .array
-            case is [String: Any]:
+                self.value = try array.map { try ConfigValue(value: $0) }
+            } else if let dict = value as? [String: Any] {
                 type = .dictionary
-            default:
-                throw ConfigurationError.unsupportedValueType(
-                    String(describing: type(of: value))
-                )
+                self.value = try dict.mapValues { try ConfigValue(value: $0) }
+            } else {
+                throw ConfigurationError.unsupportedValueType(String(describing: Swift.type(of: value)))
             }
-            self.value = value
+        }
+
+        // MARK: - Codable
+
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(type, forKey: .type)
+
+            switch type {
+            case .boolean:
+                try container.encode(value as! Bool, forKey: .value)
+            case .string:
+                try container.encode(value as! String, forKey: .value)
+            case .number:
+                try container.encode(value as! Double, forKey: .value)
+            case .array:
+                try container.encode(value as! [ConfigValue], forKey: .value)
+            case .dictionary:
+                try container.encode(value as! [String: ConfigValue], forKey: .value)
+            }
         }
 
         public init(from decoder: Decoder) throws {
@@ -75,93 +88,32 @@ public final class ConfigurationService: BaseSandboxedService {
             type = try container.decode(ValueType.self, forKey: .type)
 
             switch type {
-            case .string:
-                value = try container.decode(String.self, forKey: .value)
-            case .integer:
-                value = try container.decode(Int.self, forKey: .value)
-            case .double:
-                value = try container.decode(Double.self, forKey: .value)
             case .boolean:
                 value = try container.decode(Bool.self, forKey: .value)
-            case .date:
-                value = try container.decode(Date.self, forKey: .value)
-            case .data:
-                value = try container.decode(Data.self, forKey: .value)
-            case .array:
-                value = try container.decode([Any].self, forKey: .value)
-            case .dictionary:
-                value = try container.decode(
-                    [String: Any].self,
-                    forKey: .value
-                )
-            }
-        }
-
-        // MARK: Public
-
-        /// Value type
-        public let type: ValueType
-
-        /// Raw value
-        public let value: Any
-
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(type, forKey: .type)
-            try encodeValue(to: container)
-        }
-
-        // MARK: Private
-
-        private func encodeValue(to container: KeyedEncodingContainer<CodingKeys>) throws {
-            try validateAndEncode(for: type, to: container)
-        }
-
-        private func validateAndEncode(
-            for type: ValueType,
-            to container: KeyedEncodingContainer<CodingKeys>
-        ) throws {
-            switch type {
             case .string:
-                try encodeTypedValue(String.self, to: container)
-            case .integer:
-                try encodeTypedValue(Int.self, to: container)
-            case .double:
-                try encodeTypedValue(Double.self, to: container)
-            case .boolean:
-                try encodeTypedValue(Bool.self, to: container)
-            case .date:
-                try encodeTypedValue(Date.self, to: container)
-            case .data:
-                try encodeTypedValue(Data.self, to: container)
+                value = try container.decode(String.self, forKey: .value)
+            case .number:
+                value = try container.decode(Double.self, forKey: .value)
             case .array:
-                try encodeTypedValue([Any].self, to: container)
+                value = try container.decode([ConfigValue].self, forKey: .value)
             case .dictionary:
-                try encodeTypedValue([String: Any].self, to: container)
+                value = try container.decode([String: ConfigValue].self, forKey: .value)
             }
         }
 
-        private func encodeTypedValue<T>(
-            _ type: T.Type,
-            to container: KeyedEncodingContainer<CodingKeys>
-        ) throws {
-            guard let typedValue = value as? T else {
-                let errorMessage = """
-                    Expected type \(type), but got \(Swift.type(of: value))
-                """
-                throw ConfigurationError.invalidValueType(
-                    expected: type,
-                    actual: Swift.type(of: value)
-                )
-            }
-            try container.encode(typedValue, forKey: .value)
-        }
-
-        // MARK: - Codable Implementation
+        // MARK: - Private
 
         private enum CodingKeys: String, CodingKey {
             case type
             case value
+        }
+
+        public enum ValueType: String, Codable {
+            case boolean
+            case string
+            case number
+            case array
+            case dictionary
         }
     }
 
@@ -173,14 +125,14 @@ public final class ConfigurationService: BaseSandboxedService {
     ///   - key: Configuration key
     /// - Throws: Error if value is invalid
     public func setValue(_ value: Any, forKey key: String) throws {
-        try validateUsable(for: "setValue")
+        _ = try validateUsable(for: "setValue")
 
         let configValue = try ConfigValue(value: value)
 
         queue.async(flags: .barrier) {
             self.values[key] = configValue
 
-            self.logger.debug(
+            self.logger.info(
                 """
                 Set configuration value:
                 Key: \(key)
@@ -191,8 +143,8 @@ public final class ConfigurationService: BaseSandboxedService {
                 line: #line
             )
 
-            // Save to disk
-            self.saveToDisk()
+            // Notify observers
+            self.notifyObservers(forKey: key, value: value)
         }
     }
 
@@ -201,7 +153,7 @@ public final class ConfigurationService: BaseSandboxedService {
     /// - Returns: Configuration value
     /// - Throws: Error if value is not found
     public func getValue(forKey key: String) throws -> Any {
-        try validateUsable(for: "getValue")
+        _ = try validateUsable(for: "getValue")
 
         guard let configValue = queue.sync(execute: { values[key] }) else {
             throw ConfigurationError.valueNotFound(key)
@@ -224,7 +176,9 @@ public final class ConfigurationService: BaseSandboxedService {
             )
 
             // Save to disk
-            self.saveToDisk()
+            Task {
+                await self.saveToDisk()
+            }
         }
     }
 
@@ -241,28 +195,27 @@ public final class ConfigurationService: BaseSandboxedService {
             )
 
             // Save to disk
-            self.saveToDisk()
+            Task {
+                await self.saveToDisk()
+            }
         }
     }
 
     /// Load configuration from disk
     /// - Throws: Error if loading fails
-    public func loadFromDisk() throws {
-        try validateUsable(for: "loadFromDisk")
+    public func loadFromDisk() async throws {
+        _ = try validateUsable(for: "loadFromDisk")
 
-        try performanceMonitor.trackDuration("config.load") {
+        try await performanceMonitor.trackDuration("config.load") {
             let data = try Data(contentsOf: fileURL)
             let decoder = JSONDecoder()
-            let loadedValues = try decoder.decode(
-                [String: ConfigValue].self,
-                from: data
-            )
+            let loadedValues = try decoder.decode([String: ConfigValue].self, from: data)
 
             queue.async(flags: .barrier) {
                 self.values = loadedValues
 
                 self.logger.info(
-                    "Loaded configuration from disk",
+                    "Loaded \(loadedValues.count) configuration values from disk",
                     file: #file,
                     function: #function,
                     line: #line
@@ -292,15 +245,15 @@ public final class ConfigurationService: BaseSandboxedService {
     // MARK: - Private Methods
 
     /// Save configuration to disk
-    private func saveToDisk() {
+    private func saveToDisk() async {
         do {
-            try performanceMonitor.trackDuration("config.save") {
+            try await performanceMonitor.trackDuration("config.save") {
                 let encoder = JSONEncoder()
                 let data = try encoder.encode(self.values)
                 try data.write(to: fileURL, options: .atomic)
 
-                logger.info(
-                    "Saved configuration to disk",
+                self.logger.debug(
+                    "Saved \(self.values.count) configuration values to disk",
                     file: #file,
                     function: #function,
                     line: #line
@@ -308,7 +261,7 @@ public final class ConfigurationService: BaseSandboxedService {
             }
         } catch {
             logger.error(
-                "Failed to save configuration: \(error)",
+                "Failed to save configuration: \(error.localizedDescription)",
                 file: #file,
                 function: #function,
                 line: #line

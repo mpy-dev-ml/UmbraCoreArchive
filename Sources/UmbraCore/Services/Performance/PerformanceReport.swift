@@ -287,7 +287,8 @@ public final class PerformanceReport: BaseSandboxedService {
                 lines.append("Type: \(type)")
 
                 if let metricData = data as? [String: Any],
-                   let analysis = metricData["analysis"] as? [String: Any] {
+                   let analysis = metricData["analysis"] as? [String: Any]
+                {
                     appendTextAnalysis(analysis: analysis, to: &lines)
                     appendTextTrends(metricData: metricData, to: &lines)
                     appendTextAnomalies(metricData: metricData, to: &lines)

@@ -1,8 +1,10 @@
+import Foundation
+
 // MARK: - ResticOperationError
 
 /// Represents errors that can occur during restic operations.
 @objc
-public enum ResticOperationError: Int, ResticErrorProtocol {
+public enum ResticOperationError: ResticErrorProtocol {
     case operationFailed(operation: String, reason: String)
     case operationCancelled(operation: String)
     case operationTimeout(operation: String, duration: TimeInterval)
@@ -98,27 +100,44 @@ public enum ResticOperationError: Int, ResticErrorProtocol {
         }
     }
 
+    public var exitCode: Int32 {
+        switch self {
+        case .operationFailed: 1
+        case .operationCancelled: 130
+        case .operationTimeout: 124
+        case .operationInProgress: 75
+        case .operationNotFound: 69
+        case .invalidOperation: 64
+        }
+    }
+
     public static func from(exitCode: Int32) -> ResticOperationError? {
         switch exitCode {
-        case 6:
+        case 1:
             .operationFailed(
                 operation: "backup",
                 reason: "Unknown error"
             )
-        case 7:
-            .operationFailed(
-                operation: "restore",
-                reason: "Unknown error"
+        case 130:
+            .operationCancelled(
+                operation: "restore"
             )
-        case 8:
-            .operationFailed(
+        case 124:
+            .operationTimeout(
                 operation: "check",
-                reason: "Unknown error"
+                duration: 0
             )
-        case 9:
-            .operationFailed(
-                operation: "prune",
-                reason: "Unknown error"
+        case 75:
+            .operationInProgress(
+                operation: "prune"
+            )
+        case 69:
+            .operationNotFound(
+                operation: "backup"
+            )
+        case 64:
+            .invalidOperation(
+                operation: "restore"
             )
         default: nil
         }

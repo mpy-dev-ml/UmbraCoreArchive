@@ -77,7 +77,7 @@ public struct SecurityOperationRecorder {
         recordOperation(
             url: url,
             type: type,
-            status: .failure,
+            status: OperationStatus.failure,
             error: error.localizedDescription,
             metadata: metadata
         )
