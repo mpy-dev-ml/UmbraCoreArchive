@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Protocol defining notification center operations
 protocol NotificationCenterProtocol {

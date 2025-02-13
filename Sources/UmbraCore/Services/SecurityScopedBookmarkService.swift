@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for managing security-scoped bookmarks
 @objc

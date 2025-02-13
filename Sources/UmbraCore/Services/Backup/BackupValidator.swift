@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Validator for backup operations
 public struct BackupValidator {

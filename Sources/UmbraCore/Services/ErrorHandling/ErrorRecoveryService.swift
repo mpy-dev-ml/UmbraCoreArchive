@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for error recovery operations
 public final class ErrorRecoveryService: BaseSandboxedService {

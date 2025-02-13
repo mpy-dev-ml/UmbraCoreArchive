@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Represents a sidebar navigation item
 public enum SidebarItem: String, CaseIterable, Identifiable {

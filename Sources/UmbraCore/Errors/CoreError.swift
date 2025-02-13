@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Base error type for UmbraCore errors
 public enum CoreError: LocalizedError {

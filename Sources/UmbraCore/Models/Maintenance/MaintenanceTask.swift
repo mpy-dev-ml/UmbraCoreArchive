@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Types of maintenance tasks that can be performed on a repository
 @objc

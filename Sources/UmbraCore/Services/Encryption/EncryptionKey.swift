@@ -1,5 +1,5 @@
 import CryptoKit
-import Foundation
+@preconcurrency import Foundation
 
 /// Wrapper for encryption keys
 public struct EncryptionKey {

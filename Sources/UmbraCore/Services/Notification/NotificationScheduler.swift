@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for scheduling notifications with advanced patterns
 public final class NotificationScheduler: BaseSandboxedService {

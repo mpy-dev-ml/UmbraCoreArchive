@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// An enumeration of errors that can occur during keychain operations.
 ///

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Provider for accessing shared service instances
 ///

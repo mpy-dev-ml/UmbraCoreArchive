@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Diagnostics for system operations
 public struct SystemDiagnostics {

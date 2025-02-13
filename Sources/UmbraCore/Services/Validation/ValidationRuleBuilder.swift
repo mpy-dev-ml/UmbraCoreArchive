@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Builder for creating validation rules
 public final class ValidationRuleBuilder {

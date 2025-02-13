@@ -1,5 +1,5 @@
 import CryptoKit
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for cryptographic operations
 public final class SecurityCrypto: BaseSandboxedService {

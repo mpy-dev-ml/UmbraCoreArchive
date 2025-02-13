@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Monitor for sandbox operations and diagnostics
 public final class SandboxMonitor: BaseSandboxedService {

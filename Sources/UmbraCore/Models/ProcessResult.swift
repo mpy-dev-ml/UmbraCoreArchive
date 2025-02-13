@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Result of a process execution through the XPC service
 @objc

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Represents errors that can occur during command execution
 @objc

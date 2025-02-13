@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Class representing a backup snapshot
 @objc

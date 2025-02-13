@@ -1,5 +1,5 @@
 @unchecked Sendable
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for monitoring performance metrics
 @objc

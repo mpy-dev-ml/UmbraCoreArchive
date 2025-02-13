@@ -1,5 +1,5 @@
 import CryptoKit
-import Foundation
+@preconcurrency import Foundation
 
 /// Manager for encryption operations
 public final class EncryptionManager: Sendable {

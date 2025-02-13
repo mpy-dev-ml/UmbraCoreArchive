@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 import os.log
 
 /// Log level for logging operations

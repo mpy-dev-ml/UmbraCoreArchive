@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// A model representing a security-related operation and its metadata.
 ///

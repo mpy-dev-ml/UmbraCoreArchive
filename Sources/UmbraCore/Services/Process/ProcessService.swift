@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for managing processes
 public final class ProcessService: BaseSandboxedService {

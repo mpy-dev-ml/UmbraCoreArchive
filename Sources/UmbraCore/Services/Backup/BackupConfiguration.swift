@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Configuration for backup operations
 public struct BackupConfiguration: Codable {

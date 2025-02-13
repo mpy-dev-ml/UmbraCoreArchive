@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Store for maintenance configuration settings
 public final class MaintenanceConfigurationStore: BaseSandboxedService {

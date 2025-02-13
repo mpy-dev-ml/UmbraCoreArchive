@@ -1,5 +1,5 @@
 import CryptoKit
-import Foundation
+@preconcurrency import Foundation
 import Security
 
 /// Service for encrypting and decrypting data

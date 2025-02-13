@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Monitor for system operations and resources
 public final class SystemMonitor: BaseSandboxedService {

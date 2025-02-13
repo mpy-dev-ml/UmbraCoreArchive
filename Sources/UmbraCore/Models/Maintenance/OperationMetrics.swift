@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Namespace for operation-related metrics
 public enum Operations {

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Represents a snapshot in a Restic repository
 ///

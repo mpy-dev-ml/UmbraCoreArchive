@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Represents system-level errors that can occur during restic operations.
 public enum ResticSystemError: ResticErrorProtocol {

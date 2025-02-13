@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 public extension ServiceFactory {
     /// Validate service factory configuration

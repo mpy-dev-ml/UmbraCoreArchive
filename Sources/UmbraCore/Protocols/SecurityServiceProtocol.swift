@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// A protocol that defines the interface for security-related operations in a sandboxed
 /// environment.

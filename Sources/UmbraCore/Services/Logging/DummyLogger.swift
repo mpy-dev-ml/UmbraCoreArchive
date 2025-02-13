@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Dummy logger for initialization
 final class DummyLogger: LoggerProtocol {

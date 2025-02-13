@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// An enumeration representing the status of a security operation.
 ///

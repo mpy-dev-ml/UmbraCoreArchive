@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Preset validation rules
 public enum ValidationPreset {

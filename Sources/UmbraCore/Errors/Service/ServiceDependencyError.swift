@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Errors that can occur during service dependency management
 @frozen

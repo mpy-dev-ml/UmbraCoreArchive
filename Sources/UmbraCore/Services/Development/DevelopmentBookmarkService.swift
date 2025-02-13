@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Development implementation of BookmarkServiceProtocol for testing and debugging
 @objc

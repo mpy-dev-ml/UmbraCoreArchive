@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Class for storing repository access credentials
 @objc

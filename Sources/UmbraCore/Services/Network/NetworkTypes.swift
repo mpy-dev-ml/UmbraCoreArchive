@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Network request configuration
 public struct RequestConfiguration {

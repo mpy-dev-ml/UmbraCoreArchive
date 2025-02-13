@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 import os.log
 
 /// A development tool that simulates various security-related scenarios for testing purposes.

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Simple console logger for bootstrapping
 public class ConsoleLogger: LoggerProtocol {

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Log entry structure
 public struct LogEntry: Codable {

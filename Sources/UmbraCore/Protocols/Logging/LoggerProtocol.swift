@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 import os.log
 
 /// A protocol defining core logging operations for the application.

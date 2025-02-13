@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 import os.log
 
 /// Service responsible for discovering and managing Restic repositories

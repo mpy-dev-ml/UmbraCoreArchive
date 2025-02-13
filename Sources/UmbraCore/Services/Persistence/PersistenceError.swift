@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Errors that can occur during persistence operations
 public enum PersistenceError: LocalizedError {

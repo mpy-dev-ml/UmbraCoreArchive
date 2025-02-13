@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// A prepared command ready for execution
 @objc

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Days of the week for maintenance scheduling
 @objc

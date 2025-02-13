@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for managing development environment
 public final class DevelopmentEnvironmentService: BaseSandboxedService {

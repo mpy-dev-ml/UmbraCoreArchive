@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// A class representing a Restic backup repository
 @objc

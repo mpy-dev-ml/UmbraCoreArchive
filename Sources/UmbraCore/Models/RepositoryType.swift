@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Type of repository
 @frozen // Mark as frozen for better Swift 6 compatibility

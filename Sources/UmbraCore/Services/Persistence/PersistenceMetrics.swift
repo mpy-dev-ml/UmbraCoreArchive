@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for tracking persistence metrics
 public final class PersistenceMetrics: BaseSandboxedService {

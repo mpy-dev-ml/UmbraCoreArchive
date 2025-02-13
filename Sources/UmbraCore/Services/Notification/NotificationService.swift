@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 import UserNotifications
 
 /// Service for managing notifications

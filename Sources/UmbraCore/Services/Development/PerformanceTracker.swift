@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Tracks performance metrics for development services
 final class PerformanceTracker {

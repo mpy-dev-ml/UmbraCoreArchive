@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 public extension Notification.Name {
     // MARK: - XPC Connection Notifications

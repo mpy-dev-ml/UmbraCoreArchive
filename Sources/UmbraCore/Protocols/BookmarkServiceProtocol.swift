@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Protocol defining the interface for managing security-scoped bookmarks
 ///

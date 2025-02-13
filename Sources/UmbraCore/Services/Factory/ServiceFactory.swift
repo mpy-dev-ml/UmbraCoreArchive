@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Factory for creating services with appropriate implementations based on build configuration
 ///

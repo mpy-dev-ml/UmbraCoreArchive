@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for managing data persistence
 public final class PersistenceService: BaseSandboxedService {

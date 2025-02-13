@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Represents errors that can occur during backup operations.
 public enum ResticBackupError: Error, ResticErrorProtocol {

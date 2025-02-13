@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for generating performance reports
 public final class PerformanceReport: BaseSandboxedService {

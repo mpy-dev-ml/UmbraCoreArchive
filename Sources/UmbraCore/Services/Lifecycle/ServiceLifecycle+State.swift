@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 extension ServiceLifecycle {
     /// Update service state with logging

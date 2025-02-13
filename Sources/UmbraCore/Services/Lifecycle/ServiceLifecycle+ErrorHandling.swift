@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 extension ServiceLifecycle {
     /// Attempt to recover from an error

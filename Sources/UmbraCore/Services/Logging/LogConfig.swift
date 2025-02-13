@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Configuration for logging operations
 public struct LogConfig: Sendable {

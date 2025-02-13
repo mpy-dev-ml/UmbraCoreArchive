@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Class representing the health status of a repository
 ///

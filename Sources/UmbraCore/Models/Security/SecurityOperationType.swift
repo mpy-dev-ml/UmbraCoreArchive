@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// An enumeration of different types of security operations that can be performed.
 ///

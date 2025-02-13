@@ -1,5 +1,5 @@
 import Compression
-import Foundation
+@preconcurrency import Foundation
 
 /// Manager for compression operations
 public final class CompressionManager: Sendable {

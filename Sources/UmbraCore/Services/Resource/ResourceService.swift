@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for managing application resources
 public final class ResourceService: BaseSandboxedService {

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Class representing a Restic command for XPC execution
 ///

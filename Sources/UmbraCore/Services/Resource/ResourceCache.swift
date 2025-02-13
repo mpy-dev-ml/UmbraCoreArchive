@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Service for caching resource data
 public final class ResourceCache: BaseSandboxedService {
