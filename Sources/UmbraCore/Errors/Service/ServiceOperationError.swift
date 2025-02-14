@@ -38,6 +38,7 @@ public final class ServiceOperationError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case let .operationFailed(_, _, reason):
             reason
+
         default:
             nil
         }
@@ -48,6 +49,7 @@ public final class ServiceOperationError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case let .operationTimeout(_, _, duration):
             duration
+
         default:
             nil
         }
@@ -70,6 +72,7 @@ public final class ServiceOperationError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case let .operationFailed(service, operation, reason):
             "Service '\(service)' operation '\(operation)' failed: \(reason)"
+
         case let .operationTimeout(service, operation, duration):
             "Service '\(service)' operation '\(operation)' timed out after \(String(format: "%.1f", duration)) seconds"
         }
@@ -79,6 +82,7 @@ public final class ServiceOperationError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case .operationFailed:
             "Check the failure reason and try the operation again"
+
         case .operationTimeout:
             "Consider increasing the operation timeout or check for system performance issues"
         }

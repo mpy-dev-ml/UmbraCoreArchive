@@ -67,15 +67,19 @@ public enum RepositoryDiscoveryError: LocalizedError {
         switch self {
         case let .accessDenied(url):
             "Access denied to location: \(url.path)"
+
         case let .locationNotAccessible(url):
             "Location not accessible: \(url.path)"
+
         case let .invalidRepository(url):
             "Invalid repository structure at: \(url.path)"
+
         case let .verificationFailed(url, reason):
             """
             Repository verification failed at \(url.path): \
             \(reason)
             """
+
         case let .discoveryFailed(reason):
             "Repository discovery failed: \(reason)"
         }
@@ -85,18 +89,22 @@ public enum RepositoryDiscoveryError: LocalizedError {
         switch self {
         case .accessDenied:
             "Please ensure you have appropriate permissions and try again."
+
         case .locationNotAccessible:
             "Please check if the location exists and is accessible."
+
         case .invalidRepository:
             """
             The location does not contain a valid Restic repository \
             structure.
             """
+
         case .verificationFailed:
             """
             Please ensure the repository is not corrupted and try \
             again.
             """
+
         case .discoveryFailed:
             """
             Please try the operation again. If the problem persists, \

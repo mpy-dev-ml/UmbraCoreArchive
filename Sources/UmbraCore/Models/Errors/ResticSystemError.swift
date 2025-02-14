@@ -14,12 +14,16 @@ public enum ResticSystemError: ResticErrorProtocol {
         switch self {
         case let .insufficientPermissions(path):
             "Insufficient permissions for path: \(path)"
+
         case let .insufficientResources(details):
             "Insufficient system resources: \(details)"
+
         case let .fileSystemError(path):
             "File system error for path: \(path)"
+
         case let .networkError(details):
             "Network error: \(details)"
+
         case let .systemTimeout(operation):
             "System timeout during operation: \(operation)"
         }
@@ -29,12 +33,16 @@ public enum ResticSystemError: ResticErrorProtocol {
         switch self {
         case let .insufficientPermissions(path):
             "The current user lacks required permissions for \(path)"
+
         case let .insufficientResources(details):
             "The system lacks required resources: \(details)"
+
         case let .fileSystemError(path):
             "A file system error occurred at \(path)"
+
         case let .networkError(details):
             "A network error occurred: \(details)"
+
         case let .systemTimeout(operation):
             "The system timed out while performing \(operation)"
         }
@@ -48,24 +56,28 @@ public enum ResticSystemError: ResticErrorProtocol {
             - Request elevated access
             - Update ACL settings
             """
+
         case .insufficientResources:
             """
             - Free up system resources
             - Close unused applications
             - Check resource limits
             """
+
         case .fileSystemError:
             """
             - Check disk health
             - Verify file system
             - Repair if necessary
             """
+
         case .networkError:
             """
             - Check network connection
             - Verify DNS settings
             - Test connectivity
             """
+
         case .systemTimeout:
             """
             - Increase timeout value
@@ -79,12 +91,16 @@ public enum ResticSystemError: ResticErrorProtocol {
         switch self {
         case let .insufficientPermissions(path):
             Thread.callStackSymbols.first
+
         case let .insufficientResources(details):
             Thread.callStackSymbols.first
+
         case let .fileSystemError(path):
             Thread.callStackSymbols.first
+
         case let .networkError(details):
             Thread.callStackSymbols.first
+
         case let .systemTimeout(operation):
             Thread.callStackSymbols.first
         }

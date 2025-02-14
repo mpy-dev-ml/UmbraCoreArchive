@@ -1,53 +1,63 @@
 import Foundation
 
-// MARK: - ResticErrorProtocol
-
 /// Protocol defining requirements for Restic-specific errors
-@objc
-public protocol ResticErrorProtocol: Error {
-    /// The exit code associated with the error
-    var exitCode: Int32 { get }
-
+public protocol ResticErrorProtocol: LocalizedError, CustomStringConvertible {
     /// The command that was being executed when the error occurred
-    @objc optional var command: String? { get }
+    var command: String? { get }
 
     /// Additional context about the error
-    @objc optional var context: [String: Any]? { get }
+    var contextInfo: [String: String] { get }
 
-    /// Creates an error instance from an exit code if applicable
-    static func from(exitCode: Int32) -> Self?
+    /// The exit code of the command, if applicable
+    var exitCode: Int32 { get }
+
+    /// The underlying error type
+    var errorType: ResticErrorType { get }
+
+    /// Whether the error is recoverable
+    var isRecoverable: Bool { get }
+
+    /// Stack trace at the time of error
+    var stackTrace: [String] { get }
+}
+
+/// Types of Restic errors
+public enum ResticErrorType: String, Codable {
+    case configuration = "Configuration Error"
+    case permission = "Permission Error"
+    case resource = "Resource Error"
+    case system = "System Error"
+    case network = "Network Error"
+    case validation = "Validation Error"
+    case operation = "Operation Error"
+    case unknown = "Unknown Error"
 }
 
 // MARK: - Default Implementations
 
 public extension ResticErrorProtocol {
-    var exitCode: Int32 {
-        // Use raw value if available (for enums)
-        if let rawRepresentable = self as? RawRepresentable,
-           let intValue = rawRepresentable.rawValue as? Int
-        {
-            return Int32(intValue)
+    var isRecoverable: Bool {
+        switch errorType {
+        case .configuration, .permission, .validation:
+            true
+
+        case .resource, .system, .network, .operation, .unknown:
+            false
         }
-        return 1 // Default error code
     }
-
-    var command: String? { nil }
-    var context: [String: Any]? { nil }
-}
-
-// MARK: - LocalizedError Conformance
-
-public extension ResticErrorProtocol where Self: LocalizedError {
-    var errorDescription: String? {
-        let commandInfo = command.map { " while executing '\($0)'" } ?? ""
-        return "\(String(describing: self))\(commandInfo) (exit code: \(exitCode))"
+    
+    var stackTrace: [String] {
+        Thread.callStackSymbols
     }
-
-    var failureReason: String? {
-        context?["reason"] as? String
-    }
-
-    var recoverySuggestion: String? {
-        context?["suggestion"] as? String
+    
+    var description: String {
+        var desc = "[\(errorType.rawValue)] \(localizedDescription)"
+        if let cmd = command {
+            desc += "\nCommand: \(cmd)"
+        }
+        if !contextInfo.isEmpty {
+            desc += "\nContext: \(contextInfo)"
+        }
+        return desc
     }
 }

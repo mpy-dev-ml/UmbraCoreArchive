@@ -17,10 +17,13 @@ public enum CoreError: LocalizedError {
         switch self {
         case .authenticationFailed:
             "Authentication failed"
+
         case .insufficientPermissions:
             "Insufficient permissions to perform the operation"
+
         case let .invalidConfiguration(details):
             "Invalid configuration: \(details)"
+
         case let .systemError(details):
             "System error: \(details)"
         }

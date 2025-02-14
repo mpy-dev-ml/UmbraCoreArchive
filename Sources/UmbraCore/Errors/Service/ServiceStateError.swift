@@ -31,8 +31,10 @@ public final class ServiceStateError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case let .invalidState(_, current, _):
             current
+
         case let .stateTransitionFailed(_, from, _):
             from
+
         case let .stateLockTimeout(_, state):
             state
         }
@@ -43,8 +45,10 @@ public final class ServiceStateError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case let .invalidState(_, _, expected):
             expected
+
         case let .stateTransitionFailed(_, _, target):
             target
+
         case .stateLockTimeout:
             nil
         }
@@ -68,8 +72,10 @@ public final class ServiceStateError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case let .invalidState(service, current, expected):
             "Service '\(service)' in invalid state: expected '\(expected)', but was '\(current)'"
+
         case let .stateTransitionFailed(service, from, target):
             "Service '\(service)' failed to transition from '\(from)' to '\(target)'"
+
         case let .stateLockTimeout(service, state):
             "Service '\(service)' state lock timed out in state '\(state)'"
         }
@@ -79,8 +85,10 @@ public final class ServiceStateError: NSObject, ServiceErrorProtocol {
         switch errorType {
         case .invalidState:
             "Ensure service is in the correct state before proceeding"
+
         case .stateTransitionFailed:
             "Check if the state transition is valid and all prerequisites are met"
+
         case .stateLockTimeout:
             "Check for deadlocks or increase the lock timeout duration"
         }

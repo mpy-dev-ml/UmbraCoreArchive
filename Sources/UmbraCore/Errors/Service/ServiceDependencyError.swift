@@ -1,92 +1,61 @@
 import Foundation
 
 /// Errors that can occur during service dependency management
-@frozen
 @objc
-public final class ServiceDependencyError: NSObject, ServiceErrorProtocol {
-    // MARK: - Error Types
-
-    private enum ErrorType {
-        case dependencyUnavailable(service: String, dependency: String)
-        case dependencyMisconfigured(service: String, dependency: String, reason: String)
-        case dependencyTimeout(service: String, dependency: String)
-    }
-
-    // MARK: - Properties
-
-    private let errorType: ErrorType
-
+public enum ServiceDependencyError: Int, ServiceErrorProtocol {
+    /// Required dependency is missing
+    case missingDependency
+    /// Dependency initialization failed
+    case initializationFailed
+    /// Dependency validation failed
+    case validationFailed
+    /// Circular dependency detected
+    case circularDependency
+    
     /// Service name associated with the error
     public var serviceName: String {
-        switch errorType {
-        case let .dependencyUnavailable(service, _),
-             let .dependencyMisconfigured(service, _, _),
-             let .dependencyTimeout(service, _):
-            service
+        "DependencyService"
+    }
+    
+    /// Localized description of the error
+    public var localizedDescription: String {
+        switch self {
+        case .missingDependency:
+            return "Required service dependency is missing"
+        case .initializationFailed:
+            return "Failed to initialize service dependency"
+        case .validationFailed:
+            return "Service dependency validation failed"
+        case .circularDependency:
+            return "Circular dependency detected in service graph"
         }
     }
-
-    /// Name of the dependency involved in the error
-    public var dependencyName: String {
-        switch errorType {
-        case let .dependencyUnavailable(_, dependency),
-             let .dependencyMisconfigured(_, dependency, _),
-             let .dependencyTimeout(_, dependency):
-            dependency
+    
+    /// Reason for the failure
+    public var failureReason: String? {
+        switch self {
+        case .missingDependency:
+            return "A required dependency was not provided or could not be found"
+        case .initializationFailed:
+            return "The dependency could not be properly initialized"
+        case .validationFailed:
+            return "The dependency failed validation checks"
+        case .circularDependency:
+            return "A circular reference was detected in the dependency graph"
         }
     }
-
-    /// Reason for misconfiguration if applicable
-    public var misconfigurationReason: String? {
-        switch errorType {
-        case let .dependencyMisconfigured(_, _, reason):
-            reason
-        default:
-            nil
+    
+    /// Suggestion for recovering from the error
+    public var recoverySuggestion: String? {
+        switch self {
+        case .missingDependency:
+            return "Ensure all required dependencies are properly registered"
+        case .initializationFailed:
+            return "Check the dependency configuration and try again"
+        case .validationFailed:
+            return "Verify the dependency meets all requirements"
+        case .circularDependency:
+            return "Review the dependency graph and remove circular references"
         }
-    }
-
-    // MARK: - ServiceErrorProtocol
-
-    public var errorCode: Int {
-        switch errorType {
-        case .dependencyUnavailable: 1
-        case .dependencyMisconfigured: 2
-        case .dependencyTimeout: 3
-        }
-    }
-
-    public static var errorDomain: String {
-        "dev.mpy.umbracore.service.dependency"
-    }
-
-    override public var localizedDescription: String {
-        switch errorType {
-        case let .dependencyUnavailable(service, dependency):
-            "Required dependency '\(dependency)' unavailable for service '\(service)'"
-        case let .dependencyMisconfigured(service, dependency, reason):
-            "Dependency '\(dependency)' misconfigured for service '\(service)': \(reason)"
-        case let .dependencyTimeout(service, dependency):
-            "Dependency '\(dependency)' timed out for service '\(service)'"
-        }
-    }
-
-    // MARK: - Initialization
-
-    public convenience init(service: String, dependency: String, reason: String? = nil) {
-        if let reason {
-            self.init(type: .dependencyMisconfigured(service: service, dependency: dependency, reason: reason))
-        } else {
-            self.init(type: .dependencyUnavailable(service: service, dependency: dependency))
-        }
-    }
-
-    public convenience init(timeoutService service: String, dependency: String) {
-        self.init(type: .dependencyTimeout(service: service, dependency: dependency))
-    }
-
-    private init(type: ErrorType) {
-        errorType = type
-        super.init()
     }
 }

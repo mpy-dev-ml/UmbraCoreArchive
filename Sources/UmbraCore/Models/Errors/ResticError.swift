@@ -1,222 +1,212 @@
 import Foundation
 
-// MARK: - ResticError
-
 /// Represents errors that can occur during Restic operations
-@frozen // Mark as frozen for better Swift 6 compatibility
-@objc
-public final class ResticError: NSObject, ResticErrorProtocol, LocalizedError, Sendable {
-    // MARK: - Error Types
-
-    private enum ErrorType {
-        case commandError(Error?)
-        case operationError(Error?)
-        case repositoryError(String)
-        case configurationError(String)
-        case authenticationError(String)
-        case networkError(String)
-        case unknown(String)
-    }
-
-    // MARK: - Properties
-
-    private let errorType: ErrorType
-    private var contextInfo: [String: Any]
+public enum ResticError: ResticErrorProtocol, LocalizedError {
+    case commandNotFound(path: String)
+    case invalidArguments(command: String, details: String)
+    case invalidEnvironment(details: String)
+    case invalidState(details: String)
+    case operationFailed(command: String, details: String)
+    case permissionDenied(path: String)
+    case resourceBusy(path: String)
+    case systemError(details: String)
+    case timeout(command: String, duration: TimeInterval)
 
     // MARK: - ResticErrorProtocol
 
-    public static func from(exitCode: Int32) -> ResticError? {
-        switch exitCode {
-        case 1: ResticError(type: .commandError(nil))
-        case 2: ResticError(type: .operationError(nil))
-        case 3: ResticError(type: .repositoryError("Repository access failed"))
-        case 4: ResticError(type: .configurationError("Invalid configuration"))
-        case 5: ResticError(type: .authenticationError("Authentication failed"))
-        case 6: ResticError(type: .networkError("Network error"))
-        default: nil
-        }
-    }
-
     public var command: String? {
-        context?["command"] as? String
-    }
+        switch self {
+        case .commandNotFound(let path):
+            path
 
-    public var context: [String: Any]? {
-        contextInfo
-    }
+        case .invalidArguments(let command, _):
+            command
 
-    public var errorCode: Int {
-        switch errorType {
-        case .commandError: 1
-        case .operationError: 2
-        case .repositoryError: 3
-        case .configurationError: 4
-        case .authenticationError: 5
-        case .networkError: 6
-        case .unknown: 7
+        case .operationFailed(let command, _):
+            command
+
+        case .timeout(let command, _):
+            command
+
+        case .invalidEnvironment, .invalidState, .permissionDenied, .resourceBusy, .systemError:
+            nil
         }
     }
 
-    public static var errorDomain: String {
-        "dev.mpy.umbracore.restic"
+    public var contextInfo: [String: String] {
+        switch self {
+        case .commandNotFound(let path):
+            ["path": path]
+
+        case let .invalidArguments(command, details):
+            [
+                "command": command,
+                "details": details
+            ]
+
+        case .invalidEnvironment(let details):
+            ["details": details]
+
+        case .invalidState(let details):
+            ["details": details]
+
+        case let .operationFailed(command, details):
+            [
+                "command": command,
+                "details": details
+            ]
+
+        case .permissionDenied(let path):
+            ["path": path]
+
+        case .resourceBusy(let path):
+            ["path": path]
+
+        case .systemError(let details):
+            ["details": details]
+
+        case let .timeout(command, duration):
+            [
+                "command": command,
+                "duration": "\(duration)"
+            ]
+        }
+    }
+
+    public var exitCode: Int32 {
+        switch self {
+        case .commandNotFound: 127
+        case .invalidArguments: 2
+        case .invalidEnvironment: 3
+        case .invalidState: 4
+        case .operationFailed: 5
+        case .permissionDenied: 13
+        case .resourceBusy: 16
+        case .systemError: 1
+        case .timeout: 124
+        }
+    }
+
+    public var errorType: ResticErrorType {
+        switch self {
+        case .commandNotFound, .invalidArguments:
+            .configuration
+
+        case .invalidEnvironment:
+            .system
+
+        case .invalidState:
+            .validation
+
+        case .operationFailed:
+            .operation
+
+        case .permissionDenied:
+            .permission
+
+        case .resourceBusy:
+            .resource
+
+        case .systemError:
+            .system
+
+        case .timeout:
+            .system
+        }
     }
 
     // MARK: - LocalizedError
 
-    override public var localizedDescription: String {
-        switch errorType {
-        case let .commandError(error):
-            "Command execution failed: \(error?.localizedDescription ?? "Unknown error")"
-        case let .operationError(error):
-            "Operation failed: \(error?.localizedDescription ?? "Unknown error")"
-        case let .repositoryError(message):
-            "Repository error: \(message)"
-        case let .configurationError(message):
-            "Configuration error: \(message)"
-        case let .authenticationError(message):
-            "Authentication error: \(message)"
-        case let .networkError(message):
-            "Network error: \(message)"
-        case let .unknown(message):
-            "Unknown error: \(message)"
+    public var errorDescription: String? {
+        switch self {
+        case .commandNotFound(let path):
+            "Restic command not found at \(path)"
+
+        case let .invalidArguments(command, details):
+            "Invalid arguments for command '\(command)': \(details)"
+
+        case .invalidEnvironment(let details):
+            "Invalid environment configuration: \(details)"
+
+        case .invalidState(let details):
+            "Invalid state: \(details)"
+
+        case let .operationFailed(command, details):
+            "Operation '\(command)' failed: \(details)"
+
+        case .permissionDenied(let path):
+            "Permission denied: \(path)"
+
+        case .resourceBusy(let path):
+            "Resource busy: \(path)"
+
+        case .systemError(let details):
+            "System error: \(details)"
+
+        case let .timeout(command, duration):
+            "Command '\(command)' timed out after \(duration) seconds"
         }
     }
 
-    public var errorDescription: String? {
-        localizedDescription
-    }
-
     public var failureReason: String? {
-        switch errorType {
-        case let .commandError(error):
-            error?.localizedDescription
-        case let .operationError(error):
-            error?.localizedDescription
-        case let .repositoryError(message),
-             let .configurationError(message),
-             let .authenticationError(message),
-             let .networkError(message),
-             let .unknown(message):
-            message
+        switch self {
+        case .commandNotFound:
+            "The Restic command could not be found in the system path"
+
+        case .invalidArguments:
+            "The provided command arguments are invalid or incomplete"
+
+        case .invalidEnvironment:
+            "The environment is not properly configured"
+
+        case .invalidState:
+            "The system is in an invalid state for this operation"
+
+        case .operationFailed:
+            "The requested operation could not be completed"
+
+        case .permissionDenied:
+            "Insufficient permissions to perform the operation"
+
+        case .resourceBusy:
+            "The requested resource is currently in use"
+
+        case .systemError:
+            "A system-level error occurred"
+
+        case .timeout:
+            "The operation took too long to complete"
         }
     }
 
     public var recoverySuggestion: String? {
-        switch errorType {
-        case .commandError:
+        switch self {
+        case .commandNotFound:
+            "Install Restic or verify the installation path"
+
+        case .invalidArguments:
             "Check the command syntax and try again"
-        case .operationError:
-            "Verify the operation parameters and retry"
-        case .repositoryError:
-            "Ensure the repository is accessible and properly configured"
-        case .configurationError:
-            "Review and correct the configuration settings"
-        case .authenticationError:
-            "Check your credentials and try again"
-        case .networkError:
-            "Check your network connection and try again"
-        case .unknown:
-            "Try the operation again or check the logs for more details"
-        }
-    }
 
-    // MARK: - Initialization
+        case .invalidEnvironment:
+            "Check environment variables and configuration"
 
-    public convenience init(command error: Error?) {
-        self.init(type: .commandError(error))
-    }
+        case .invalidState:
+            "Try restarting the application"
 
-    public convenience init(operation error: Error?) {
-        self.init(type: .operationError(error))
-    }
+        case .operationFailed:
+            "Check the error details and try again"
 
-    public convenience init(repository message: String) {
-        self.init(type: .repositoryError(message))
-    }
+        case .permissionDenied:
+            "Check file permissions and user access rights"
 
-    public convenience init(configuration message: String) {
-        self.init(type: .configurationError(message))
-    }
+        case .resourceBusy:
+            "Wait for the resource to become available"
 
-    public convenience init(authentication message: String) {
-        self.init(type: .authenticationError(message))
-    }
+        case .systemError:
+            "Check system logs for more details"
 
-    public convenience init(network message: String) {
-        self.init(type: .networkError(message))
-    }
-
-    public convenience init(unknown message: String) {
-        self.init(type: .unknown(message))
-    }
-
-    private init(type: ErrorType, context: [String: Any] = [:]) {
-        errorType = type
-        contextInfo = context
-        super.init()
-    }
-
-    // MARK: - Context Management
-
-    public func with(context: [String: Any]) -> ResticError {
-        ResticError(type: errorType, context: context)
-    }
-
-    public func adding(context key: String, value: Any) -> ResticError {
-        var newContext = contextInfo
-        newContext[key] = value
-        return ResticError(type: errorType, context: newContext)
-    }
-}
-
-// MARK: - ResticErrorProtocol
-
-public extension ResticError {
-    var underlyingError: Error? {
-        switch errorType {
-        case let .commandError(error),
-             let .operationError(error):
-            error
-        default: nil
-        }
-    }
-
-    var isRecoverable: Bool {
-        switch errorType {
-        case .commandError,
-             .operationError,
-             .repositoryError,
-             .configurationError,
-             .authenticationError,
-             .networkError,
-             .unknown:
-            false
-        }
-    }
-
-    var requiresUserIntervention: Bool {
-        switch errorType {
-        case .commandError,
-             .operationError,
-             .repositoryError,
-             .configurationError,
-             .authenticationError,
-             .networkError,
-             .unknown:
-            true
-        }
-    }
-
-    var shouldRetry: Bool {
-        switch errorType {
-        case .commandError,
-             .operationError,
-             .repositoryError,
-             .configurationError,
-             .authenticationError,
-             .networkError,
-             .unknown:
-            false
+        case .timeout:
+            "Consider increasing the timeout duration"
         }
     }
 }

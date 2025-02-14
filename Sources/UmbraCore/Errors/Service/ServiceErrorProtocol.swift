@@ -4,24 +4,21 @@ import Foundation
 
 /// Protocol defining common functionality for service-related errors
 @objc
-public protocol ServiceErrorProtocol: NSObject {
-    /// The service name associated with the error
+public protocol ServiceErrorProtocol: Error {
+    /// Service name associated with the error
     var serviceName: String { get }
-
-    /// A human-readable description of what went wrong
+    
+    /// Localized description of the error
     var localizedDescription: String { get }
-
-    /// A suggestion for how to recover from the error
-    @objc optional var recoverySuggestion: String? { get }
-
-    /// The reason for the failure, if available
+    
+    /// Reason for the error
     @objc optional var failureReason: String? { get }
-
-    /// The error code associated with this error
-    var errorCode: Int { get }
-
-    /// The error domain for this type of error
-    static var errorDomain: String { get }
+    
+    /// Suggestion for recovering from the error
+    @objc optional var recoverySuggestion: String? { get }
+    
+    /// Error metadata dictionary
+    var errorUserInfo: [String: Any] { get }
 }
 
 // MARK: - Error Conformance
@@ -29,17 +26,11 @@ public protocol ServiceErrorProtocol: NSObject {
 public extension ServiceErrorProtocol {
     /// Convert to NSError
     var asNSError: NSError {
-        let userInfo: [String: Any] = [
-            NSLocalizedDescriptionKey: localizedDescription,
-            "serviceName": serviceName
-        ].merging([
-            NSLocalizedRecoverySuggestionKey: recoverySuggestion,
-            NSLocalizedFailureReasonKey: failureReason
-        ].compactMapValues { $0 }) { current, _ in current }
-
+        let userInfo = errorUserInfo
+        
         return NSError(
-            domain: Self.errorDomain,
-            code: errorCode,
+            domain: "dev.mpy.umbracore.service",
+            code: 0,
             userInfo: userInfo
         )
     }
@@ -48,15 +39,19 @@ public extension ServiceErrorProtocol {
 // MARK: - Default Implementations
 
 public extension ServiceErrorProtocol {
-    static var errorDomain: String {
-        "dev.mpy.umbracore.service"
-    }
-
-    var failureReason: String? {
-        nil
-    }
-
-    var recoverySuggestion: String? {
-        nil
+    var errorUserInfo: [String: Any] {
+        var info: [String: Any] = [
+            "serviceName": serviceName
+        ]
+        
+        if let reason = failureReason {
+            info[NSLocalizedFailureReasonErrorKey] = reason
+        }
+        
+        if let suggestion = recoverySuggestion {
+            info[NSLocalizedRecoverySuggestionErrorKey] = suggestion
+        }
+        
+        return info
     }
 }

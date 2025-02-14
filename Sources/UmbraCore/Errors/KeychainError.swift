@@ -103,14 +103,19 @@ public enum KeychainError: LocalizedError {
         switch self {
         case let .saveFailed(status):
             "Failed to save item to keychain: \(status)"
+
         case let .retrievalFailed(status):
             "Failed to retrieve item from keychain: \(status)"
+
         case let .updateFailed(status):
             "Failed to update item in keychain: \(status)"
+
         case let .deleteFailed(status):
             "Failed to delete item from keychain: \(status)"
+
         case .accessValidationFailed:
             "Failed to validate keychain access"
+
         case .xpcConfigurationFailed:
             "Failed to configure XPC for keychain access"
         }

@@ -161,8 +161,10 @@ public enum SandboxError: LocalizedError {
         switch self {
         case let .accessDenied(url):
             "Access denied to \(url.path)"
+
         case let .bookmarkInvalid(url):
             "Invalid bookmark for \(url.path)"
+
         case let .bookmarkCreationFailed(url):
             "Failed to create bookmark for \(url.path)"
         }
@@ -213,6 +215,7 @@ public extension Error {
         switch self {
         case let error as LocalizedError:
             error.localizedDescription
+
         default:
             localizedDescription
         }

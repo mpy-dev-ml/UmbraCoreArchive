@@ -16,7 +16,7 @@ public enum ResticCommandError: Int, ResticErrorProtocol, LocalizedError {
 
     // MARK: - ResticErrorProtocol
 
-    public static func from(exitCode: Int32) -> ResticCommandError? {
+    public static func from(exitCode: Int32) -> Self? {
         switch exitCode {
         case 1: .executionFailed
         case 124: .timeout
@@ -39,12 +39,16 @@ public enum ResticCommandError: Int, ResticErrorProtocol, LocalizedError {
         switch self {
         case .executionFailed:
             "Command execution failed"
+
         case .timeout:
             "Command timed out"
+
         case .interrupted:
             "Command was interrupted"
+
         case .invalidArguments:
             "Invalid command arguments"
+
         case .unsupportedCommand:
             "Unsupported command"
         }
@@ -54,12 +58,16 @@ public enum ResticCommandError: Int, ResticErrorProtocol, LocalizedError {
         switch self {
         case .executionFailed:
             "The command failed to execute properly"
+
         case .timeout:
             "The command exceeded its time limit"
+
         case .interrupted:
             "The command was interrupted by a signal"
+
         case .invalidArguments:
             "The command received invalid arguments"
+
         case .unsupportedCommand:
             "The command is not supported by this version"
         }
@@ -69,12 +77,16 @@ public enum ResticCommandError: Int, ResticErrorProtocol, LocalizedError {
         switch self {
         case .executionFailed:
             "Check the command output for details"
+
         case .timeout:
             "Try increasing the timeout duration"
+
         case .interrupted:
             "Try running the command again"
+
         case .invalidArguments:
             "Check the command arguments"
+
         case .unsupportedCommand:
             "Check the supported commands list"
         }

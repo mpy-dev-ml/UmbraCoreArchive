@@ -1,86 +1,204 @@
+import Foundation
+
 /// Represents errors that can occur during repository operations.
 public enum ResticRepositoryError: ResticErrorProtocol {
-    case repositoryNotFound(String)
-    case repositoryLocked(String)
-    case repositoryCorrupted(String)
-    case repositoryInUse(String)
-    case repositoryInvalidConfig(String)
+    case repositoryNotFound(path: String)
+    case repositoryCorrupted(path: String, details: String)
+    case repositoryLocked(path: String)
+    case repositoryInUse(path: String)
+    case repositoryFull(path: String, available: UInt64)
+    case indexCorrupted(path: String)
+    case invalidFormat(path: String, details: String)
+    case incompatibleVersion(path: String, version: String)
 
-    // MARK: Public
-
-    public var errorDescription: String {
-        switch self {
-        case let .repositoryNotFound(path):
-            "Repository not found at path: \(path)"
-        case let .repositoryLocked(path):
-            "Repository is locked at path: \(path)"
-        case let .repositoryCorrupted(path):
-            "Repository is corrupted at path: \(path)"
-        case let .repositoryInUse(path):
-            "Repository is in use at path: \(path)"
-        case let .repositoryInvalidConfig(path):
-            "Invalid repository configuration at path: \(path)"
-        }
-    }
-
-    public var failureReason: String {
-        switch self {
-        case let .repositoryNotFound(path):
-            "The repository at \(path) does not exist or is not accessible"
-        case let .repositoryLocked(path):
-            "The repository at \(path) is currently locked by another process"
-        case let .repositoryCorrupted(path):
-            "The repository at \(path) has integrity issues"
-        case let .repositoryInUse(path):
-            "The repository at \(path) is being used by another process"
-        case let .repositoryInvalidConfig(path):
-            "The repository configuration at \(path) is invalid or corrupted"
-        }
-    }
-
-    public var recoverySuggestion: String {
-        switch self {
-        case .repositoryNotFound:
-            """
-            - Verify repository path exists
-            - Check repository permissions
-            - Create repository if needed
-            """
-        case .repositoryLocked:
-            """
-            - Wait for lock to be released
-            - Check locking process
-            - Break lock if necessary
-            """
-        case .repositoryCorrupted:
-            """
-            - Run repository check
-            - Try repository repair
-            - Restore from backup
-            """
-        case .repositoryInUse:
-            """
-            - Wait for other process
-            - Check process status
-            - Force unlock if needed
-            """
-        case .repositoryInvalidConfig:
-            """
-            - Check config format
-            - Verify config values
-            - Reset config if needed
-            """
-        }
-    }
+    // MARK: - ResticErrorProtocol
 
     public var command: String? {
         switch self {
-        case let .repositoryNotFound(path),
-             let .repositoryLocked(path),
-             let .repositoryCorrupted(path),
-             let .repositoryInUse(path),
-             let .repositoryInvalidConfig(path):
-            Thread.callStackSymbols.first
+        case .repositoryNotFound(let path):
+            "restic -r \(path) check"
+
+        case .repositoryCorrupted(let path, _):
+            "restic -r \(path) check"
+
+        case .repositoryLocked(let path):
+            "restic -r \(path) unlock"
+
+        case .repositoryInUse(let path):
+            "restic -r \(path) check"
+
+        case .repositoryFull(let path, _):
+            "restic -r \(path) check"
+
+        case .indexCorrupted(let path):
+            "restic -r \(path) rebuild-index"
+
+        case .invalidFormat(let path, _):
+            "restic -r \(path) check"
+
+        case .incompatibleVersion(let path, _):
+            "restic -r \(path) version"
+        }
+    }
+
+    public var contextInfo: [String: String] {
+        switch self {
+        case .repositoryNotFound(let path):
+            ["path": path]
+
+        case let .repositoryCorrupted(path, details):
+            [
+                "path": path,
+                "details": details
+            ]
+
+        case .repositoryLocked(let path):
+            ["path": path]
+
+        case .repositoryInUse(let path):
+            ["path": path]
+
+        case let .repositoryFull(path, available):
+            [
+                "path": path,
+                "available": "\(available)"
+            ]
+
+        case .indexCorrupted(let path):
+            ["path": path]
+
+        case let .invalidFormat(path, details):
+            [
+                "path": path,
+                "details": details
+            ]
+
+        case let .incompatibleVersion(path, version):
+            [
+                "path": path,
+                "version": version
+            ]
+        }
+    }
+
+    public var exitCode: Int32 {
+        switch self {
+        case .repositoryNotFound: 1
+        case .repositoryCorrupted: 2
+        case .repositoryLocked: 3
+        case .repositoryInUse: 4
+        case .repositoryFull: 5
+        case .indexCorrupted: 6
+        case .invalidFormat: 7
+        case .incompatibleVersion: 8
+        }
+    }
+
+    public var errorType: ResticErrorType {
+        switch self {
+        case .repositoryNotFound:
+            .configuration
+
+        case .repositoryCorrupted, .indexCorrupted:
+            .validation
+
+        case .repositoryLocked, .repositoryInUse:
+            .resource
+
+        case .repositoryFull:
+            .resource
+
+        case .invalidFormat:
+            .validation
+
+        case .incompatibleVersion:
+            .configuration
+        }
+    }
+
+    // MARK: - LocalizedError
+
+    public var errorDescription: String? {
+        switch self {
+        case .repositoryNotFound(let path):
+            "Repository not found at \(path)"
+
+        case let .repositoryCorrupted(path, details):
+            "Repository corrupted at \(path): \(details)"
+
+        case .repositoryLocked(let path):
+            "Repository is locked at \(path)"
+
+        case .repositoryInUse(let path):
+            "Repository is in use at \(path)"
+
+        case let .repositoryFull(path, available):
+            "Repository full at \(path) (available: \(available) bytes)"
+
+        case .indexCorrupted(let path):
+            "Repository index corrupted at \(path)"
+
+        case let .invalidFormat(path, details):
+            "Invalid repository format at \(path): \(details)"
+
+        case let .incompatibleVersion(path, version):
+            "Incompatible repository version at \(path): \(version)"
+        }
+    }
+
+    public var failureReason: String? {
+        switch self {
+        case .repositoryNotFound:
+            "The repository directory does not exist or is not accessible"
+
+        case .repositoryCorrupted:
+            "The repository data is corrupted and needs repair"
+
+        case .repositoryLocked:
+            "Another process has locked the repository"
+
+        case .repositoryInUse:
+            "The repository is being accessed by another process"
+
+        case .repositoryFull:
+            "The repository has run out of storage space"
+
+        case .indexCorrupted:
+            "The repository index is corrupted and needs rebuilding"
+
+        case .invalidFormat:
+            "The repository format is invalid or unsupported"
+
+        case .incompatibleVersion:
+            "The repository version is not compatible with this version of Restic"
+        }
+    }
+
+    public var recoverySuggestion: String? {
+        switch self {
+        case .repositoryNotFound:
+            "Check the repository path and ensure it exists"
+
+        case .repositoryCorrupted:
+            "Run 'restic check --repair' to attempt repair"
+
+        case .repositoryLocked:
+            "Run 'restic unlock' if no other process is using the repository"
+
+        case .repositoryInUse:
+            "Wait for other processes to finish or check for stuck locks"
+
+        case .repositoryFull:
+            "Free up space or move repository to a larger storage"
+
+        case .indexCorrupted:
+            "Run 'restic rebuild-index' to rebuild the index"
+
+        case .invalidFormat:
+            "Check repository format and ensure compatibility"
+
+        case .incompatibleVersion:
+            "Update Restic to a compatible version"
         }
     }
 }
