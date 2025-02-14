@@ -48,7 +48,9 @@ public final class MockResticXPCService: NSObject, ResticXPCServiceProtocol {
         usedPassword = password
     }
 
-    public func backup(from source: URL, to destination: URL, username: String, password: String) async throws {
+    public func backup(from source: URL, to destination: URL, username: String, password: String)
+        async throws
+    {
         if shouldFailConnection {
             throw ResticXPCError.connectionFailed
         }

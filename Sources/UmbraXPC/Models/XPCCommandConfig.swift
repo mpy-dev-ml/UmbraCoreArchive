@@ -138,10 +138,12 @@ private extension XPCCommandConfig {
         }
 
         // Decode required working directory
-        guard let workingDirectory = decodeString(
-            from: coder,
-            forKey: .workingDirectory
-        ) else {
+        guard
+            let workingDirectory = decodeString(
+                from: coder,
+                forKey: .workingDirectory
+            )
+        else {
             return nil
         }
 

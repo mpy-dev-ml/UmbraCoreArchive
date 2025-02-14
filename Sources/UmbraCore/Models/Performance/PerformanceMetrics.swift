@@ -75,7 +75,7 @@ public struct MonitoredOperation {
         guard let endTime else {
             return nil
         }
-        return endTime.timeIntervalSince(startTime) * 1000
+        return endTime.timeIntervalSince(startTime) * 1_000
     }
 }
 

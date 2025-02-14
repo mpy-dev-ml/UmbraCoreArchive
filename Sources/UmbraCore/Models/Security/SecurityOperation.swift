@@ -193,12 +193,10 @@ public struct SecurityOperation: Hashable {
     /// let areEqual = op1 == op2 // true
     /// ```
     public static func == (
-        lhs: SecurityOperation,
-        rhs: SecurityOperation
+        lhs: Self,
+        rhs: Self
     ) -> Bool {
-        lhs.url == rhs.url &&
-            lhs.operationType == rhs.operationType &&
-            lhs.timestamp == rhs.timestamp
+        lhs.url == rhs.url && lhs.operationType == rhs.operationType && lhs.timestamp == rhs.timestamp
     }
 
     /// Hashes the essential components of the operation.

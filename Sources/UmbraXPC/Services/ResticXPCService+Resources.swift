@@ -12,12 +12,14 @@ extension ResticXPCService {
         for (path, bookmark) in bookmarks {
             var isStale = false
             let options = URL.BookmarkResolutionOptions.withSecurityScope
-            guard let url = try? URL(
-                resolvingBookmarkData: bookmark as Data,
-                options: options,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            ) else {
+            guard
+                let url = try? URL(
+                    resolvingBookmarkData: bookmark as Data,
+                    options: options,
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &isStale
+                )
+            else {
                 throw ResticXPCError.invalidBookmark(path: path)
             }
 
@@ -87,12 +89,14 @@ extension ResticXPCService {
         for (path, bookmark) in activeBookmarks {
             var isStale = false
             let options = URL.BookmarkResolutionOptions.withSecurityScope
-            guard let url = try? URL(
-                resolvingBookmarkData: bookmark as Data,
-                options: options,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            ) else {
+            guard
+                let url = try? URL(
+                    resolvingBookmarkData: bookmark as Data,
+                    options: options,
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &isStale
+                )
+            else {
                 throw ResticXPCError.invalidBookmark(path: path)
             }
 

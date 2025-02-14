@@ -312,9 +312,10 @@ public actor XPCConnectionManager {
             let errorHandler = { [weak self] (error: Error) in
                 Task { await self?.handleHealthCheckError(error) }
             }
-            let remote = connection.remoteObjectProxyWithErrorHandler(
-                errorHandler
-            ) as? ResticXPCProtocol
+            let remote =
+                connection.remoteObjectProxyWithErrorHandler(
+                    errorHandler
+                ) as? ResticXPCProtocol
 
             guard let remote else {
                 throw ResticXPCError.invalidRemoteObject

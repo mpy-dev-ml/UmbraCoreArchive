@@ -1,6 +1,7 @@
 @preconcurrency import Foundation
 
 /// Result of a process execution through the XPC service
+@Observable
 @objc
 public final class ProcessResult: NSObject, Codable {
     // MARK: Lifecycle
@@ -10,16 +11,6 @@ public final class ProcessResult: NSObject, Codable {
         self.output = output
         self.error = error
         self.exitCode = exitCode
-        super.init()
-    }
-
-    // MARK: - Codable Implementation
-
-    public required init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        output = try container.decode(String.self, forKey: .output)
-        error = try container.decode(String.self, forKey: .error)
-        exitCode = try container.decode(Int.self, forKey: .exitCode)
         super.init()
     }
 
@@ -37,18 +28,26 @@ public final class ProcessResult: NSObject, Codable {
     /// Whether the process executed successfully
     @objc public var succeeded: Bool { exitCode == 0 }
 
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(output, forKey: .output)
-        try container.encode(error, forKey: .error)
-        try container.encode(exitCode, forKey: .exitCode)
-    }
-
-    // MARK: Private
+    // MARK: - Codable Implementation
 
     private enum CodingKeys: String, CodingKey {
         case output
         case error
         case exitCode
+    }
+
+    public required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        output = try container.decode(String.self, forKey: .output)
+        error = try container.decode(String.self, forKey: .error)
+        exitCode = try container.decode(Int.self, forKey: .exitCode)
+        super.init()
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(output, forKey: .output)
+        try container.encode(error, forKey: .error)
+        try container.encode(exitCode, forKey: .exitCode)
     }
 }

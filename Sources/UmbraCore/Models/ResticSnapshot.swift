@@ -42,9 +42,7 @@
 public final class ResticSnapshot: NSObject,
     NSSecureCoding,
     Codable,
-    Identifiable,
-    Equatable, Hashable
-{
+    Identifiable {
     // MARK: Lifecycle
 
     /// Creates a new snapshot instance
@@ -199,15 +197,17 @@ public final class ResticSnapshot: NSObject,
         self.id = id
         self.time = time
         self.hostname = hostname
-        tags = coder.decodeObject(
-            of: NSArray.self,
-            forKey: "tags"
-        ) as? [String]
+        tags =
+            coder.decodeObject(
+                of: NSArray.self,
+                forKey: "tags"
+            ) as? [String]
         self.paths = paths
-        parent = coder.decodeObject(
-            of: NSString.self,
-            forKey: "parent"
-        ) as String?
+        parent =
+            coder.decodeObject(
+                of: NSString.self,
+                forKey: "parent"
+            ) as String?
         size = UInt64(coder.decodeInt64(forKey: "size"))
         self.repositoryId = repositoryId
         super.init()
@@ -217,10 +217,16 @@ public final class ResticSnapshot: NSObject,
 
     public static var supportsSecureCoding: Bool { true }
 
-    /// Provides a hash value for the snapshot
+    /// Hash value for the snapshot
     override public var hash: Int {
         var hasher = Hasher()
         hasher.combine(id)
+        hasher.combine(time)
+        hasher.combine(hostname)
+        hasher.combine(tags)
+        hasher.combine(paths)
+        hasher.combine(parent)
+        hasher.combine(size)
         hasher.combine(repositoryId)
         return hasher.finalize()
     }
@@ -302,20 +308,8 @@ public final class ResticSnapshot: NSObject,
     /// - Parameter object: The object to compare with
     /// - Returns: True if the snapshots are equal
     override public func isEqual(_ object: Any?) -> Bool {
-        guard let other = object as? ResticSnapshot else { return false }
+        guard let other = object as? Self else { return false }
         return id == other.id
-    }
-
-    // MARK: - Equatable
-
-    /// Equality operator for ResticSnapshot
-    /// Compares:
-    /// - Same snapshot ID
-    /// - Same repository ID
-    ///
-    /// Note: Other properties don't affect equality
-    public static func == (lhs: ResticSnapshot, rhs: ResticSnapshot) -> Bool {
-        lhs.isEqual(rhs)
     }
 
     // MARK: - NSSecureCoding
@@ -337,19 +331,5 @@ public final class ResticSnapshot: NSObject,
         coder.encode(parent, forKey: "parent")
         coder.encode(size, forKey: "size")
         coder.encode(repositoryId, forKey: "repositoryId")
-    }
-
-    // MARK: - Hashable
-
-    /// Hashes the essential components of the snapshot
-    ///
-    /// Combines:
-    /// - Snapshot ID
-    /// - Repository ID
-    ///
-    /// Note: Other properties are not included as they don't affect identity
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(repositoryId)
     }
 }

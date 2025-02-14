@@ -1,0 +1,8 @@
+
+----- xcbeautify -----
+Version: 2.25.0
+----------------------
+
+⚠️ [33m'swiftlint': 'swiftlint' dependency on 'https://github.com/swiftlang/swift-syntax.git' conflicts with dependency on 'https://github.com/apple/swift-syntax.git' which has the same identity 'swift-syntax'. this will be escalated to an error in future versions of SwiftPM.[0m
+❌ [31merror: no target named 'Errors'[0m
+❌ [31merror: no target named 'Errors'[0m

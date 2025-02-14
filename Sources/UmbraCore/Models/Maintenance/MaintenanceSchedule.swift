@@ -1,87 +1,108 @@
 @preconcurrency import Foundation
 
+// MARK: - MaintenanceDay
+
+/// Represents a day of the week for maintenance scheduling
+public enum MaintenanceDay: Int, Codable, Sendable {
+    case sunday = 1
+    case monday = 2
+    case tuesday = 3
+    case wednesday = 4
+    case thursday = 5
+    case friday = 6
+    case saturday = 7
+}
+
 // MARK: - MaintenanceSchedule
 
-/// Configuration for repository maintenance scheduling
-public struct MaintenanceSchedule: Codable, CustomStringConvertible, Equatable {
-    // MARK: Lifecycle
-
+/// Represents a maintenance schedule configuration
+public struct MaintenanceSchedule: Codable, Sendable {
+    // MARK: - Properties
+    
+    /// Days when maintenance is scheduled
+    public let days: Set<MaintenanceDay>
+    
+    /// Hour of the day to start maintenance (0-23)
+    public let hour: Int
+    
+    /// Minute of the hour to start maintenance (0-59)
+    public let minute: Int
+    
+    /// Duration in minutes
+    public let duration: Int
+    
+    /// Whether the schedule is enabled
+    public let isEnabled: Bool
+    
+    private enum CodingKeys: String, CodingKey {
+        case days
+        case hour
+        case minute
+        case duration
+        case isEnabled = "enabled"
+    }
+    
+    // MARK: - Initialization
+    
     public init(
-        days: Set<MaintenanceDay> = [.sunday],
-        hour: Int = 2, // 2 AM default
-        minute: Int = 0,
-        isEnabled: Bool = true,
-        maxDuration: Int = 120,
-        tasks: Set<MaintenanceTask> = MaintenanceTask.allCases
+        days: Set<MaintenanceDay>,
+        hour: Int,
+        minute: Int,
+        duration: Int,
+        isEnabled: Bool = true
     ) {
         self.days = days
         self.hour = min(max(hour, 0), 23)
         self.minute = min(max(minute, 0), 59)
+        self.duration = max(duration, 0)
         self.isEnabled = isEnabled
-        self.maxDuration = max(maxDuration, 30)
-        self.tasks = tasks
     }
-
-    // MARK: Public
-
-    /// Days of the week to run maintenance
-    public let days: Set<MaintenanceDay>
-
-    /// Hour of the day to start maintenance (0-23)
-    public let hour: Int
-
-    /// Minute of the hour to start maintenance (0-59)
-    public let minute: Int
-
-    /// Whether maintenance should run automatically
-    public let isEnabled: Bool
-
-    /// Maximum duration in minutes before maintenance is considered stuck
-    public let maxDuration: Int
-
-    /// Tasks to perform during maintenance
-    public let tasks: Set<MaintenanceTask>
-}
-
-// MARK: - MaintenanceDay
-
-/// Days of the week for maintenance scheduling
-public enum MaintenanceDay: String, Codable, CaseIterable {
-    case sunday
-    case monday
-    case tuesday
-    case wednesday
-    case thursday
-    case friday
-    case saturday
-
-    // MARK: Public
-
-    /// Convert to Calendar.Component.weekday
-    public var weekday: Int {
-        switch self {
-        case .sunday: 1
-        case .monday: 2
-        case .tuesday: 3
-        case .wednesday: 4
-        case .thursday: 5
-        case .friday: 6
-        case .saturday: 7
+    
+    // MARK: - Public Methods
+    
+    /// Check if maintenance is scheduled for a given date
+    /// - Parameter date: Date to check
+    /// - Returns: True if maintenance is scheduled for the date
+    public func isScheduled(for date: Date) -> Bool {
+        guard isEnabled else { return false }
+        
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.weekday, .hour, .minute], from: date)
+        
+        guard let weekday = components.weekday,
+              let currentHour = components.hour,
+              let currentMinute = components.minute else {
+            return false
         }
-    }
-
-    /// Convert from Calendar.Component.weekday
-    public static func from(weekday: Int) -> MaintenanceDay? {
-        switch weekday {
-        case 1: .sunday
-        case 2: .monday
-        case 3: .tuesday
-        case 4: .wednesday
-        case 5: .thursday
-        case 6: .friday
-        case 7: .saturday
-        default: nil
+        
+        // Convert weekday to MaintenanceDay (Calendar uses 1=Sunday, 7=Saturday)
+        let maintenanceDay = MaintenanceDay(rawValue: weekday)
+        
+        guard let day = maintenanceDay, days.contains(day) else {
+            return false
         }
+        
+        // Check if we're within the maintenance window
+        if currentHour < hour {
+            return false
+        }
+        
+        if currentHour == hour && currentMinute < minute {
+            return false
+        }
+        
+        let endHour = hour + (minute + duration) / 60
+        let endMinute = (minute + duration) % 60
+        
+        if currentHour > endHour {
+            return false
+        }
+        
+        if currentHour == endHour && currentMinute >= endMinute {
+            return false
+        }
+        
+        return true
     }
 }
 

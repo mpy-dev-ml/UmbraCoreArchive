@@ -11,7 +11,7 @@ public enum TaskPriority: Int, Comparable {
 
     // MARK: Public
 
-    public static func < (lhs: TaskPriority, rhs: TaskPriority) -> Bool {
+    public static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
 }

@@ -3,27 +3,27 @@
 // MARK: - OperationThresholds
 
 /// Represents thresholds for different operation types
-public struct OperationThresholds {
+public struct OperationThresholds: Sendable {
     /// Default thresholds for unknown operations
     public static let `default`: OperationThresholds = .init(
         base: PerformanceThresholds(),
         operationSpecific: [
             "backup": PerformanceThresholds(
-                maxMemoryUsage: 2 * 1024 * 1024 * 1024, // 2GB
+                maxMemoryUsage: 2 * 1_024 * 1_024 * 1_024, // 2GB
                 maxCPUUsage: 90.0,
-                minBackupSpeed: 5 * 1024 * 1024, // 5MB/s
+                minBackupSpeed: 5 * 1_024 * 1_024, // 5MB/s
                 maxOperationDuration: 7_200_000, // 2 hours
                 minSuccessRate: 98.0
             ),
             "restore": PerformanceThresholds(
-                maxMemoryUsage: 3 * 1024 * 1024 * 1024, // 3GB
+                maxMemoryUsage: 3 * 1_024 * 1_024 * 1_024, // 3GB
                 maxCPUUsage: 95.0,
-                minBackupSpeed: 10 * 1024 * 1024, // 10MB/s
+                minBackupSpeed: 10 * 1_024 * 1_024, // 10MB/s
                 maxOperationDuration: 3_600_000, // 1 hour
                 minSuccessRate: 99.0
             ),
             "check": PerformanceThresholds(
-                maxMemoryUsage: 1024 * 1024 * 1024, // 1GB
+                maxMemoryUsage: 1_024 * 1_024 * 1_024, // 1GB
                 maxCPUUsage: 70.0,
                 minBackupSpeed: 0.0,
                 maxOperationDuration: 1_800_000, // 30 minutes
@@ -135,20 +135,20 @@ public struct ExtendedPerformanceMetrics {
 
     /// Create metrics snapshot
     /// - Returns: Current metrics
-    public static func createMetricsSnapshot() -> ExtendedPerformanceMetrics {
+    public static func createMetricsSnapshot() -> Self {
         // In real implementation, this would use system APIs
         // For now, return dummy values
-        ExtendedPerformanceMetrics(
+        Self(
             ioMetrics: IOMetrics(
-                readOperations: 1000,
+                readOperations: 1_000,
                 writeOperations: 500,
-                bytesRead: 1024 * 1024 * 10,
-                bytesWritten: 1024 * 1024 * 5
+                bytesRead: 1_024 * 1_024 * 10,
+                bytesWritten: 1_024 * 1_024 * 5
             ),
             networkMetrics: NetworkMetrics(
-                bytesReceived: 1024 * 1024,
-                bytesSent: 1024 * 512,
-                packetsReceived: 1000,
+                bytesReceived: 1_024 * 1_024,
+                bytesSent: 1_024 * 512,
+                packetsReceived: 1_000,
                 packetsSent: 800,
                 errors: 0
             ),
@@ -162,8 +162,8 @@ public struct ExtendedPerformanceMetrics {
                 garbageCollections: 100,
                 totalPauseTime: 0.5,
                 averagePauseTime: 0.005,
-                heapSize: 1024 * 1024 * 100,
-                heapUsed: 1024 * 1024 * 60
+                heapSize: 1_024 * 1_024 * 100,
+                heapUsed: 1_024 * 1_024 * 60
             ),
             metricsCollectionTimestamp: Date()
         )

@@ -19,9 +19,37 @@
 ///     bookmarks: [:]
 /// )
 /// ```
+@Observable
 @objc
-public class ResticCommand: NSObject, NSSecureCoding {
-    // MARK: Lifecycle
+public class ResticCommand: NSObject, Codable {
+    // MARK: - Types
+    
+    private enum CodingKeys: String, CodingKey {
+        case command
+        case arguments
+        case environment = "env"
+        case workingDirectory = "working_dir"
+        case bookmarks
+    }
+    
+    // MARK: - Properties
+
+    /// Command to execute (typically "restic")
+    @objc public let command: String
+
+    /// Array of command arguments
+    @objc public let arguments: [String]
+
+    /// Dictionary of environment variables
+    @objc public let environment: [String: String]
+
+    /// Optional working directory path
+    @objc public let workingDirectory: String?
+
+    /// Dictionary of security-scoped bookmarks
+    @objc public let bookmarks: [String: NSData]
+
+    // MARK: - Initialization
 
     /// Initialize a new Restic command
     /// - Parameters:
@@ -46,28 +74,46 @@ public class ResticCommand: NSObject, NSSecureCoding {
         super.init()
     }
 
-    /// Decodes and initializes a command from secure storage
-    /// - Parameter coder: The coder to read from
-    /// - Returns: A new ResticCommand instance, or nil if decoding fails
+    // MARK: - Codable Implementation
+
+    public required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        command = try container.decode(String.self, forKey: .command)
+        arguments = try container.decode([String].self, forKey: .arguments)
+        environment = try container.decode([String: String].self, forKey: .environment)
+        workingDirectory = try container.decodeIfPresent(String.self, forKey: .workingDirectory)
+        bookmarks = try container.decode([String: NSData].self, forKey: .bookmarks)
+        super.init()
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(command, forKey: .command)
+        try container.encode(arguments, forKey: .arguments)
+        try container.encode(environment, forKey: .environment)
+        try container.encodeIfPresent(workingDirectory, forKey: .workingDirectory)
+        try container.encode(bookmarks, forKey: .bookmarks)
+    }
+
+    // MARK: - NSSecureCoding Support
+
+    public static var supportsSecureCoding: Bool { true }
+
+    @objc
+    public func encode(with coder: NSCoder) {
+        coder.encode(command, forKey: CodingKeys.command.stringValue)
+        coder.encode(arguments, forKey: CodingKeys.arguments.stringValue)
+        coder.encode(environment, forKey: CodingKeys.environment.stringValue)
+        coder.encode(workingDirectory, forKey: CodingKeys.workingDirectory.stringValue)
+        coder.encode(bookmarks, forKey: CodingKeys.bookmarks.stringValue)
+    }
+
     @objc
     public required init?(coder: NSCoder) {
-        guard
-            let command = coder.decodeObject(
-                of: NSString.self,
-                forKey: "command"
-            ) as String?,
-            let arguments = coder.decodeObject(
-                of: NSArray.self,
-                forKey: "arguments"
-            ) as? [String],
-            let environment = coder.decodeObject(
-                of: NSDictionary.self,
-                forKey: "environment"
-            ) as? [String: String],
-            let bookmarks = coder.decodeObject(
-                of: NSDictionary.self,
-                forKey: "bookmarks"
-            ) as? [String: NSData]
+        guard let command = coder.decodeObject(of: NSString.self, forKey: CodingKeys.command.stringValue) as String?,
+              let arguments = coder.decodeObject(of: [NSString].self, forKey: CodingKeys.arguments.stringValue) as [String]?,
+              let environment = coder.decodeObject(of: [NSString: NSString].self, forKey: CodingKeys.environment.stringValue) as [String: String]?,
+              let bookmarks = coder.decodeObject(of: [NSString: NSData].self, forKey: CodingKeys.bookmarks.stringValue) as [String: NSData]?
         else {
             return nil
         }
@@ -75,62 +121,8 @@ public class ResticCommand: NSObject, NSSecureCoding {
         self.command = command
         self.arguments = arguments
         self.environment = environment
-        workingDirectory = coder.decodeObject(
-            of: NSString.self,
-            forKey: "workingDirectory"
-        ) as String?
+        workingDirectory = coder.decodeObject(of: NSString.self, forKey: CodingKeys.workingDirectory.stringValue) as String?
         self.bookmarks = bookmarks
         super.init()
-    }
-
-    // MARK: Public
-
-    // MARK: - NSSecureCoding
-
-    /// Indicates that this class supports secure coding
-    public static var supportsSecureCoding: Bool { true }
-
-    /// Command to execute
-    ///
-    /// The main command to be executed, typically "restic"
-    @objc public let command: String
-
-    /// Command arguments
-    ///
-    /// Array of arguments to pass to the command, such as:
-    /// - Operation type (backup, restore, etc.)
-    /// - Target paths
-    /// - Configuration options
-    @objc public let arguments: [String]
-
-    /// Environment variables
-    ///
-    /// Dictionary of environment variables required for the command:
-    /// - RESTIC_PASSWORD: Repository password
-    /// - RESTIC_REPOSITORY: Repository location
-    /// - Custom configuration variables
-    @objc public let environment: [String: String]
-
-    /// Working directory
-    ///
-    /// Optional directory from which to execute the command.
-    /// If nil, uses the default working directory.
-    @objc public let workingDirectory: String?
-
-    /// Security-scoped bookmarks
-    ///
-    /// Dictionary mapping paths to their security-scoped bookmarks.
-    /// Used to maintain file access across app launches.
-    @objc public let bookmarks: [String: NSData]
-
-    /// Encodes the command for secure transmission
-    /// - Parameter coder: The coder to write to
-    @objc
-    public func encode(with coder: NSCoder) {
-        coder.encode(command, forKey: "command")
-        coder.encode(arguments, forKey: "arguments")
-        coder.encode(environment, forKey: "environment")
-        coder.encode(workingDirectory, forKey: "workingDirectory")
-        coder.encode(bookmarks, forKey: "bookmarks")
     }
 }

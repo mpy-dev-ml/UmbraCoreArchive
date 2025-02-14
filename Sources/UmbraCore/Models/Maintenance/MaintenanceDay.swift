@@ -28,8 +28,8 @@ public enum MaintenanceDay: Int, Codable, CaseIterable {
     // MARK: Public
 
     /// Convert from Calendar.Component.weekday
-    public static func from(weekday: Int) -> MaintenanceDay? {
-        MaintenanceDay(rawValue: weekday)
+    public static func from(weekday: Int) -> Self? {
+        Self(rawValue: weekday)
     }
 
     /// Get the next occurrence of this day

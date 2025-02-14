@@ -179,10 +179,11 @@ public actor XPCHealthMonitor {
             if successfulChecks >= Constants.healthyThreshold {
                 .healthy
             } else {
-                .recovering("""
-                Service recovering: \(successfulChecks)/\(Constants.healthyThreshold) \
-                checks passed
-                """)
+                .recovering(
+                    """
+                    Service recovering: \(successfulChecks)/\(Constants.healthyThreshold) \
+                    checks passed
+                    """)
             }
 
         if lastResponseTime > Constants.responseTimeThreshold {
@@ -207,15 +208,17 @@ public actor XPCHealthMonitor {
         // Determine state based on consecutive failures
         let state: XPCHealthStatus.State =
             if failedChecks >= Constants.criticalFailureThreshold {
-                .critical("""
-                Service consistently failing health checks: \
-                \(failedChecks) consecutive failures
-                """)
+                .critical(
+                    """
+                    Service consistently failing health checks: \
+                    \(failedChecks) consecutive failures
+                    """)
             } else {
-                .degraded("""
-                Service failed health check: \
-                \(failedChecks)/\(Constants.criticalFailureThreshold) failures
-                """)
+                .degraded(
+                    """
+                    Service failed health check: \
+                    \(failedChecks)/\(Constants.criticalFailureThreshold) failures
+                    """)
             }
 
         await updateStatus(state, resources: resources)

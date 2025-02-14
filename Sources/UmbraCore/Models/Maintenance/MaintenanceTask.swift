@@ -73,7 +73,7 @@ public enum MaintenanceTask: Int, Codable, CaseIterable {
     }
 
     /// Get dependencies that must be run before this task
-    public var dependencies: Set<MaintenanceTask> {
+    public var dependencies: Set<Self> {
         switch self {
         case .pack: [.prune]
         case .rebuildIndex: [.check]

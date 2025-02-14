@@ -7,170 +7,82 @@
 //
 
 import Foundation
-import os.log
+import Logging
+import UmbraLogging
 
 /// Mock logger for testing
-@objc
-public class MockLogger: NSObject, LoggerProtocol {
-    // MARK: Public
-
+public final class MockLogger: UmbraLogger {
     // MARK: - Types
-
-    /// Logged message
+    
+    /// Logged message for verification in tests
     public struct LoggedMessage: Equatable {
-        // MARK: Lifecycle
-
         /// Initialize with values
         public init(
             message: String,
-            level: Level,
-            metadata: [String: String]
+            level: Logging.Logger.Level,
+            metadata: Logging.Logger.Metadata? = nil
         ) {
             self.message = message
             self.level = level
             self.metadata = metadata
         }
-
-        // MARK: Public
-
+        
         /// Message text
         public let message: String
         /// Log level
-        public let level: Level
+        public let level: Logging.Logger.Level
         /// Message metadata
-        public let metadata: [String: String]
+        public let metadata: Logging.Logger.Metadata?
     }
-
-    /// Log level
-    public enum Level: Int {
-        case debug = 0
-        case info = 1
-        case warning = 2
-        case error = 3
-        case critical = 4
-    }
-
-    /// Logged messages
+    
+    // MARK: - Properties
+    
+    /// Messages that have been logged
     public private(set) var messages: [LoggedMessage] = []
-
-    // MARK: - LoggerProtocol
-
-    /// Log debug message
-    @objc
-    public func debug(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        logMessage(
-            message,
-            level: .debug,
-            metadata: config.metadata
-        )
+    
+    /// The logger configuration
+    public let config: LogConfig
+    
+    // MARK: - Initialization
+    
+    /// Initialize with configuration
+    /// - Parameter config: Logger configuration
+    public init(config: LogConfig = .default) {
+        self.config = config
     }
-
-    /// Log info message
-    @objc
-    public func info(
-        _ message: String,
-        config: LogConfig = LogConfig()
+    
+    // MARK: - UmbraLogger Implementation
+    
+    public func log(
+        level: Logging.Logger.Level,
+        message: String,
+        metadata: Logging.Logger.Metadata?,
+        source: String?,
+        function: String?,
+        line: UInt?
     ) {
-        logMessage(
-            message,
-            level: .info,
-            metadata: config.metadata
-        )
+        messages.append(LoggedMessage(
+            message: message,
+            level: level,
+            metadata: metadata
+        ))
     }
-
-    /// Log warning message
-    @objc
-    public func warning(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        logMessage(
-            message,
-            level: .warning,
-            metadata: config.metadata
-        )
+    
+    public func flush() {
+        // No-op implementation for testing
     }
-
-    /// Log error message
-    @objc
-    public func error(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        logMessage(
-            message,
-            level: .error,
-            metadata: config.metadata
-        )
-    }
-
-    /// Log critical message
-    @objc
-    public func critical(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        logMessage(
-            message,
-            level: .critical,
-            metadata: config.metadata
-        )
-    }
-
-    // MARK: - Public Methods
-
-    /// Clear logged messages
+    
+    // MARK: - Test Helpers
+    
+    /// Clear all logged messages
     public func clear() {
-        queue.async(flags: .barrier) {
-            self.messages.removeAll()
-        }
+        messages.removeAll()
     }
-
-    /// Get messages of level
-    public func messages(
-        ofLevel level: Level
-    ) -> [LoggedMessage] {
-        queue.sync {
-            messages.filter { $0.level == level }
-        }
-    }
-
-    /// Get messages containing text
-    public func messages(
-        containing text: String
-    ) -> [LoggedMessage] {
-        queue.sync {
-            messages.filter { $0.message.contains(text) }
-        }
-    }
-
-    // MARK: Private
-
-    /// Queue for synchronizing access
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbra.mock-logger",
-        attributes: .concurrent
-    )
-
-    // MARK: - Private Methods
-
-    /// Log message with level and metadata
-    private func logMessage(
-        _ message: String,
-        level: Level,
-        metadata: [String: String]
-    ) {
-        queue.async(flags: .barrier) {
-            self.messages.append(
-                LoggedMessage(
-                    message: message,
-                    level: level,
-                    metadata: metadata
-                )
-            )
-        }
+    
+    /// Get messages at a specific level
+    /// - Parameter level: The log level to filter by
+    /// - Returns: Array of messages at that level
+    public func messages(at level: Logging.Logger.Level) -> [LoggedMessage] {
+        messages.filter { $0.level == level }
     }
 }

@@ -10,8 +10,7 @@
 public struct KeychainCredentials:
     Codable,
     Hashable,
-    Sendable
-{
+    Sendable {
     // MARK: - Properties
 
     /// Account identifier or username
@@ -75,8 +74,6 @@ public extension KeychainCredentials {
 
 public extension KeychainCredentials {
     static func == (lhs: KeychainCredentials, rhs: KeychainCredentials) -> Bool {
-        lhs.username == rhs.username &&
-            lhs.password == rhs.password &&
-            lhs.metadata == rhs.metadata
+        lhs.username == rhs.username && lhs.password == rhs.password && lhs.metadata == rhs.metadata
     }
 }

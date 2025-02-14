@@ -144,6 +144,7 @@ public actor XPCMessageQueue {
             case .completed,
                  .failed:
                 true
+
             default:
                 false
             }
@@ -162,10 +163,13 @@ public actor XPCMessageQueue {
             switch message.status {
             case .pending:
                 pending += 1
+
             case .inProgress:
                 inProgress += 1
+
             case .completed:
                 completed += 1
+
             case .failed:
                 failed += 1
             }

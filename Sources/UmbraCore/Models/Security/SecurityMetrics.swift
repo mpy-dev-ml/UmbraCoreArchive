@@ -1,4 +1,5 @@
 @preconcurrency import Foundation
+import Logging
 import os.log
 
 // MARK: - SecurityMetrics
@@ -7,6 +8,12 @@ import os.log
 @available(macOS 13.0, *)
 public actor SecurityMetrics {
     // MARK: - Types
+
+    /// Configuration for metric logging
+    struct LogConfig {
+        /// Log level
+        let level: Logging.Logger.Level
+    }
 
     /// Type of security metric being recorded
     private enum MetricType: String {
@@ -19,8 +26,7 @@ public actor SecurityMetrics {
 
     // MARK: - Properties
 
-    private let logger: Logger
-    private let queue: DispatchQueue
+    private let logger: LoggerProtocol
     private let maxHistorySize: Int
 
     private(set) var accessCount = 0
@@ -39,15 +45,11 @@ public actor SecurityMetrics {
     ///   - label: Queue label for synchronisation
     ///   - maxHistory: Maximum operations in history
     public init(
-        logger: Logger,
-        label: String = Bundle.main.bundleIdentifier ?? "com.umbra.core",
+        logger: LoggerProtocol,
+        label _: String = Bundle.main.bundleIdentifier ?? "com.umbra.core",
         maxHistory: Int = 100
     ) {
         self.logger = logger
-        queue = DispatchQueue(
-            label: "\(label).security-metrics",
-            qos: .utility
-        )
         maxHistorySize = maxHistory
     }
 
@@ -117,26 +119,22 @@ public actor SecurityMetrics {
 
     /// Increments active access count
     public func incrementActiveAccess() {
-        queue.async {
-            self.activeAccessCount += 1
-            self.logMetric(
-                type: .session,
-                success: true,
-                metadata: ["action": "start"]
-            )
-        }
+        activeAccessCount += 1
+        logMetric(
+            type: .session,
+            success: true,
+            metadata: ["action": "start"]
+        )
     }
 
     /// Decrements active access count
     public func decrementActiveAccess() {
-        queue.async {
-            self.activeAccessCount = max(0, self.activeAccessCount - 1)
-            self.logMetric(
-                type: .session,
-                success: true,
-                metadata: ["action": "end"]
-            )
-        }
+        activeAccessCount = max(0, activeAccessCount - 1)
+        logMetric(
+            type: .session,
+            success: true,
+            metadata: ["action": "end"]
+        )
     }
 
     // MARK: - Private Methods
@@ -148,18 +146,16 @@ public actor SecurityMetrics {
         error: String?,
         metadata: [String: String]
     ) {
-        queue.async {
-            counter()
-            if !success {
-                self.failureCount += 1
-            }
-            self.logMetric(
-                type: type,
-                success: success,
-                error: error,
-                metadata: metadata
-            )
+        counter()
+        if !success {
+            failureCount += 1
         }
+        logMetric(
+            type: type,
+            success: success,
+            error: error,
+            metadata: metadata
+        )
     }
 
     private func logMetric(
@@ -178,13 +174,13 @@ public actor SecurityMetrics {
         }
 
         logMetadata.merge(metadata) { current, _ in current }
-        let config = LogConfig(metadata: logMetadata)
+        let config = LogConfig(level: success ? .info : .error)
 
         logWithAppropriateLevel(
             type: type,
             success: success,
             error: error,
-            config: config
+            config: SecurityMetrics.LogConfig(level: config.level)
         )
     }
 
@@ -203,18 +199,12 @@ public actor SecurityMetrics {
         type: MetricType,
         success: Bool,
         error: String?,
-        config: LogConfig
+        config: SecurityMetrics.LogConfig
     ) {
         if success {
-            logger.info(
-                "\(type.rawValue) operation completed",
-                config: config
-            )
+            logger.log(level: config.level, message: "\(type.rawValue) operation completed")
         } else {
-            logger.error(
-                "\(type.rawValue) operation failed: \(error ?? "Unknown error")",
-                config: config
-            )
+            logger.log(level: config.level, message: "\(type.rawValue) operation failed: \(error ?? "Unknown error")")
         }
     }
 
@@ -224,11 +214,4 @@ public actor SecurityMetrics {
             operationHistory.removeFirst()
         }
     }
-}
-
-// MARK: - LogConfig
-
-/// Configuration for metric logging
-private struct LogConfig {
-    let metadata: [String: String]
 }

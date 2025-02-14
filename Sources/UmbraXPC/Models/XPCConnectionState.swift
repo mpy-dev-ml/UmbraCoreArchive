@@ -39,8 +39,10 @@ public enum XPCConnectionState: Equatable {
         case .interrupted,
              .invalidated:
             true
+
         case let .recovering(attempt, _):
-            attempt < XPCConnectionState.maxRecoveryAttempts
+            attempt < Self.maxRecoveryAttempts
+
         default:
             false
         }

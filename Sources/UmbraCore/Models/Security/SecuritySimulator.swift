@@ -1,6 +1,33 @@
 @preconcurrency import Foundation
 import os.log
 
+/// Configuration for development environment
+public struct DevelopmentConfiguration: Codable, Sendable {
+    /// Enable simulation mode
+    public let simulationEnabled: Bool
+    
+    /// Simulated delay range in seconds
+    public let simulatedDelayRange: ClosedRange<TimeInterval>
+    
+    /// Simulated error rate (0.0 to 1.0)
+    public let simulatedErrorRate: Double
+    
+    /// Custom error messages for simulation
+    public let simulatedErrors: [String]
+    
+    public init(
+        simulationEnabled: Bool = false,
+        simulatedDelayRange: ClosedRange<TimeInterval> = 0.1...2.0,
+        simulatedErrorRate: Double = 0.1,
+        simulatedErrors: [String] = []
+    ) {
+        self.simulationEnabled = simulationEnabled
+        self.simulatedDelayRange = simulatedDelayRange
+        self.simulatedErrorRate = min(max(simulatedErrorRate, 0.0), 1.0)
+        self.simulatedErrors = simulatedErrors
+    }
+}
+
 /// A development tool that simulates various security-related scenarios for testing purposes.
 ///
 /// The `SecuritySimulator` provides controlled simulation of security failures and delays
@@ -19,26 +46,25 @@ import os.log
 /// let simulator = SecuritySimulator(
 ///     logger: logger,
 ///     configuration: DevelopmentConfiguration(
-///         shouldSimulateAccessFailures: true,
-///         artificialDelay: 2.0
+///         simulationEnabled: true,
+///         simulatedDelayRange: 1.0...3.0,
+///         simulatedErrorRate: 0.2,
+///         simulatedErrors: ["Error 1", "Error 2"]
 ///     )
 /// )
 ///
 /// // Test error handling
-/// try simulator.simulateFailureIfNeeded(
-///     operation: "read",
-///     url: fileURL
-/// ) { message in
-///     SecurityError.accessDenied(
-///         """
-///         Access denied to \(fileURL.lastPathComponent): \
-///         \(message)
-///         """
-///     )
+/// try simulator.simulateOperation("read") { result in
+///     switch result {
+///     case .success:
+///         print("Operation successful")
+///     case .failure(let error):
+///         print("Operation failed: \(error)")
+///     }
 /// }
 ///
 /// // Test timeout handling
-/// try await simulator.simulateDelay()
+/// try await simulator.simulateOperation("write")
 /// ```
 @available(macOS 13.0, *)
 public struct SecuritySimulator {
@@ -61,8 +87,10 @@ public struct SecuritySimulator {
     ///         category: "security-sim"
     ///     ),
     ///     configuration: DevelopmentConfiguration(
-    ///         shouldSimulateAccessFailures: true,
-    ///         artificialDelay: 1.5
+    ///         simulationEnabled: true,
+    ///         simulatedDelayRange: 1.0...3.0,
+    ///         simulatedErrorRate: 0.2,
+    ///         simulatedErrors: ["Error 1", "Error 2"]
     ///     )
     /// )
     /// ```
@@ -73,80 +101,76 @@ public struct SecuritySimulator {
 
     // MARK: Internal
 
-    /// Simulates a security failure for testing purposes
+    /// Simulates a security operation for testing purposes
     ///
-    /// If enabled in configuration, simulates a security failure by:
-    /// 1. Logging an error message
-    /// 2. Throwing a configured error
+    /// If enabled in configuration, simulates a security operation by:
+    /// 1. Logging an operation message
+    /// 2. Introducing a random delay
+    /// 3. Throwing a random error (if configured)
     ///
     /// - Parameters:
     ///   - operation: Name of the operation (e.g., "read", "write")
-    ///   - url: URL associated with the operation
-    ///   - error: Closure creating an error with given message
+    ///   - completion: Completion handler with result of the operation
     ///
-    /// - Throws: Error from closure if simulation is enabled
+    /// - Throws: Error if simulation is enabled and error rate is met
     ///
     /// Example:
     /// ```swift
-    /// try simulator.simulateFailureIfNeeded(
-    ///     operation: "write",
-    ///     url: fileURL
-    /// ) { message in
-    ///     SecurityError.permissionDenied(
-    ///         """
-    ///         Cannot write to \(fileURL.lastPathComponent): \
-    ///         \(message)
-    ///         """
-    ///     )
+    /// try simulator.simulateOperation("write") { result in
+    ///     switch result {
+    ///     case .success:
+    ///         print("Operation successful")
+    ///     case .failure(let error):
+    ///         print("Operation failed: \(error)")
+    ///     }
     /// }
     /// ```
-    func simulateFailureIfNeeded(
-        operation: String,
-        url: URL,
-        error: (String) -> Error
-    ) throws {
-        guard configuration.shouldSimulateAccessFailures else {
+    func simulateOperation(
+        _ operation: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        guard configuration.simulationEnabled else {
+            completion(.success(()))
             return
         }
-
-        let errorMessage = "\(operation) failed (simulated)"
-        let logMessage = """
-        Simulating \(operation) failure for URL: \
-        \(url.path)
-        """
-
-        logger.error(
-            logMessage,
-            file: #file,
-            function: #function,
-            line: #line
+        
+        // Simulate random delay
+        let delay = Double.random(
+            in: configuration.simulatedDelayRange
         )
-        throw error(errorMessage)
+        
+        Thread.sleep(forTimeInterval: delay)
+        
+        // Simulate random error
+        if Double.random(in: 0...1) < configuration.simulatedErrorRate {
+            let error = configuration.simulatedErrors.randomElement() ?? "Simulated error"
+            logger.error(
+                "Simulated error in operation: \(operation)",
+                file: #file,
+                function: #function,
+                line: #line
+            )
+            completion(.failure(SecurityError.operationFailed(error)))
+        } else {
+            logger.info(
+                "Successfully simulated operation: \(operation)",
+                file: #file,
+                function: #function,
+                line: #line
+            )
+            completion(.success(()))
+        }
     }
 
-    /// Simulates a delay in operation execution
-    ///
-    /// If configured, introduces an artificial delay to simulate:
-    /// - Network latency
-    /// - Disk I/O delays
-    /// - Service response times
-    ///
-    /// - Throws: Any error during the sleep operation
-    ///
-    /// Example:
-    /// ```swift
-    /// // Simulate network delay
-    /// try await simulator.simulateDelay()
-    ///
-    /// // Proceed with operation
-    /// try await performNetworkRequest()
-    /// ```
-    func simulateDelay() async throws {
-        if configuration.artificialDelay > 0 {
-            let nanoseconds = UInt64(
-                configuration.artificialDelay * 1_000_000_000
-            )
-            try await Task.sleep(nanoseconds: nanoseconds)
+    /// Simulates an async security operation
+    /// - Parameter operation: Operation to simulate
+    /// - Returns: Result of the operation
+    @available(macOS 10.15, *)
+    func simulateOperation(_ operation: String) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            simulateOperation(operation) { result in
+                continuation.resume(with: result)
+            }
         }
     }
 

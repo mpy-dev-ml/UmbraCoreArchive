@@ -64,9 +64,10 @@ extension ResticXPCService {
         options: BackupOptions
     ) throws -> Bool {
         // Convert options to dictionary for legacy support
-        let optionsDict = try JSONSerialization.jsonObject(
-            with: JSONEncoder().encode(options)
-        ) as? [String: Any] ?? [:]
+        let optionsDict =
+            try JSONSerialization.jsonObject(
+                with: JSONEncoder().encode(options)
+            ) as? [String: Any] ?? [:]
 
         return try executeBackup(
             from: source,
@@ -90,9 +91,10 @@ extension ResticXPCService {
         options: RestoreOptions
     ) throws -> Bool {
         // Convert options to dictionary for legacy support
-        let optionsDict = try JSONSerialization.jsonObject(
-            with: JSONEncoder().encode(options)
-        ) as? [String: Any] ?? [:]
+        let optionsDict =
+            try JSONSerialization.jsonObject(
+                with: JSONEncoder().encode(options)
+            ) as? [String: Any] ?? [:]
 
         return try executeRestore(
             from: source,
