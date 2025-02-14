@@ -43,8 +43,10 @@ public struct XPCHealthStatus: Equatable {
         case .healthy,
              .unknown:
             false
+
         case .degraded:
             failedChecks >= 2
+
         case .unhealthy:
             true
         }
@@ -75,7 +77,7 @@ public struct SystemResources: Equatable {
         cpuUsage < 80.0 &&
             memoryUsage < 1_073_741_824 && // 1GB
             availableDiskSpace > 1_073_741_824 && // 1GB
-            activeFileHandles < 1000 &&
+            activeFileHandles < 1_000 &&
             activeConnections < 10
     }
 }

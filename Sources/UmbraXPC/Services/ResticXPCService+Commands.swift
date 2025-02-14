@@ -9,10 +9,10 @@ import os.log
 
 private extension ResticXPCService {
     /// Minimum required memory in bytes (512MB)
-    static let minimumMemoryRequired: UInt64 = 512 * 1024 * 1024
+    static let minimumMemoryRequired: UInt64 = 512 * 1_024 * 1_024
 
     /// Minimum required disk space in bytes (1GB)
-    static let minimumDiskSpaceRequired: Int64 = 1024 * 1024 * 1024
+    static let minimumDiskSpaceRequired: Int64 = 1_024 * 1_024 * 1_024
 
     /// Cache directory name
     static let cacheDirName = "ResticCache"
@@ -85,7 +85,7 @@ public extension ResticXPCService {
             environment: [:],
             workingDirectory: destination.path,
             bookmarks: [:],
-            timeout: 3600,
+            timeout: 3_600,
             auditSessionID: au_session_self()
         )
         let result = try await executeResticCommand(command)
@@ -132,7 +132,7 @@ public extension ResticXPCService {
             environment: [:],
             workingDirectory: source.path,
             bookmarks: [:],
-            timeout: 3600,
+            timeout: 3_600,
             auditSessionID: au_session_self()
         )
         let result = try await executeResticCommand(command)

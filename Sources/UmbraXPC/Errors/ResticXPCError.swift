@@ -13,20 +13,20 @@ public class ResticXPCErrorDomain: NSObject {
 /// Error codes for Restic XPC errors
 @objc
 public enum ResticXPCErrorCode: Int {
-    case serviceUnavailable = 1000
-    case connectionFailed = 1001
-    case executionFailed = 1002
-    case invalidResponse = 1003
-    case timeout = 1004
-    case bookmarkInvalid = 1005
-    case accessDenied = 1006
-    case resourceNotFound = 1007
-    case versionMismatch = 1008
-    case internalError = 1009
-    case invalidArguments = 1010
-    case missingEnvironment = 1011
-    case unsafeArguments = 1012
-    case resourceUnavailable = 1013
+    case serviceUnavailable = 1_000
+    case connectionFailed = 1_001
+    case executionFailed = 1_002
+    case invalidResponse = 1_003
+    case timeout = 1_004
+    case bookmarkInvalid = 1_005
+    case accessDenied = 1_006
+    case resourceNotFound = 1_007
+    case versionMismatch = 1_008
+    case internalError = 1_009
+    case invalidArguments = 1_010
+    case missingEnvironment = 1_011
+    case unsafeArguments = 1_012
+    case resourceUnavailable = 1_013
 }
 
 // MARK: - ResticXPCError

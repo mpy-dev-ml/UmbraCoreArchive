@@ -244,10 +244,13 @@ extension ResticXPCService: XPCConnectionStateDelegate {
         switch state {
         case .connected:
             handleConnectedState()
+
         case .disconnected:
             handleDisconnectedState()
+
         case .invalid:
             handleInvalidState()
+
         case .interrupted:
             handleInterruptedState()
         }
