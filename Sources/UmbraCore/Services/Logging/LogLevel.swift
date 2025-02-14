@@ -1,60 +1,98 @@
 import Foundation
 import os.log
+import Logging
 
-/// Log level for logging operations
-public enum LogLevel: Int, Comparable, CustomStringConvertible {
-    /// Debug level for detailed information during development
-    case debug = 0
-
-    /// Info level for general operational information
-    case info = 1
-
-    /// Warning level for potentially problematic situations
-    case warning = 2
-
-    /// Error level for errors that need attention
-    case error = 3
-
-    /// Critical level for severe errors that may impact system stability
-    case critical = 4
-
-    // MARK: - Comparable
-
-    public static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
-        lhs.rawValue < rhs.rawValue
+/// Log level enumeration
+@frozen public enum UmbraLogLevel: Int, Codable, Sendable {
+    case trace
+    case debug
+    case info
+    case notice
+    case warning
+    case error
+    case critical
+    case fault
+    
+    /// Severity level (higher is more severe)
+    public var severity: Int {
+        rawValue
     }
-
-    // MARK: - Description
-
-    /// Human-readable description of the log level
-    public var description: String {
-        switch self {
-        case .debug:
-            "Debug"
-        case .info:
-            "Info"
-        case .warning:
-            "Warning"
-        case .error:
-            "Error"
-        case .critical:
-            "Critical"
-        }
-    }
-
-    /// OS Log type equivalent
+    
+    /// Corresponding OSLogType
     public var osLogType: OSLogType {
         switch self {
-        case .debug:
-            .debug
+        case .trace, .debug:
+            return .debug
         case .info:
-            .info
+            return .info
+        case .notice:
+            return .default
         case .warning:
-            .default
+            return .error
+        case .error, .critical, .fault:
+            return .fault
+        }
+    }
+    
+    /// Convert to swift-log Logger.Level
+    public var swiftLogLevel: Logger.Level {
+        switch self {
+        case .trace:
+            return .trace
+        case .debug:
+            return .debug
+        case .info:
+            return .info
+        case .notice:
+            return .notice
+        case .warning:
+            return .warning
         case .error:
-            .error
+            return .error
+        case .critical, .fault:
+            return .critical
+        }
+    }
+    
+    /// Convert from swift-log Logger.Level
+    public static func from(_ level: Logger.Level) -> UmbraLogLevel {
+        switch level {
+        case .trace:
+            return .trace
+        case .debug:
+            return .debug
+        case .info:
+            return .info
+        case .notice:
+            return .notice
+        case .warning:
+            return .warning
+        case .error:
+            return .error
         case .critical:
-            .fault
+            return .critical
+        }
+    }
+    
+    /// Icon representation
+    public var icon: String {
+        switch self {
+        case .trace:
+            return "🔍"
+        case .debug:
+            return "🐛"
+        case .info:
+            return "ℹ️"
+        case .notice:
+            return "📝"
+        case .warning:
+            return "⚠️"
+        case .error:
+            return "❌"
+        case .critical:
+            return "🚨"
+        case .fault:
+            return "💥"
         }
     }
 }

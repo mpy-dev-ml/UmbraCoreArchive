@@ -1,185 +1,221 @@
 import Foundation
 import os.log
+import Logging
 
-// MARK: - LogLevel
-
-/// Log levels for the application
-public enum LogLevel: Int, Comparable {
-    case debug = 0
-    case info = 1
-    case warning = 2
-    case error = 3
-    case critical = 4
-
-    public static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
-        lhs.rawValue < rhs.rawValue
-    }
-}
-
-// MARK: - LoggingService
-
-/// Service for logging and monitoring
-public final class LoggingService: BaseSandboxedService, LoggerProtocol {
+/// Service for managing logging operations
+@MainActor
+public final class LoggingService: @unchecked Sendable {
     // MARK: - Properties
-
-    private let osLogAdapter: OSLogAdapter
-    private let minimumLevel: LogLevel
-    private let maxEntries: Int
-    private var entries: [LogEntry] = []
-    private let queue = DispatchQueue(
-        label: "dev.mpy.umbracore.logging",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
+    
+    /// Current log level
+    private(set) var currentLevel: UmbraLogLevel
+    
+    /// Maximum number of entries to keep
+    private(set) var maxEntries: Int
+    
+    /// Log entries
+    private(set) var entries: [LogEntry]
+    
+    /// System logger
+    private let osLogger: OSLog
+    
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+    
     // MARK: - Initialization
-
-    /// Initialize with configuration
-    /// - Parameter configuration: Service configuration
-    public init(configuration: Configuration = Configuration()) {
-        osLogAdapter = OSLogAdapter(
-            subsystem: configuration.subsystem,
-            category: configuration.category
-        )
-        minimumLevel = configuration.minimumLevel
-        maxEntries = configuration.maxEntries
-        super.init(logger: DummyLogger())
-    }
-
-    // MARK: - LoggerProtocol
-
-    public func debug(
-        _ message: String,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        log(level: .debug, message: message, file: file, function: function, line: line)
-    }
-
-    public func info(
-        _ message: String,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        log(level: .info, message: message, file: file, function: function, line: line)
-    }
-
-    public func warning(
-        _ message: String,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        log(level: .warning, message: message, file: file, function: function, line: line)
-    }
-
-    public func error(
-        _ message: String,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        log(level: .error, message: message, file: file, function: function, line: line)
-    }
-
-    public func critical(
-        _ message: String,
-        file: String = #file,
-        function: String = #function,
-        line: Int = #line
-    ) {
-        log(level: .critical, message: message, file: file, function: function, line: line)
-    }
-
-    // MARK: - Private Methods
-
-    private func log(
-        level: LogLevel,
-        message: String,
-        file: String,
-        function: String,
-        line: Int
-    ) {
-        guard level >= minimumLevel else { return }
-
-        let entry = LogEntry(
-            level: level,
-            message: message,
-            file: file,
-            function: function,
-            line: line
-        )
-
-        queue.async(flags: .barrier) { [weak self] in
-            guard let self else { return }
-            entries.append(entry)
-            if entries.count > maxEntries {
-                entries.removeFirst()
-            }
-        }
-
-        osLogAdapter.log(message: message, level: level)
-    }
-}
-
-// MARK: - DummyLogger
-
-/// A dummy logger used during initialization to avoid circular dependencies
-private struct DummyLogger: LoggerProtocol {
-    func debug(_: String, file _: String, function _: String, line _: Int) {}
-    func info(_: String, file _: String, function _: String, line _: Int) {}
-    func warning(_: String, file _: String, function _: String, line _: Int) {}
-    func error(_: String, file _: String, function _: String, line _: Int) {}
-    func critical(_: String, file _: String, function _: String, line _: Int) {}
-}
-
-// MARK: - LogEntry
-
-/// Log entry
-public struct LogEntry: Codable {
-    // MARK: Lifecycle
-
-    /// Initialize with values
+    
+    /// Initialize the logging service
+    /// - Parameters:
+    ///   - level: Initial log level
+    ///   - maxEntries: Maximum number of entries to keep
+    ///   - performanceMonitor: Performance monitor instance
     public init(
-        level: LogLevel,
-        message: String,
-        file: String,
-        function: String,
-        line: Int,
-        timestamp: Date = Date(),
-        metadata: [String: String] = [:]
+        level: UmbraLogLevel = .info,
+        maxEntries: Int = 1000,
+        performanceMonitor: PerformanceMonitor
     ) {
-        self.level = level
-        self.message = message
-        self.file = file
-        self.function = function
-        self.line = line
-        self.timestamp = timestamp
-        self.metadata = metadata
+        self.currentLevel = level
+        self.maxEntries = maxEntries
+        self.entries = []
+        self.osLogger = OSLog(subsystem: "dev.mpy.umbracore", category: "logging")
+        self.performanceMonitor = performanceMonitor
     }
+    
+    // MARK: - Level Management
+    
+    /// Update the current log level
+    /// - Parameter level: New log level
+    public func updateLevel(_ level: UmbraLogLevel) {
+        currentLevel = level
+    }
+    
+    /// Get the current log level
+    /// - Returns: Current log level
+    public func getLevel() -> UmbraLogLevel {
+        currentLevel
+    }
+    
+    // MARK: - Entry Management
+    
+    /// Get log entries filtered by level and date range
+    /// - Parameters:
+    ///   - level: Minimum log level
+    ///   - startDate: Start date for filtering
+    ///   - endDate: End date for filtering
+    /// - Returns: Filtered log entries
+    public func getEntries(
+        level: UmbraLogLevel? = nil,
+        startDate: Date? = nil,
+        endDate: Date? = nil
+    ) -> [LogEntry] {
+        var filtered = entries
+        
+        if let level = level {
+            filtered = filtered.filter { $0.level.severity >= level.severity }
+        }
+        
+        if let startDate = startDate {
+            filtered = filtered.filter { $0.timestamp >= startDate }
+        }
+        
+        if let endDate = endDate {
+            filtered = filtered.filter { $0.timestamp <= endDate }
+        }
+        
+        return filtered
+    }
+    
+    /// Clear all log entries
+    public func clearEntries() {
+        entries.removeAll()
+    }
+    
+    /// Get the current entry count
+    /// - Returns: Number of entries
+    public func entryCount() -> Int {
+        entries.count
+    }
+    
+    /// Get the maximum number of entries
+    /// - Returns: Maximum number of entries
+    public func getMaxEntries() -> Int {
+        maxEntries
+    }
+    
+    /// Update the maximum number of entries
+    /// - Parameter count: New maximum
+    public func updateMaxEntries(_ count: Int) {
+        maxEntries = count
+        if entries.count > maxEntries {
+            entries.removeFirst(entries.count - maxEntries)
+        }
+    }
+}
 
-    // MARK: Public
+// MARK: - Private Extensions
 
-    /// Log level
-    public let level: LogLevel
+private extension UmbraLogLevel {
+    /// Convert to swift-log LogLevel
+    var swiftLogLevel: Logger.Level {
+        switch self {
+        case .trace:
+            return .debug
 
-    /// Message
-    public let message: String
+        case .debug:
+            return .debug
 
-    /// Source file
-    public let file: String
+        case .info:
+            return .info
 
-    /// Source function
-    public let function: String
+        case .notice:
+            return .notice
 
-    /// Source line
-    public let line: Int
+        case .warning:
+            return .warning
 
-    /// Timestamp
-    public let timestamp: Date
+        case .error:
+            return .error
 
-    /// Additional metadata
-    public let metadata: [String: String]
+        case .critical:
+            return .critical
+        }
+    }
+    
+    /// Severity of log level
+    var severity: Int {
+        switch self {
+        case .trace:
+            return 0
+
+        case .debug:
+            return 1
+
+        case .info:
+            return 2
+
+        case .notice:
+            return 3
+
+        case .warning:
+            return 4
+
+        case .error:
+            return 5
+
+        case .critical:
+            return 6
+        }
+    }
+    
+    /// Icon for log level
+    var icon: String {
+        switch self {
+        case .trace:
+            return ""
+
+        case .debug:
+            return ""
+
+        case .info:
+            return ""
+
+        case .notice:
+            return ""
+
+        case .warning:
+            return ""
+
+        case .error:
+            return ""
+
+        case .critical:
+            return ""
+        }
+    }
+    
+    /// Color code for log level
+    var colorCode: String {
+        switch self {
+        case .trace:
+            return "\u{001B}[0;37m"
+
+        case .debug:
+            return "\u{001B}[0;37m"
+
+        case .info:
+            return "\u{001B}[0;37m"
+
+        case .notice:
+            return "\u{001B}[0;37m"
+
+        case .warning:
+            return "\u{001B}[0;33m"
+
+        case .error:
+            return "\u{001B}[0;31m"
+
+        case .critical:
+            return "\u{001B}[0;31m"
+        }
+    }
 }
