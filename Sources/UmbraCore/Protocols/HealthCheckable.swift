@@ -16,14 +16,19 @@ public enum HealthState: Int {
         switch self {
         case .unknown:
             "Unknown"
+
         case .healthy:
             "Healthy"
+
         case .degraded:
             "Degraded"
+
         case .unhealthy:
             "Unhealthy"
+
         case .critical:
             "Critical"
+
         case .maintenance:
             "Maintenance"
         }

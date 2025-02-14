@@ -89,12 +89,16 @@ public extension LoggingServiceProtocol {
         switch level {
         case .debug:
             logger.debug(formattedMessage, file: file, function: function, line: line)
+
         case .info:
             logger.info(formattedMessage, file: file, function: function, line: line)
+
         case .warning:
             logger.warning(formattedMessage, file: file, function: function, line: line)
+
         case .error:
             logger.error(formattedMessage, file: file, function: function, line: line)
+
         case .fault:
             logger.fault(formattedMessage, file: file, function: function, line: line)
         }

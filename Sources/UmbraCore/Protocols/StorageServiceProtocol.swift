@@ -38,10 +38,13 @@ public enum StorageError: LocalizedError {
         switch self {
         case let .fileOperationFailed(operation):
             "File operation failed: \(operation)"
+
         case .invalidData:
             "Invalid data format"
+
         case .accessDenied:
             "Access denied"
+
         case .notFound:
             "Data not found"
         }
