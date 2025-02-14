@@ -1,62 +1,68 @@
-# =========================
-# SwiftFormat Configuration
-# =========================
-
-# Swift Version
---swiftversion 5.9.2
-
-# Indentation and Width
+# General Formatting
 --indent 4
---maxwidth 120
---xcodeindentation enabled
-
-# Wrapping
---wrapparameters before-first
---wrapcollections before-first
+--maxwidth 100
 --wraparguments before-first
+--wrapcollections before-first
 --wrapconditions before-first
---closingparen same-line
 
-# Spacing and Alignment
---spacing no-space
---commas inline
---trimwhitespace always
---ranges no-space
---operatorfunc spaced
-
-# Organization
---organizetypes class,enum,struct,extension
---markextensions always
---marktypes always
---extensionacl on-declarations
-
-# Header and Documentation
---header "{file}\nCopyright  {year} UmbraCore. All rights reserved."
---stripunusedargs closure-only
-
-# Braces and Parentheses
---allman false
---guardelse same-line
---elseposition same-line
-
-# Coding Style
---self remove
---shortoptionals always
---semicolons never
---importgrouping testable-bottom
---enumnamespaces always
---markcategories true
-
-# Protocol Conformance
---protocoltypes always
---structthreshold 0
---enumthreshold 0
---octalgrouping 4,8
---binarygrouping 4,8
---hexgrouping 4,8
+# Spacing & Line Breaks
 --decimalgrouping 3,6
---exponentcase lowercase
---exponentgrouping disabled
---fractiongrouping disabled
---hexliteralcase uppercase
---ifdef no-indent
+--binarygrouping 4
+--octalgrouping 4
+--hexgrouping 4
+--linebreaks lf
+--commas always
+--trailingCommas always
+--semicolons never
+--emptybraces newline
+--nospaceoperators false
+
+# Structuring Code
+--self insert
+--selfrequired bound
+--redundantSelf remove
+--redundantParens remove
+--redundantRawValues remove
+--redundantType explicit
+--redundantBackticks remove
+--redundantPatternModifiers remove
+--redundantLet remove
+
+# Access Control & Safety
+--strongOutlets warn
+--redundantReturn remove
+--redundantSelf remove
+--redundantInit remove
+--redundantClosure return
+
+# Swift 6 Features
+--swiftversion 6.0.3
+--indentcase true
+--elseOnSameLine false
+--commas inline
+--modifierOrder accessibility,override,static,class,mutating
+--patternlet inline
+--shortOptionals always
+--concurrency inline
+
+# Function & Closure Formatting
+--trailingClosures always
+--redundantClosureSyntax remove
+--shortClosures inline
+--wrapclosures before-first
+
+# Enum & Structs
+--empty return
+--staticSelf remove
+--useVoid true
+
+# Imports
+--groupImports true
+--importGrouping testable,foundation,lowercase
+--sortedImports true
+
+# Documentation & Comments
+--commentSpacing always
+--blankLinesAroundMark 1
+--blankLinesBetweenScopes 1
+--ranges nospace

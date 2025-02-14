@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0.3
 import PackageDescription
 
 let package = Package(
@@ -27,7 +27,11 @@ let package = Package(
             ],
             exclude: ["Services/Development/README.md"], // ✅ Corrected placement
             swiftSettings: [
-                .unsafeFlags(["-enable-experimental-feature", "Sendable"])
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableUpcomingFeature("ExistentialAny"),
+                .enableUpcomingFeature("ForwardTrailingClosures"),
+                .enableUpcomingFeature("ImportObjcForwardDeclarations"),
+                .enableUpcomingFeature("DisableOutwardActorInference")
             ]
         ),
         .testTarget(
