@@ -100,7 +100,6 @@ public protocol ConfigurationObserver: AnyObject {
 // MARK: - ConfigurationService
 
 /// Service for managing configuration settings
-@MainActor
 public final class ConfigurationService: @unchecked Sendable {
     // MARK: - Properties
     
@@ -118,6 +117,7 @@ public final class ConfigurationService: @unchecked Sendable {
     ///   - fileURL: File URL for persistent storage
     ///   - performanceMonitor: Performance monitor
     ///   - logger: Logger for tracking operations
+    @MainActor
     public init(
         fileURL: URL,
         performanceMonitor: PerformanceMonitor,

@@ -51,7 +51,7 @@ public final class ProgressTracker: ProgressTrackerProtocol {
             operations[operationID] = OperationState(
                 startTime: Date(),
                 progress: 0,
-                status: OperationStatus.inProgress,
+                status: .notStarted,
                 error: nil
             )
 
@@ -100,7 +100,7 @@ public final class ProgressTracker: ProgressTrackerProtocol {
             guard var state = operations[operationID] else {
                 return
             }
-            state.status = .failed(error)
+            state.status = .failed
             state.error = error
             operations[operationID] = state
 
@@ -150,7 +150,7 @@ private struct OperationState: @unchecked Sendable {
     init(
         startTime: Date = Date(),
         progress: Double = 0,
-        status: OperationStatus = .inProgress,
+        status: OperationStatus = .notStarted,
         error: Error? = nil
     ) {
         self.startTime = startTime
@@ -162,9 +162,21 @@ private struct OperationState: @unchecked Sendable {
 
 // MARK: - OperationStatus
 
-private enum OperationStatus {
+@frozen public enum OperationStatus: String, Codable, Sendable {
+    case notStarted
     case inProgress
-    case failed(Error)
+    case completed
+    case failed
+    case cancelled
+    
+    public var isTerminal: Bool {
+        switch self {
+        case .completed, .failed, .cancelled:
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Notification Names

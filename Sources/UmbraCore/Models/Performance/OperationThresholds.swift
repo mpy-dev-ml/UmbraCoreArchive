@@ -3,46 +3,69 @@ import Foundation
 // MARK: - OperationThresholds
 
 /// Represents thresholds for different operation types
-public struct OperationThresholds {
-    /// Default thresholds for unknown operations
-    public static let `default`: OperationThresholds = .init(
-        base: PerformanceThresholds(),
-        operationSpecific: [
-            "backup": PerformanceThresholds(
-                maxMemoryUsage: 2 * 1_024 * 1_024 * 1_024, // 2GB
-                maxCPUUsage: 90.0,
-                minBackupSpeed: 5 * 1_024 * 1_024, // 5MB/s
-                maxOperationDuration: 7_200_000, // 2 hours
-                minSuccessRate: 98.0
-            ),
-            "restore": PerformanceThresholds(
-                maxMemoryUsage: 3 * 1_024 * 1_024 * 1_024, // 3GB
-                maxCPUUsage: 95.0,
-                minBackupSpeed: 10 * 1_024 * 1_024, // 10MB/s
-                maxOperationDuration: 3_600_000, // 1 hour
-                minSuccessRate: 99.0
-            ),
-            "check": PerformanceThresholds(
-                maxMemoryUsage: 1_024 * 1_024 * 1_024, // 1GB
-                maxCPUUsage: 70.0,
-                minBackupSpeed: 0.0,
-                maxOperationDuration: 1_800_000, // 30 minutes
-                minSuccessRate: 99.9
-            )
-        ]
+@frozen
+public struct OperationThresholds: Codable, Sendable {
+    /// Default thresholds
+    public static let `default` = OperationThresholds(
+        backup: 3600,    // 1 hour
+        restore: 7200,   // 2 hours
+        verify: 1800,    // 30 minutes
+        prune: 900,      // 15 minutes
+        check: 600       // 10 minutes
     )
-
-    /// Base thresholds for all operations
-    public let base: PerformanceThresholds
-
-    /// Operation-specific thresholds
-    public let operationSpecific: [String: PerformanceThresholds]
-
-    /// Get thresholds for a specific operation
-    /// - Parameter operation: Operation name
-    /// - Returns: Thresholds for the operation
-    public func thresholdsFor(operation: String) -> PerformanceThresholds {
-        operationSpecific[operation] ?? base
+    
+    /// Backup operation threshold (seconds)
+    public let backup: TimeInterval
+    
+    /// Restore operation threshold (seconds)
+    public let restore: TimeInterval
+    
+    /// Verify operation threshold (seconds)
+    public let verify: TimeInterval
+    
+    /// Prune operation threshold (seconds)
+    public let prune: TimeInterval
+    
+    /// Check operation threshold (seconds)
+    public let check: TimeInterval
+    
+    /// Initialize with custom thresholds
+    /// - Parameters:
+    ///   - backup: Backup threshold
+    ///   - restore: Restore threshold
+    ///   - verify: Verify threshold
+    ///   - prune: Prune threshold
+    ///   - check: Check threshold
+    public init(
+        backup: TimeInterval,
+        restore: TimeInterval,
+        verify: TimeInterval,
+        prune: TimeInterval,
+        check: TimeInterval
+    ) {
+        self.backup = backup
+        self.restore = restore
+        self.verify = verify
+        self.prune = prune
+        self.check = check
+    }
+    
+    /// Get threshold for operation type
+    /// - Parameter type: Operation type
+    /// - Returns: Threshold in seconds
+    public func threshold(for type: OperationType) -> TimeInterval {
+        switch type {
+        case .backup:
+            return backup
+        case .restore:
+            return restore
+        case .verify:
+            return verify
+        case .prune:
+            return prune
+        case .check:
+            return check
+        }
     }
 }
 
