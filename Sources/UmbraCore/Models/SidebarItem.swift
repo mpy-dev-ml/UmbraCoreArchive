@@ -15,8 +15,10 @@ public enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .repositories:
             "folder"
+
         case .backups:
             "arrow.clockwise"
+
         case .settings:
             "gear"
         }

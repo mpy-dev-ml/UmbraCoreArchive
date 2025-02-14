@@ -10,8 +10,7 @@ import Foundation
 public struct KeychainCredentials:
     Codable,
     Hashable,
-    Sendable
-{
+    Sendable {
     // MARK: - Properties
 
     /// Account identifier or username

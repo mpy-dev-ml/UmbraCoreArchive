@@ -33,8 +33,7 @@ public enum RepositoryOperation: Int, Codable, CaseIterable, Sendable, CustomStr
 
     public init(from decoder: Decoder) throws {
         if let container = try? decoder.singleValueContainer(),
-           let rawValue = try? container.decode(String.self)
-        {
+           let rawValue = try? container.decode(String.self) {
             // String-based decoding for backward compatibility
             switch rawValue.lowercased() {
             case "initialise", "initialize": self = .initialise
@@ -47,6 +46,7 @@ public enum RepositoryOperation: Int, Codable, CaseIterable, Sendable, CustomStr
             case "unlock": self = .unlock
             case "maintenance": self = .maintenance
             case "stats": self = .stats
+
             default:
                 throw DecodingError.dataCorruptedError(
                     in: container,
@@ -57,7 +57,7 @@ public enum RepositoryOperation: Int, Codable, CaseIterable, Sendable, CustomStr
             // Int-based decoding (preferred)
             let container = try decoder.container(keyedBy: CodingKeys.self)
             let rawValue = try container.decode(Int.self, forKey: .rawValue)
-            if let value = RepositoryOperation(rawValue: rawValue) {
+            if let value = Self(rawValue: rawValue) {
                 self = value
             } else {
                 throw DecodingError.dataCorruptedError(

@@ -10,8 +10,7 @@ import Foundation
 public struct DiscoveredRepository:
     Identifiable,
     Hashable,
-    Sendable
-{
+    Sendable {
     // MARK: - Properties
 
     /// Unique identifier for the repository
@@ -79,7 +78,7 @@ public struct DiscoveredRepository:
 
     // MARK: - Equatable
 
-    public static func == (lhs: DiscoveredRepository, rhs: DiscoveredRepository) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id
     }
 
@@ -100,8 +99,7 @@ public struct DiscoveredRepository:
 @frozen
 public struct RepositoryMetadata:
     Hashable,
-    Sendable
-{
+    Sendable {
     // MARK: - Properties
 
     /// Repository size in bytes

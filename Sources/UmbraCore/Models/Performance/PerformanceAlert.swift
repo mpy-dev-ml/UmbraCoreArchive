@@ -15,9 +15,9 @@ public struct PerformanceThresholds: Sendable {
     /// hour)
     ///   - minSuccessRate: Minimum acceptable operation success rate percentage (default: 95%)
     public init(
-        maxMemoryUsage: UInt64 = 1024 * 1024 * 1024, // 1GB
+        maxMemoryUsage: UInt64 = 1_024 * 1_024 * 1_024, // 1GB
         maxCPUUsage: Double = 80.0,
-        minBackupSpeed: Double = 1024 * 1024, // 1MB/s
+        minBackupSpeed: Double = 1_024 * 1_024, // 1MB/s
         maxOperationDuration: Double = 3_600_000, // 1 hour
         minSuccessRate: Double = 95.0
     ) {

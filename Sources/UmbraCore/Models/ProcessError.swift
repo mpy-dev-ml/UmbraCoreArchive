@@ -14,12 +14,16 @@ public enum ProcessError: LocalizedError {
         switch self {
         case let .executionFailed(message):
             "Process execution failed: \(message)"
+
         case let .invalidExecutable(path):
             "Invalid executable at path: \(path)"
+
         case let .sandboxViolation(message):
             "Sandbox violation: \(message)"
+
         case let .timeout(message):
             "Process timed out: \(message)"
+
         case let .environmentError(message):
             "Environment error: \(message)"
         }

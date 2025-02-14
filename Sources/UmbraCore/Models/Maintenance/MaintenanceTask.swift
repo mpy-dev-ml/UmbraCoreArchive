@@ -1,8 +1,7 @@
 import Foundation
 
 /// Types of maintenance tasks that can be performed on a repository
-@objc
-public enum MaintenanceTask: Int, Codable, CaseIterable {
+public enum MaintenanceTask: Int, Codable, CaseIterable, CustomStringConvertible {
     /// Check repository integrity
     case check
     /// Remove unused data
@@ -31,28 +30,7 @@ public enum MaintenanceTask: Int, Codable, CaseIterable {
 
     // MARK: Public
 
-    /// Get the priority level for this task
-    public var priority: MaintenanceTaskPriority {
-        switch self {
-        case .checkLocks: .high
-        case .check, .verify: .medium
-        case .prune, .rebuildIndex, .pack: .low
-        }
-    }
-
-    /// Get the recommended interval for this task in days
-    public var recommendedInterval: Int {
-        switch self {
-        case .checkLocks: 1
-        case .check: 7
-        case .verify: 30
-        case .prune: 30
-        case .rebuildIndex: 90
-        case .pack: 90
-        }
-    }
-
-    /// Get the estimated duration in minutes
+    /// Get the estimated duration in minutes for this task
     public var estimatedDuration: Int {
         switch self {
         case .checkLocks: 5
@@ -73,12 +51,12 @@ public enum MaintenanceTask: Int, Codable, CaseIterable {
     }
 
     /// Get dependencies that must be run before this task
-    public var dependencies: Set<MaintenanceTask> {
+    public var dependencies: Set<Self> {
         switch self {
         case .pack: [.prune]
         case .rebuildIndex: [.check]
         case .verify: [.check]
-        default: []
+        case .check, .prune, .checkLocks: []
         }
     }
 }

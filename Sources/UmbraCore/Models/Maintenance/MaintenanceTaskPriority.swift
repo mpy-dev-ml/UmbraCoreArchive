@@ -3,7 +3,7 @@ import Foundation
 // MARK: - TaskPriority
 
 /// Priority levels for maintenance tasks
-public enum TaskPriority: Int, Comparable {
+public enum TaskPriority: Int, Comparable, Codable {
     case critical = 0 // Must run, blocks other tasks
     case high = 1 // Should run soon
     case medium = 2 // Run when convenient
@@ -11,7 +11,7 @@ public enum TaskPriority: Int, Comparable {
 
     // MARK: Public
 
-    public static func < (lhs: TaskPriority, rhs: TaskPriority) -> Bool {
+    public static func < (lhs: Self, rhs: Self) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
 }
@@ -77,6 +77,34 @@ public struct TaskConfiguration: Codable, CustomStringConvertible, Equatable {
 
     /// Whether the task can be interrupted
     public let isInterruptible: Bool
+
+    /// String representation of the task configuration
+    public var description: String {
+        """
+        Task Configuration:
+        - Task: \(task)
+        - Priority: \(priority)
+        - Duration: \(estimatedDuration) minutes
+        - Memory: \(maxMemoryUsage) MB
+        - CPU: \(cpuIntensity)%
+        - Parallel: \(allowsParallel ? "Yes" : "No")
+        - Dependencies: \(dependencies.isEmpty ? "None" : dependencies.map { String(describing: $0) }.joined(separator: ", "))
+        - Interruptible: \(isInterruptible ? "Yes" : "No")
+        """
+    }
+
+    // MARK: Equatable
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.task == rhs.task &&
+        lhs.priority == rhs.priority &&
+        lhs.estimatedDuration == rhs.estimatedDuration &&
+        lhs.maxMemoryUsage == rhs.maxMemoryUsage &&
+        lhs.cpuIntensity == rhs.cpuIntensity &&
+        lhs.allowsParallel == rhs.allowsParallel &&
+        lhs.dependencies == rhs.dependencies &&
+        lhs.isInterruptible == rhs.isInterruptible
+    }
 }
 
 /// Default configurations for maintenance tasks
@@ -127,8 +155,4 @@ public extension TaskConfiguration {
             dependencies: [.healthCheck]
         )
     ]
-}
-
-public var description: String {
-    String(describing: self)
 }

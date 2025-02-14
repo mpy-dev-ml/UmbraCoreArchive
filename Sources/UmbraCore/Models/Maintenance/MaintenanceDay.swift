@@ -1,8 +1,7 @@
 import Foundation
 
 /// Days of the week for maintenance scheduling
-@objc
-public enum MaintenanceDay: Int, Codable, CaseIterable {
+public enum MaintenanceDay: Int, Codable, CaseIterable, CustomStringConvertible {
     case sunday = 1
     case monday = 2
     case tuesday = 3
@@ -27,25 +26,13 @@ public enum MaintenanceDay: Int, Codable, CaseIterable {
 
     // MARK: Public
 
-    /// Convert from Calendar.Component.weekday
-    public static func from(weekday: Int) -> MaintenanceDay? {
-        MaintenanceDay(rawValue: weekday)
+    /// Convert to Calendar.Component.weekday
+    public var weekday: Int {
+        rawValue
     }
 
-    /// Get the next occurrence of this day
-    public func nextOccurrence(after date: Date = Date()) -> Date {
-        let calendar = Calendar.current
-        var components = calendar.dateComponents([.year, .month, .day, .weekday], from: date)
-
-        // Calculate days until next occurrence
-        let currentWeekday = components.weekday ?? 1
-        let daysToAdd = (rawValue - currentWeekday + 7) % 7
-
-        // If it's the same day and we want next occurrence, add 7 days
-        let adjustedDaysToAdd = daysToAdd == 0 ? 7 : daysToAdd
-
-        components.day! += adjustedDaysToAdd
-
-        return calendar.date(from: components) ?? date
+    /// Convert from Calendar.Component.weekday
+    public static func from(weekday: Int) -> Self? {
+        Self(rawValue: weekday)
     }
 }

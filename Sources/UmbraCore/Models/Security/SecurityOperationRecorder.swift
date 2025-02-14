@@ -136,17 +136,20 @@ public struct SecurityOperationRecorder {
                 "Security operation \(type) succeeded for \(path)",
                 config: config
             )
+
         case .failure:
             let error = operation.error ?? "Unknown error"
             logger.error(
                 "Security operation \(type) failed for \(path): \(error)",
                 config: config
             )
+
         case .pending:
             logger.debug(
                 "Security operation \(type) pending for \(path)",
                 config: config
             )
+
         case .cancelled:
             logger.notice(
                 "Security operation \(type) cancelled for \(path)",

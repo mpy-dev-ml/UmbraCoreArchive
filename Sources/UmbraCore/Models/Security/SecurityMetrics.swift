@@ -5,7 +5,7 @@ import os.log
 
 /// Tracks and analyses security-related metrics for monitoring and debugging
 @available(macOS 13.0, *)
-public actor SecurityMetrics {
+public actor SecurityMetrics: @unchecked Sendable {
     // MARK: - Types
 
     /// Type of security metric being recorded
@@ -15,6 +15,12 @@ public actor SecurityMetrics {
         case bookmark
         case xpc
         case session
+    }
+
+    /// Type of security operation
+    public enum SecurityOperationType: String, Sendable {
+        case bookmark
+        case xpc
     }
 
     // MARK: - Properties
@@ -30,6 +36,8 @@ public actor SecurityMetrics {
     private(set) var failureCount = 0
     private(set) var activeAccessCount = 0
     private(set) var operationHistory: [SecurityOperation] = []
+
+    private(set) var operationCount = 0
 
     // MARK: - Initialization
 
@@ -58,8 +66,8 @@ public actor SecurityMetrics {
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
-    ) {
-        recordMetric(
+    ) async {
+        await recordMetric(
             type: .access,
             counter: { self.accessCount += 1 },
             success: success,
@@ -73,8 +81,8 @@ public actor SecurityMetrics {
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
-    ) {
-        recordMetric(
+    ) async {
+        await recordMetric(
             type: .permission,
             counter: { self.permissionCount += 1 },
             success: success,
@@ -88,8 +96,8 @@ public actor SecurityMetrics {
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
-    ) {
-        recordMetric(
+    ) async {
+        await recordMetric(
             type: .bookmark,
             counter: { self.bookmarkCount += 1 },
             success: success,
@@ -103,8 +111,8 @@ public actor SecurityMetrics {
         success: Bool = true,
         error: String? = nil,
         metadata: [String: String] = [:]
-    ) {
-        recordMetric(
+    ) async {
+        await recordMetric(
             type: .xpc,
             counter: { self.xpcCount += 1 },
             success: success,
@@ -113,30 +121,77 @@ public actor SecurityMetrics {
         )
     }
 
+    /// Record start of security operation
+    /// - Parameter type: Type of operation
+    public func recordOperationStart(type: SecurityOperationType) async {
+        operationCount += 1
+        activeAccessCount += 1
+        
+        switch type {
+        case .bookmark:
+            bookmarkCount += 1
+        case .xpc:
+            xpcCount += 1
+        }
+        
+        await logMetric(type: type, success: true)
+    }
+    
+    /// Record end of security operation
+    /// - Parameters:
+    ///   - type: Type of operation
+    ///   - error: Optional error if operation failed
+    public func recordOperationEnd(type: SecurityOperationType, error: Error? = nil) async {
+        activeAccessCount = max(0, activeAccessCount - 1)
+        
+        if error != nil {
+            failureCount += 1
+        }
+        
+        await logMetric(type: type, success: error == nil, error: error?.localizedDescription)
+    }
+    
+    /// Get current metrics
+    /// - Returns: Dictionary of metric values
+    public func getMetrics() -> [String: Int] {
+        [
+            "operations": operationCount,
+            "active": activeAccessCount,
+            "bookmarks": bookmarkCount,
+            "xpc": xpcCount,
+            "failures": failureCount
+        ]
+    }
+    
+    /// Reset all metrics
+    public func resetMetrics() {
+        operationCount = 0
+        activeAccessCount = 0
+        bookmarkCount = 0
+        xpcCount = 0
+        failureCount = 0
+    }
+
     // MARK: - Session Management
 
     /// Increments active access count
-    public func incrementActiveAccess() {
-        queue.async {
-            self.activeAccessCount += 1
-            self.logMetric(
-                type: .session,
-                success: true,
-                metadata: ["action": "start"]
-            )
-        }
+    public func incrementActiveAccess() async {
+        activeAccessCount += 1
+        await logMetric(
+            type: .session,
+            success: true,
+            metadata: ["action": "start"]
+        )
     }
 
     /// Decrements active access count
-    public func decrementActiveAccess() {
-        queue.async {
-            self.activeAccessCount = max(0, self.activeAccessCount - 1)
-            self.logMetric(
-                type: .session,
-                success: true,
-                metadata: ["action": "end"]
-            )
-        }
+    public func decrementActiveAccess() async {
+        activeAccessCount = max(0, activeAccessCount - 1)
+        await logMetric(
+            type: .session,
+            success: true,
+            metadata: ["action": "end"]
+        )
     }
 
     // MARK: - Private Methods
@@ -147,19 +202,17 @@ public actor SecurityMetrics {
         success: Bool,
         error: String?,
         metadata: [String: String]
-    ) {
-        queue.async {
-            counter()
-            if !success {
-                self.failureCount += 1
-            }
-            self.logMetric(
-                type: type,
-                success: success,
-                error: error,
-                metadata: metadata
-            )
+    ) async {
+        counter()
+        if !success {
+            failureCount += 1
         }
+        await logMetric(
+            type: type,
+            success: success,
+            error: error,
+            metadata: metadata
+        )
     }
 
     private func logMetric(
@@ -167,7 +220,7 @@ public actor SecurityMetrics {
         success: Bool,
         error: String? = nil,
         metadata: [String: String] = [:]
-    ) {
+    ) async {
         var logMetadata = createBaseMetadata(
             type: type,
             success: success
@@ -180,12 +233,35 @@ public actor SecurityMetrics {
         logMetadata.merge(metadata) { current, _ in current }
         let config = LogConfig(metadata: logMetadata)
 
-        logWithAppropriateLevel(
+        await logWithAppropriateLevel(
             type: type,
             success: success,
             error: error,
             config: config
         )
+    }
+
+    private func logMetric(
+        type: SecurityOperationType,
+        success: Bool,
+        error: String? = nil,
+        metadata: [String: String] = [:]
+    ) async {
+        var logMetadata = metadata
+        logMetadata["type"] = type.rawValue
+        logMetadata["success"] = String(success)
+        if let error = error {
+            logMetadata["error"] = error
+        }
+        
+        // Log metric using logging service
+        Task {
+            await LoggingService.shared.log(
+                "Security metric recorded",
+                level: success ? .info : .error,
+                metadata: Logger.Metadata(logMetadata)
+            )
+        }
     }
 
     private func createBaseMetadata(
@@ -204,7 +280,7 @@ public actor SecurityMetrics {
         success: Bool,
         error: String?,
         config: LogConfig
-    ) {
+    ) async {
         if success {
             logger.info(
                 "\(type.rawValue) operation completed",
