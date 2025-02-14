@@ -113,11 +113,13 @@ public final class PerformanceReportExporter: BaseSandboxedService {
                     metrics: metrics,
                     metadata: configuration.metadata
                 )
+
             case .csv:
                 try generateCSVReport(
                     metrics: metrics,
                     metadata: configuration.metadata
                 )
+
             case .text:
                 try generateTextReport(
                     metrics: metrics,

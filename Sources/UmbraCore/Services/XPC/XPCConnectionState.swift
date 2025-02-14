@@ -53,6 +53,7 @@ public enum XPCConnectionState: Int {
         switch self {
         case .invalidated:
             true
+
         default:
             false
         }
@@ -64,6 +65,7 @@ public enum XPCConnectionState: Int {
         case .connected,
              .degraded:
             true
+
         default:
             false
         }
@@ -77,6 +79,7 @@ public enum XPCConnectionState: Int {
              .degraded,
              .needsRecovery:
             true
+
         default:
             false
         }
@@ -88,6 +91,7 @@ public enum XPCConnectionState: Int {
         case .connecting,
              .disconnecting:
             true
+
         default:
             false
         }
@@ -100,20 +104,28 @@ public enum XPCConnectionState: Int {
         switch self {
         case .disconnected:
             "Disconnected"
+
         case .connecting:
             "Connecting..."
+
         case .connected:
             "Connected"
+
         case .disconnecting:
             "Disconnecting..."
+
         case .interrupted:
             "Connection Interrupted"
+
         case .invalidated:
             "Connection Invalid"
+
         case .error:
             "Connection Error"
+
         case .degraded:
             "Connection Degraded"
+
         case .needsRecovery:
             "Connection Needs Recovery"
         }
@@ -124,20 +136,28 @@ public enum XPCConnectionState: Int {
         switch self {
         case .disconnected:
             "disconnected"
+
         case .connecting:
             "connecting"
+
         case .connected:
             "connected"
+
         case .disconnecting:
             "disconnecting"
+
         case .interrupted:
             "interrupted"
+
         case .invalidated:
             "invalidated"
+
         case .error:
             "error"
+
         case .degraded:
             "degraded"
+
         case .needsRecovery:
             "needs_recovery"
         }
@@ -167,12 +187,14 @@ public enum XPCConnectionState: Int {
              .disconnecting,
              .disconnected:
             .debug
+
         case .degraded:
             .warning
         case .interrupted,
              .error,
              .needsRecovery:
             .error
+
         case .invalidated:
             .critical
         }
@@ -192,24 +214,32 @@ public enum XPCConnectionState: Int {
     // MARK: - State Transitions
 
     /// Valid next states from current state
-    public var validNextStates: Set<XPCConnectionState> {
+    public var validNextStates: Set<Self> {
         switch self {
         case .disconnected:
             [.connecting]
+
         case .connecting:
             [.connected, .error, .disconnected]
+
         case .connected:
             [.disconnecting, .interrupted, .error, .degraded]
+
         case .disconnecting:
             [.disconnected]
+
         case .interrupted:
             [.connecting, .disconnected, .error]
+
         case .invalidated:
             [.disconnected]
+
         case .error:
             [.connecting, .disconnected]
+
         case .degraded:
             [.connected, .needsRecovery, .error, .disconnecting]
+
         case .needsRecovery:
             [.connecting, .error, .disconnected]
         }
@@ -218,14 +248,14 @@ public enum XPCConnectionState: Int {
     /// Whether transition to given state is valid
     /// - Parameter state: Target state
     /// - Returns: Whether transition is valid
-    public func canTransitionTo(_ state: XPCConnectionState) -> Bool {
+    public func canTransitionTo(_ state: Self) -> Bool {
         validNextStates.contains(state)
     }
 
     /// Validate transition to new state
     /// - Parameter newState: Target state
     /// - Throws: XPCError if transition is invalid
-    public func validateTransitionTo(_ newState: XPCConnectionState) throws {
+    public func validateTransitionTo(_ newState: Self) throws {
         guard canTransitionTo(newState) else {
             throw XPCError.invalidState(
                 reason: """

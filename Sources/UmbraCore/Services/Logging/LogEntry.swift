@@ -1,50 +1,50 @@
 import Foundation
 
 /// Log entry structure
-public struct LogEntry: Codable {
+public struct LogEntry: Codable, Sendable {
     // MARK: - Properties
-
-    /// Timestamp of the log entry
-    public let timestamp: Date
-
+    
     /// Log level
-    public let level: LogLevel
-
+    public let level: UmbraLogLevel
+    
     /// Log message
     public let message: String
-
+    
     /// Source file
     public let file: String
-
-    /// Source line
-    public let line: Int
-
+    
     /// Source function
     public let function: String
-
+    
+    /// Source line
+    public let line: Int
+    
+    /// Timestamp
+    public let timestamp: Date
+    
     // MARK: - Initialization
-
-    /// Initialize a log entry
+    
+    /// Initialize a new log entry
     /// - Parameters:
-    ///   - timestamp: Entry timestamp
     ///   - level: Log level
     ///   - message: Log message
     ///   - file: Source file
-    ///   - line: Source line
     ///   - function: Source function
+    ///   - line: Source line
+    ///   - timestamp: Log timestamp
     public init(
-        timestamp: Date = Date(),
-        level: LogLevel,
+        level: UmbraLogLevel,
         message: String,
         file: String,
+        function: String,
         line: Int,
-        function: String
+        timestamp: Date = Date()
     ) {
-        self.timestamp = timestamp
         self.level = level
         self.message = message
         self.file = file
-        self.line = line
         self.function = function
+        self.line = line
+        self.timestamp = timestamp
     }
 }

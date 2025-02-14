@@ -466,14 +466,19 @@ extension XPCError {
             switch self {
             case .serviceInstanceDeallocated:
                 "Service instance was deallocated"
+
             case let .invalidConnectionState(state):
                 "Cannot connect while in state: \(state.description)"
+
             case .noActiveConnection:
                 "No active connection available"
+
             case let .invalidProxyType(type):
                 "Failed to cast proxy to type: \(type)"
+
             case .maxRetryAttemptsExceeded:
                 "Maximum retry attempts exceeded"
+
             case let .operationTimeout(seconds):
                 "Operation timed out after \(seconds) seconds"
             }

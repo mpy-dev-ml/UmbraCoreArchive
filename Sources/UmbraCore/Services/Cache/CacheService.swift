@@ -41,38 +41,31 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
 
     /// Cache entry
     public struct CacheEntry<T: Codable & Sendable>: Codable, Sendable {
-        // MARK: Properties
-
         /// The cached value
         public let value: T
-
         /// Size of the entry in bytes
         public let size: Int
-
-        /// Timestamp when the entry was created
+        /// Timestamp when entry was created
         public let timestamp: Date
+        /// Optional expiration date
+        public let expirationDate: Date?
 
-        /// Additional metadata
-        public let metadata: [String: String]
-
-        // MARK: Initialization
-
-        /// Initialize a cache entry
+        /// Initialize a new cache entry
         /// - Parameters:
         ///   - value: Value to cache
         ///   - size: Size in bytes
         ///   - timestamp: Creation timestamp
-        ///   - metadata: Optional metadata
+        ///   - expirationDate: Optional expiration date
         public init(
             value: T,
             size: Int,
             timestamp: Date = Date(),
-            metadata: [String: String] = [:]
+            expirationDate: Date? = nil
         ) {
             self.value = value
             self.size = size
             self.timestamp = timestamp
-            self.metadata = metadata
+            self.expirationDate = expirationDate
         }
     }
 
@@ -82,7 +75,7 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
 
         /// Initialize with values
         public init(
-            maxSize: Int = 100 * 1024 * 1024, // 100MB
+            maxSize: Int = 100 * 1_024 * 1_024, // 100MB
             defaultLifetime: TimeInterval? = nil,
             autoCleanup: Bool = true,
             cleanupInterval: TimeInterval = 300 // 5 minutes
@@ -123,45 +116,45 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
         lifetime: TimeInterval? = nil,
         metadata: [String: String] = [:]
     ) async throws {
-        try validateUsable(for: "setValue")
+        try await withValidation("setValue") {
+            try await performanceMonitor.trackDuration("cache.set") {
+                // Create entry
+                let data = try JSONEncoder().encode(value)
+                let expirationDate = lifetime.map { Date().addingTimeInterval($0) }
+                    ?? configuration.defaultLifetime.map { Date().addingTimeInterval($0) }
 
-        try await performanceMonitor.trackDuration("cache.set") {
-            // Create entry
-            let data = try JSONEncoder().encode(value)
-            let expirationDate = lifetime.map { Date().addingTimeInterval($0) }
-                ?? configuration.defaultLifetime.map { Date().addingTimeInterval($0) }
+                let entry = CacheEntry(
+                    value: value,
+                    size: data.count,
+                    expirationDate: expirationDate
+                )
 
-            let entry = CacheEntry(
-                value: value,
-                size: data.count,
-                metadata: metadata
-            )
+                // Save entry
+                let entryURL = fileURL(forKey: key)
+                try await save(entry, to: entryURL)
 
-            // Save entry
-            let entryURL = fileURL(forKey: key)
-            try await save(entry, to: entryURL)
+                // Update size
+                queue.async(flags: .barrier) {
+                    self.currentSize += entry.size
+                }
 
-            // Update size
-            queue.async(flags: .barrier) {
-                self.currentSize += entry.size
-            }
+                // Log operation
+                logger.debug(
+                    """
+                    Set cache entry:
+                    Key: \(key)
+                    Size: \(entry.size) bytes
+                    Expiration: \(String(describing: expirationDate))
+                    """,
+                    file: #file,
+                    function: #function,
+                    line: #line
+                )
 
-            // Log operation
-            logger.debug(
-                """
-                Set cache entry:
-                Key: \(key)
-                Size: \(entry.size) bytes
-                Expiration: \(String(describing: expirationDate))
-                """,
-                file: #file,
-                function: #function,
-                line: #line
-            )
-
-            // Check size limit
-            if currentSize > configuration.maxSize {
-                try await cleanup()
+                // Check size limit
+                if currentSize > configuration.maxSize {
+                    try await cleanup()
+                }
             }
         }
     }
@@ -173,9 +166,7 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
     public func getValue<T: Codable & Sendable>(
         forKey key: String
     ) async throws -> CacheEntry<T>? {
-        try validateUsable(for: "getValue")
-
-        return try await performanceMonitor.trackDuration("cache.get") {
+        try await withValidation("getValue") {
             let entryURL = fileURL(forKey: key)
 
             // Check if file exists
@@ -213,23 +204,20 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
     /// - Parameter key: Cache key
     /// - Throws: Error if operation fails
     public func removeValue(forKey key: String) async throws {
-        try validateUsable(for: "removeValue")
-
-        try await performanceMonitor.trackDuration("cache.remove") {
+        try await withValidation("removeValue") {
             let entryURL = fileURL(forKey: key)
 
-            // Get file size
-            let attributes = try FileManager.default.attributesOfItem(
-                atPath: entryURL.path
-            )
-            let size = attributes[.size] as? Int ?? 0
+            // Get file size before removal
+            let fileSize = try? FileManager.default.attributesOfItem(atPath: entryURL.path)[.size] as? Int ?? 0
 
             // Remove file
             try FileManager.default.removeItem(at: entryURL)
 
             // Update size
-            queue.async(flags: .barrier) {
-                self.currentSize -= size
+            if let size = fileSize {
+                queue.async(flags: .barrier) {
+                    self.currentSize -= size
+                }
             }
 
             // Log operation
@@ -237,7 +225,7 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
                 """
                 Removed cache entry:
                 Key: \(key)
-                Size: \(size) bytes
+                Size: \(fileSize ?? 0) bytes
                 """,
                 file: #file,
                 function: #function,
@@ -249,31 +237,31 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
     /// Clear all cache entries
     /// - Throws: Error if operation fails
     public func clearCache() async throws {
-        try validateUsable(for: "clearCache")
+        try await withValidation("clearCache") {
+            try await performanceMonitor.trackDuration("cache.clear") {
+                // Remove all files
+                let contents = try FileManager.default.contentsOfDirectory(
+                    at: directoryURL,
+                    includingPropertiesForKeys: nil
+                )
 
-        try await performanceMonitor.trackDuration("cache.clear") {
-            // Remove all files
-            let contents = try FileManager.default.contentsOfDirectory(
-                at: directoryURL,
-                includingPropertiesForKeys: nil
-            )
+                for url in contents {
+                    try FileManager.default.removeItem(at: url)
+                }
 
-            for url in contents {
-                try FileManager.default.removeItem(at: url)
+                // Reset size
+                queue.async(flags: .barrier) {
+                    self.currentSize = 0
+                }
+
+                // Log operation
+                logger.debug(
+                    "Cleared cache",
+                    file: #file,
+                    function: #function,
+                    line: #line
+                )
             }
-
-            // Reset size
-            queue.async(flags: .barrier) {
-                self.currentSize = 0
-            }
-
-            // Log operation
-            logger.debug(
-                "Cleared cache",
-                file: #file,
-                function: #function,
-                line: #line
-            )
         }
     }
 
@@ -303,12 +291,27 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
 
     // MARK: - Private Methods
 
+    /// Validate service is usable and wrap operation
+    private func withValidation<T>(_ operation: String, block: () async throws -> T) async throws -> T {
+        try validateUsable(for: operation)
+        return try await block()
+    }
+
+    private func validateUsable(for key: String) async throws -> Bool {
+        let isValid = try await validateCache()
+        guard isValid else {
+            throw CacheError.cacheInvalid
+        }
+        return true
+    }
+
     /// Set up cache directory
     private func setupDirectory() {
         do {
             try FileManager.default.createDirectory(
                 at: directoryURL,
-                withIntermediateDirectories: true
+                withIntermediateDirectories: true,
+                attributes: nil
             )
 
             // Calculate initial size
@@ -374,8 +377,7 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
                 // Check if entry is expired
                 if let entry: CacheEntry<Data> = try? await load(from: url),
                    let expirationDate = entry.expirationDate,
-                   expirationDate < Date()
-                {
+                   expirationDate < Date() {
                     // Remove file
                     try FileManager.default.removeItem(at: url)
                     removedSize += entry.size
@@ -404,21 +406,23 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
 
     /// Get file URL for key
     private func fileURL(forKey key: String) -> URL {
-        directoryURL.appendingPathComponent(key)
-    }
-
-    /// Save entry to file
-    private func save(
-        _ entry: CacheEntry<some Codable & Sendable>,
-        to url: URL
-    ) async throws {
-        let data = try JSONEncoder().encode(entry)
-        try data.write(to: url, options: .atomicWrite)
+        directoryURL.appendingPathComponent(key.md5)
     }
 
     /// Load entry from file
     private func load<T: Codable & Sendable>(from url: URL) async throws -> CacheEntry<T> {
-        let data = try Data(contentsOf: url)
+        guard let data = try? Data(contentsOf: url) else {
+            throw CacheError.entryNotFound
+        }
         return try JSONDecoder().decode(CacheEntry<T>.self, from: data)
+    }
+
+    /// Save entry to file
+    private func save<T: Codable & Sendable>(
+        _ entry: CacheEntry<T>,
+        to url: URL
+    ) async throws {
+        let data = try JSONEncoder().encode(entry)
+        try data.write(to: url, options: .atomicWrite)
     }
 }

@@ -27,12 +27,15 @@ final class OSLogAdapter {
         let type: OSLogType = switch level {
         case .debug:
             .debug
+
         case .info:
             .info
+
         case .warning:
             .default // Use .default for warnings as it's the closest match
         case .error:
             .error
+
         case .critical:
             .fault
         }

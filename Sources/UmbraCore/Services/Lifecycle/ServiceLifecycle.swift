@@ -126,12 +126,16 @@ public enum ServiceLifecycleError: LocalizedError {
         switch self {
         case let .invalidState(reason):
             "Invalid service state: \(reason)"
+
         case let .initializationFailed(reason):
             "Service initialization failed: \(reason)"
+
         case let .startFailed(reason):
             "Service start failed: \(reason)"
+
         case let .stopFailed(reason):
             "Service stop failed: \(reason)"
+
         case let .resetFailed(reason):
             "Service reset failed: \(reason)"
         }

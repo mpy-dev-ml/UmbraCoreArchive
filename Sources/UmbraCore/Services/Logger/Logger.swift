@@ -164,8 +164,10 @@ public class Logger: NSObject, LoggerProtocol {
         switch destination {
         case .osLog:
             writeToOSLog(formattedMessage, level: level)
+
         case let .file(url):
             writeToFile(formattedMessage, at: url)
+
         case let .custom(handler):
             handler(formattedMessage, level)
         }
@@ -210,12 +212,16 @@ public class Logger: NSObject, LoggerProtocol {
             switch level {
             case .debug:
                 .debug
+
             case .info:
                 .info
+
             case .warning:
                 .default
+
             case .error:
                 .error
+
             case .critical:
                 .fault
             }

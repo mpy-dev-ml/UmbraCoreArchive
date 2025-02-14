@@ -33,10 +33,13 @@ public extension LoggingService {
         let type: OSLogType = switch level {
         case .debug:
             .debug
+
         case .info:
             .info
+
         case .warning:
             .error
+
         case .error, .critical:
             .fault
         }

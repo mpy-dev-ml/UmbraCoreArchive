@@ -221,7 +221,7 @@ public class EncryptionService: NSObject {
                         saltBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
                         salt.count,
                         CCPBKDFAlgorithm(kCCPRFHmacAlgSHA256),
-                        10000,
+                        10_000,
                         derivedKeyBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
                         keySize / 8
                     )
@@ -242,8 +242,7 @@ public class EncryptionService: NSObject {
         useSecureEnclave: Bool
     ) throws -> SymmetricKey {
         if useSecureEnclave,
-           let key = try? createSecureEnclaveKey(fromData: data)
-        {
+           let key = try? createSecureEnclaveKey(fromData: data) {
             return key
         }
 

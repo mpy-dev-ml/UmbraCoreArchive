@@ -142,6 +142,7 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         switch result {
         case let .success(isValid):
             continuation.resume(returning: isValid)
+
         case let .failure(error):
             continuation.resume(throwing: error)
         }
@@ -185,6 +186,7 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         switch result {
         case .success:
             continuation.resume()
+
         case let .failure(error):
             continuation.resume(throwing: error)
         }

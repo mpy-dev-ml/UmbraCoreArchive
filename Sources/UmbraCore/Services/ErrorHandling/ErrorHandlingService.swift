@@ -171,6 +171,7 @@ public final class ErrorHandlingService: BaseSandboxedService {
                     delay: delay,
                     work: work
                 )
+
             case let .fallback(value):
                 guard let result = value as? T else {
                     throw ErrorHandlingError.invalidFallbackValue(
@@ -178,9 +179,11 @@ public final class ErrorHandlingService: BaseSandboxedService {
                     )
                 }
                 return result
+
             case let .cleanup(cleanup):
                 try await cleanup()
                 throw error
+
             case .terminate:
                 throw error
             }
@@ -213,8 +216,10 @@ public final class ErrorHandlingService: BaseSandboxedService {
                 case .notConnectedToInternet,
                      .networkConnectionLost:
                     return .retry(maxAttempts: 3, delay: 1.0)
+
                 case .timedOut:
                     return .retry(maxAttempts: 2, delay: 2.0)
+
                 default:
                     return .terminate
                 }
@@ -228,8 +233,10 @@ public final class ErrorHandlingService: BaseSandboxedService {
                 switch error.code {
                 case .fileNoSuchFile:
                     return .cleanup { /* Clean up missing file references */ }
+
                 case .fileReadNoPermission:
                     return .terminate
+
                 default:
                     return .retry(maxAttempts: 2, delay: 1.0)
                 }
@@ -404,8 +411,10 @@ public enum ErrorHandlingError: LocalizedError {
         switch self {
         case let .invalidFallbackValue(reason):
             "Invalid fallback value: \(reason)"
+
         case let .maxRetriesExceeded(operation):
             "Maximum retries exceeded for operation: \(operation)"
+
         case let .errorHandlingFailed(reason):
             "Error handling failed: \(reason)"
         }
@@ -415,8 +424,10 @@ public enum ErrorHandlingError: LocalizedError {
         switch self {
         case .invalidFallbackValue:
             "Check fallback value type"
+
         case .maxRetriesExceeded:
             "Check operation and try again later"
+
         case .errorHandlingFailed:
             "Check error handler implementation"
         }

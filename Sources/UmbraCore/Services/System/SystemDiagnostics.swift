@@ -253,8 +253,10 @@ public struct SystemDiagnostics {
         switch percentage {
         case 0 ..< 70:
             .operational
+
         case 70 ..< 90:
             .warning
+
         default:
             .error
         }
@@ -266,8 +268,8 @@ public struct SystemDiagnostics {
         var value = Double(bytes)
         var unitIndex = 0
 
-        while value > 1024, unitIndex < units.count - 1 {
-            value /= 1024
+        while value > 1_024, unitIndex < units.count - 1 {
+            value /= 1_024
             unitIndex += 1
         }
 

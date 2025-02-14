@@ -1,14 +1,117 @@
-import Foundation
+@preconcurrency import Foundation
+
+// MARK: - ConfigValue
+
+/// Configuration value
+@unchecked
+public struct ConfigValue: Sendable {
+    /// Value type
+    public enum ValueType: String, Codable, Sendable {
+        case string
+        case integer
+        case double
+        case boolean
+        case data
+    }
+    
+    /// Value type
+    public let type: ValueType
+    /// Raw value
+    public let value: Any
+    
+    /// Initialize with value
+    /// - Parameters:
+    ///   - value: Value to store
+    public init(_ value: Any) {
+        self.value = value
+        self.type = Self.determineType(of: value)
+    }
+    
+    private static func determineType(of value: Any) -> ValueType {
+        switch value {
+        case is String:
+            return .string
+        case is Int:
+            return .integer
+        case is Double:
+            return .double
+        case is Bool:
+            return .boolean
+        case is Data:
+            return .data
+        default:
+            fatalError("Unsupported value type")
+        }
+    }
+}
+
+// MARK: - ConfigurationError
+
+/// Errors that can occur during configuration operations
+public enum ConfigurationError: LocalizedError {
+    /// Value not found
+    case valueNotFound(String)
+    /// Invalid value type
+    case invalidValueType(expected: Any.Type, actual: Any.Type)
+    /// Unsupported value type
+    case unsupportedValueType(String)
+    /// Persistence error
+    case persistenceError(String)
+
+    // MARK: Public
+
+    public var errorDescription: String? {
+        switch self {
+        case let .valueNotFound(key):
+            "Configuration value not found for key: \(key)"
+
+        case let .invalidValueType(expected, actual):
+            "Invalid value type: expected \(expected), actual \(actual)"
+
+        case let .unsupportedValueType(type):
+            "Unsupported value type: \(type)"
+
+        case let .persistenceError(reason):
+            "Configuration persistence error: \(reason)"
+        }
+    }
+
+    public var recoverySuggestion: String? {
+        switch self {
+        case .valueNotFound:
+            "Check configuration key"
+
+        case .invalidValueType:
+            "Check value type"
+
+        case .unsupportedValueType:
+            "Use supported value type"
+
+        case .persistenceError:
+            "Check file permissions and disk space"
+        }
+    }
+}
+
+public protocol ConfigurationObserver: AnyObject {
+    func configurationDidChange(key: String, oldValue: Any?, newValue: Any?)
+}
 
 // MARK: - ConfigurationService
 
 /// Service for managing configuration settings
-@objc
-public final class ConfigurationService: BaseSandboxedService {
-    // MARK: Lifecycle
-
+@objc public final class ConfigurationService: NSObject, Sendable {
+    // MARK: - Properties
+    
+    private let fileURL: URL
+    private let performanceMonitor: PerformanceMonitor
+    private let logger: LoggerProtocol
+    private var values: [String: ConfigValue]
+    private var observers: [(String, UUID, (ConfigValue?) -> Void)]
+    private let queue: DispatchQueue
+    
     // MARK: - Initialization
-
+    
     /// Initialize with dependencies
     /// - Parameters:
     ///   - fileURL: File URL for persistent storage
@@ -21,101 +124,14 @@ public final class ConfigurationService: BaseSandboxedService {
     ) {
         self.fileURL = fileURL
         self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
+        self.logger = logger
+        self.values = [:]
+        self.observers = []
+        self.queue = DispatchQueue(label: "dev.mpy.umbracore.config")
+        super.init()
     }
 
     // MARK: Public
-
-    // MARK: - Types
-
-    /// Configuration value
-    public struct ConfigValue: Codable, Sendable {
-        // MARK: - Properties
-
-        /// Value type
-        public let type: ValueType
-        /// Raw value
-        public let value: Any
-
-        // MARK: - Lifecycle
-
-        /// Initialize with value
-        /// - Parameter value: Value to store
-        /// - Throws: Error if value type is not supported
-        public init(value: Any) throws {
-            if let bool = value as? Bool {
-                type = .boolean
-                self.value = bool
-            } else if let string = value as? String {
-                type = .string
-                self.value = string
-            } else if let number = value as? Double {
-                type = .number
-                self.value = number
-            } else if let array = value as? [Any] {
-                type = .array
-                self.value = try array.map { try ConfigValue(value: $0) }
-            } else if let dict = value as? [String: Any] {
-                type = .dictionary
-                self.value = try dict.mapValues { try ConfigValue(value: $0) }
-            } else {
-                throw ConfigurationError.unsupportedValueType(String(describing: Swift.type(of: value)))
-            }
-        }
-
-        // MARK: - Codable
-
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(type, forKey: .type)
-
-            switch type {
-            case .boolean:
-                try container.encode(value as! Bool, forKey: .value)
-            case .string:
-                try container.encode(value as! String, forKey: .value)
-            case .number:
-                try container.encode(value as! Double, forKey: .value)
-            case .array:
-                try container.encode(value as! [ConfigValue], forKey: .value)
-            case .dictionary:
-                try container.encode(value as! [String: ConfigValue], forKey: .value)
-            }
-        }
-
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            type = try container.decode(ValueType.self, forKey: .type)
-
-            switch type {
-            case .boolean:
-                value = try container.decode(Bool.self, forKey: .value)
-            case .string:
-                value = try container.decode(String.self, forKey: .value)
-            case .number:
-                value = try container.decode(Double.self, forKey: .value)
-            case .array:
-                value = try container.decode([ConfigValue].self, forKey: .value)
-            case .dictionary:
-                value = try container.decode([String: ConfigValue].self, forKey: .value)
-            }
-        }
-
-        // MARK: - Private
-
-        private enum CodingKeys: String, CodingKey {
-            case type
-            case value
-        }
-
-        public enum ValueType: String, Codable {
-            case boolean
-            case string
-            case number
-            case array
-            case dictionary
-        }
-    }
 
     // MARK: - Public Methods
 
@@ -127,9 +143,10 @@ public final class ConfigurationService: BaseSandboxedService {
     public func setValue(_ value: Any, forKey key: String) throws {
         _ = try validateUsable(for: "setValue")
 
-        let configValue = try ConfigValue(value: value)
+        let configValue = ConfigValue(value)
 
         queue.async(flags: .barrier) {
+            let oldValue = self.values[key]
             self.values[key] = configValue
 
             self.logger.info(
@@ -144,7 +161,12 @@ public final class ConfigurationService: BaseSandboxedService {
             )
 
             // Notify observers
-            self.notifyObservers(forKey: key, value: value)
+            let observers = self.observers
+            DispatchQueue.main.async {
+                observers.forEach { observer in
+                    observer.2(oldValue?.value)
+                }
+            }
         }
     }
 
@@ -166,6 +188,7 @@ public final class ConfigurationService: BaseSandboxedService {
     /// - Parameter key: Configuration key
     public func removeValue(forKey key: String) {
         queue.async(flags: .barrier) {
+            let oldValue = self.values[key]
             self.values.removeValue(forKey: key)
 
             self.logger.debug(
@@ -179,12 +202,21 @@ public final class ConfigurationService: BaseSandboxedService {
             Task {
                 await self.saveToDisk()
             }
+
+            // Notify observers
+            let observers = self.observers
+            DispatchQueue.main.async {
+                observers.forEach { observer in
+                    observer.2(nil)
+                }
+            }
         }
     }
 
     /// Clear all configuration values
     public func clearValues() {
         queue.async(flags: .barrier) {
+            let oldValues = self.values
             self.values.removeAll()
 
             self.logger.debug(
@@ -197,6 +229,16 @@ public final class ConfigurationService: BaseSandboxedService {
             // Save to disk
             Task {
                 await self.saveToDisk()
+            }
+
+            // Notify observers
+            let observers = self.observers
+            DispatchQueue.main.async {
+                oldValues.forEach { key, value in
+                    observers.forEach { observer in
+                        observer.2(nil)
+                    }
+                }
             }
         }
     }
@@ -224,23 +266,27 @@ public final class ConfigurationService: BaseSandboxedService {
         }
     }
 
+    // MARK: Public
+
+    /// Add observer
+    /// - Parameter observer: Observer to add
+    public func addObserver(_ observer: ConfigurationObserver) {
+        queue.async {
+            self.observers.append(("key", UUID(), { value in
+                observer.configurationDidChange(key: "key", oldValue: nil, newValue: value)
+            }))
+        }
+    }
+    
+    /// Remove observer
+    /// - Parameter observer: Observer to remove
+    public func removeObserver(_ observer: ConfigurationObserver) {
+        queue.async {
+            self.observers.removeAll { $0.2 === observer.configurationDidChange }
+        }
+    }
+
     // MARK: Private
-
-    /// Configuration values
-    private var values: [String: ConfigValue] = [:]
-
-    /// Queue for synchronizing operations
-    private let queue: DispatchQueue = .init(
-        label: "dev.mpy.umbracore.config",
-        qos: .userInitiated,
-        attributes: .concurrent
-    )
-
-    /// File URL for persistent storage
-    private let fileURL: URL
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
 
     // MARK: - Private Methods
 
@@ -268,46 +314,18 @@ public final class ConfigurationService: BaseSandboxedService {
             )
         }
     }
-}
 
-// MARK: - ConfigurationError
-
-/// Errors that can occur during configuration operations
-public enum ConfigurationError: LocalizedError {
-    /// Value not found
-    case valueNotFound(String)
-    /// Invalid value type
-    case invalidValueType(expected: Any.Type, actual: Any.Type)
-    /// Unsupported value type
-    case unsupportedValueType(String)
-    /// Persistence error
-    case persistenceError(String)
-
-    // MARK: Public
-
-    public var errorDescription: String? {
-        switch self {
-        case let .valueNotFound(key):
-            "Configuration value not found for key: \(key)"
-        case let .invalidValueType(expected, actual):
-            "Invalid value type: expected \(expected), actual \(actual)"
-        case let .unsupportedValueType(type):
-            "Unsupported value type: \(type)"
-        case let .persistenceError(reason):
-            "Configuration persistence error: \(reason)"
+    /// Notify observers of configuration change
+    private func notifyObservers(forKey key: String, oldValue: Any?, newValue: Any?) {
+        let observers = self.observers
+        DispatchQueue.main.async {
+            observers.forEach { observer in
+                observer.2(newValue)
+            }
         }
     }
 
-    public var recoverySuggestion: String? {
-        switch self {
-        case .valueNotFound:
-            "Check configuration key"
-        case .invalidValueType:
-            "Check value type"
-        case .unsupportedValueType:
-            "Use supported value type"
-        case .persistenceError:
-            "Check file permissions and disk space"
-        }
+    private func validateUsable(for method: String) throws {
+        // TO DO: implement validation
     }
 }

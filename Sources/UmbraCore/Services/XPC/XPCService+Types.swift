@@ -73,14 +73,19 @@ enum XPCError: LocalizedError {
         switch self {
         case let .serviceUnavailable(reason):
             "Service unavailable: \(reason.description)"
+
         case let .invalidState(reason):
             "Invalid state: \(reason.description)"
+
         case let .notConnected(reason):
             "Not connected: \(reason.description)"
+
         case let .invalidProxy(reason):
             "Invalid proxy: \(reason.description)"
+
         case let .reconnectionFailed(reason):
             "Reconnection failed: \(reason.description)"
+
         case let .timeout(reason):
             "Operation timed out: \(reason.description)"
         }

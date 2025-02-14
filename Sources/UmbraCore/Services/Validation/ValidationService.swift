@@ -92,7 +92,7 @@ public final class ValidationService: BaseSandboxedService {
 
         // MARK: Public
 
-        public static func < (lhs: Priority, rhs: Priority) -> Bool {
+        public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
     }
@@ -267,8 +267,10 @@ public enum ValidationError: LocalizedError {
         switch self {
         case let .criticalValidationFailed(rule, message):
             "Critical validation failed - Rule \(rule): \(message)"
+
         case let .invalidValidationRule(reason):
             "Invalid validation rule: \(reason)"
+
         case let .validationTypeNotFound(type):
             "Validation type not found: \(type)"
         }
@@ -278,8 +280,10 @@ public enum ValidationError: LocalizedError {
         switch self {
         case .criticalValidationFailed:
             "Fix the validation issues and try again"
+
         case .invalidValidationRule:
             "Check the validation rule configuration"
+
         case .validationTypeNotFound:
             "Register validation rules for this type"
         }

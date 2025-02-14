@@ -237,7 +237,7 @@ public class ProcessMonitor: NSObject {
             let cpuTime = Double(
                 taskInfo.pti_total_user + taskInfo.pti_total_system
             )
-            let cpuUsage = cpuTime / ProcessMonitor.cpuTimeBase
+            let cpuUsage = cpuTime / Self.cpuTimeBase
 
             return ProcessInfo(
                 pid: pid,

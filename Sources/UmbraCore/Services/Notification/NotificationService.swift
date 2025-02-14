@@ -33,7 +33,7 @@ public final class NotificationService: BaseSandboxedService {
 
         // MARK: Public
 
-        public static func < (lhs: Priority, rhs: Priority) -> Bool {
+        public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
 
@@ -42,10 +42,13 @@ public final class NotificationService: BaseSandboxedService {
             switch self {
             case .low:
                 .passive
+
             case .normal:
                 .active
+
             case .high:
                 .timeSensitive
+
             case .critical:
                 .critical
             }

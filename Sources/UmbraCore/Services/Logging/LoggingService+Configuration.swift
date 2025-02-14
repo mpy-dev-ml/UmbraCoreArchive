@@ -14,7 +14,7 @@ public extension LoggingService {
             subsystem: String = "dev.mpy.umbracore",
             category: String = "default",
             minimumLevel: LogLevel = .debug,
-            maxEntries: Int = 10000
+            maxEntries: Int = 10_000
         ) {
             self.subsystem = subsystem
             self.category = category

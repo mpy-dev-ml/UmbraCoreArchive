@@ -88,10 +88,13 @@ public enum XPCError: LocalizedError {
         switch self {
         case .serviceUnavailable, .notConnected, .invalidState, .timeout, .reconnectionFailed:
             XPCErrorHelpers.getConnectionFailureReason(self)
+
         case .invalidProxy, .invalidMessage, .invalidInterface, .protocolMismatch:
             XPCErrorHelpers.getProtocolFailureReason(self)
+
         case .securityViolation, .invalidEntitlements, .auditSessionInvalid, .sandboxViolation:
             XPCErrorHelpers.getSecurityFailureReason(self)
+
         case .systemResource, .memoryPressure, .processLimit:
             XPCErrorHelpers.getSystemFailureReason(self)
         }
@@ -101,28 +104,40 @@ public enum XPCError: LocalizedError {
         switch self {
         case .serviceUnavailable:
             "Check if the XPC service is running and properly configured"
+
         case .notConnected:
             "Try re-establishing the connection"
+
         case .invalidState:
             "Reset the connection state"
+
         case .timeout:
             "Check network connectivity and try again"
+
         case .reconnectionFailed:
             "Verify service availability and try reconnecting"
+
         case .invalidProxy:
             "Verify proxy configuration"
+
         case .invalidMessage:
             "Check message format and content"
+
         case .invalidInterface:
             "Update interface configuration"
+
         case .protocolMismatch:
             "Update to compatible protocol version"
+
         case .securityViolation, .invalidEntitlements, .auditSessionInvalid, .sandboxViolation:
             XPCErrorHelpers.getSecurityRecoverySuggestion(self)
+
         case .systemResource:
             "Free up system resources and try again"
+
         case .memoryPressure:
             "Free up memory and try again"
+
         case .processLimit:
             "Terminate unnecessary processes and try again"
         }
@@ -132,10 +147,13 @@ public enum XPCError: LocalizedError {
         switch self {
         case .serviceUnavailable, .notConnected, .invalidState, .timeout, .reconnectionFailed:
             "xpc-connection-errors"
+
         case .invalidProxy, .invalidMessage, .invalidInterface, .protocolMismatch:
             XPCErrorHelpers.getProtocolHelpAnchor(self)
+
         case .securityViolation, .invalidEntitlements, .auditSessionInvalid, .sandboxViolation:
             "xpc-security-errors"
+
         case .systemResource, .memoryPressure, .processLimit:
             "xpc-system-errors"
         }

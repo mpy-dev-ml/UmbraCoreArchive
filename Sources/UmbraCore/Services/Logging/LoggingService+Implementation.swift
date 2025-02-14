@@ -1,5 +1,6 @@
 import Foundation
 import os.log
+import Logging
 
 // MARK: - LoggingService+Implementation
 
@@ -15,8 +16,8 @@ public extension LoggingService {
     ) {
         guard shouldLog(level) else { return }
         processLogMessage(
+            message,
             level: level,
-            message: message,
             file: file,
             function: function,
             line: line
@@ -68,15 +69,11 @@ public extension LoggingService {
         log(level: .critical, message: message, file: file, function: function, line: line)
     }
 
-    // MARK: - Private Methods
-
-    internal func shouldLog(_ level: LogLevel) -> Bool {
-        level >= minimumLevel
-    }
-
+    // MARK: - Internal Methods
+    
     internal func processLogMessage(
-        level: LogLevel,
-        message: String,
+        _ message: String,
+        level: UmbraLogLevel,
         file: String,
         function: String,
         line: Int
@@ -86,10 +83,40 @@ public extension LoggingService {
             message: message,
             file: file,
             function: function,
-            line: line
+            line: line,
+            timestamp: Date()
         )
-
-        osLogAdapter.log(message: message, level: level)
-        addEntry(entry)
+        
+        Task { @MainActor in
+            entries.append(entry)
+            if entries.count > maxEntries {
+                entries.removeFirst(entries.count - maxEntries)
+            }
+        }
+        
+        // Log to system logger
+        os_log(
+            "%{public}@",
+            log: osLogger,
+            type: level.osLogType,
+            message
+        )
+        
+        // Track performance metrics
+        if level >= .warning {
+            Task {
+                await performanceMonitor.trackMetric(
+                    type: .logging,
+                    value: 1.0,
+                    unit: "error"
+                )
+            }
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func shouldLog(_ level: UmbraLogLevel) -> Bool {
+        level.severity >= currentLevel.severity
     }
 }

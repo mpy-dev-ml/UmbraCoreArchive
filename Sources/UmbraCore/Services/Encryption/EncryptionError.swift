@@ -1,111 +1,71 @@
-import Foundation
-
 /// Errors that can occur during encryption operations
 public enum EncryptionError: LocalizedError {
-    /// Key derivation failed
-    case keyDerivationFailed
-    /// Secure Enclave key creation failed
-    case secureEnclaveKeyCreationFailed
-    /// Invalid key size
-    case invalidKeySize(Int)
-    /// Invalid input data
-    case invalidInputData(String)
+    /// Invalid encryption key
+    case invalidKey(String)
+    /// Operation failed
+    case operationFailed(String)
+    /// Invalid data format
+    case invalidDataFormat(String)
     /// Encryption failed
     case encryptionFailed(String)
     /// Decryption failed
     case decryptionFailed(String)
-    /// Invalid algorithm parameters
-    case invalidParameters(String)
-    /// Operation not supported
-    case operationNotSupported(String)
-
-    // MARK: Public
+    /// Key generation failed
+    case keyGenerationFailed(String)
+    /// Key storage failed
+    case keyStorageFailed(String)
 
     /// Localized description of the error
     public var errorDescription: String? {
         switch self {
-        case .keyDerivationFailed:
-            "Failed to derive encryption key"
-        case .secureEnclaveKeyCreationFailed:
-            "Failed to create Secure Enclave key"
-        case let .invalidKeySize(size):
-            "Invalid key size: \(size) bits"
-        case let .invalidInputData(reason):
-            "Invalid input data: \(reason)"
-        case let .encryptionFailed(reason):
-            "Encryption failed: \(reason)"
-        case let .decryptionFailed(reason):
-            "Decryption failed: \(reason)"
-        case let .invalidParameters(reason):
-            "Invalid parameters: \(reason)"
-        case let .operationNotSupported(reason):
-            "Operation not supported: \(reason)"
+        case .invalidKey(let reason):
+            return "Invalid encryption key: \(reason)"
+        case .operationFailed(let reason):
+            return "Encryption operation failed: \(reason)"
+        case .invalidDataFormat(let reason):
+            return "Invalid data format: \(reason)"
+        case .encryptionFailed(let reason):
+            return "Encryption failed: \(reason)"
+        case .decryptionFailed(let reason):
+            return "Decryption failed: \(reason)"
+        case .keyGenerationFailed(let reason):
+            return "Key generation failed: \(reason)"
+        case .keyStorageFailed(let reason):
+            return "Key storage failed: \(reason)"
         }
     }
 
     /// Failure reason for the error
     public var failureReason: String? {
         switch self {
-        case .keyDerivationFailed:
-            "The key derivation process failed to complete successfully"
-        case .secureEnclaveKeyCreationFailed:
-            "Failed to create a key in the Secure Enclave"
-        case .invalidKeySize:
-            "The specified key size is not supported"
-        case .invalidInputData:
-            "The provided input data is invalid or corrupted"
-        case .encryptionFailed:
-            "The encryption operation failed to complete"
-        case .decryptionFailed:
-            "The decryption operation failed to complete"
-        case .invalidParameters:
-            "The provided parameters are invalid or incompatible"
-        case .operationNotSupported:
-            "The requested operation is not supported"
+        case .invalidKey(let reason),
+             .operationFailed(let reason),
+             .invalidDataFormat(let reason),
+             .encryptionFailed(let reason),
+             .decryptionFailed(let reason),
+             .keyGenerationFailed(let reason),
+             .keyStorageFailed(let reason):
+            return reason
         }
     }
 
     /// Recovery suggestion for the error
     public var recoverySuggestion: String? {
         switch self {
-        case .keyDerivationFailed:
-            "Try using a different key or key derivation parameters"
-        case .secureEnclaveKeyCreationFailed:
-            "Check if the Secure Enclave is available and try again"
-        case .invalidKeySize:
-            "Use a supported key size (e.g., 128, 256 bits)"
-        case .invalidInputData:
-            "Verify the input data is valid and try again"
+        case .invalidKey:
+            return "Verify that the encryption key is valid and properly initialized"
+        case .operationFailed:
+            return "Check the operation parameters and try again"
+        case .invalidDataFormat:
+            return "Ensure the data is in the correct format for the operation"
         case .encryptionFailed:
-            "Check the encryption parameters and try again"
+            return "Verify the encryption parameters and try again"
         case .decryptionFailed:
-            "Verify the key and encrypted data are correct"
-        case .invalidParameters:
-            "Check the documentation for supported parameters"
-        case .operationNotSupported:
-            "Use a supported operation or algorithm"
-        }
-    }
-
-    /// Help anchor for documentation
-    public var helpAnchor: String {
-        switch self {
-        case .keyDerivationFailed:
-            "encryption-key-derivation-failed"
-        case .secureEnclaveKeyCreationFailed:
-            "encryption-secure-enclave-failed"
-        case .invalidKeySize:
-            "encryption-invalid-key-size"
-        case .invalidInputData:
-            "encryption-invalid-input"
-        case .encryptionFailed:
-            "encryption-failed"
-        case .decryptionFailed:
-            "encryption-decryption-failed"
-        case .invalidParameters:
-            "encryption-invalid-parameters"
-        case .operationNotSupported:
-            "encryption-operation-not-supported"
+            return "Verify the decryption key and try again"
+        case .keyGenerationFailed:
+            return "Check the key generation parameters and try again"
+        case .keyStorageFailed:
+            return "Verify the storage location is accessible and try again"
         }
     }
 }

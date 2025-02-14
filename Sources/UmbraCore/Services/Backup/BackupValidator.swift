@@ -265,8 +265,7 @@ public struct BackupValidator {
                     forPath: storage.url.path
                 )
                 if let freeSize = attributes[.systemFreeSize] as? Int64,
-                   freeSize < quota
-                {
+                   freeSize < quota {
                     issues.append(
                         ValidationIssue(
                             type: .storage,
@@ -292,6 +291,7 @@ public struct BackupValidator {
         case .zip,
              .gzip:
             break
+
         case .lzma:
             guard CompressionManager.shared.isLZMAAvailable else {
                 issues.append(
@@ -313,6 +313,7 @@ public struct BackupValidator {
         switch configuration.encryptionType {
         case .none:
             break
+
         case .aes256:
             guard EncryptionManager.shared.isAESAvailable else {
                 issues.append(
@@ -323,6 +324,7 @@ public struct BackupValidator {
                 )
                 return
             }
+
         case .chacha20:
             guard EncryptionManager.shared.isChaCha20Available else {
                 issues.append(

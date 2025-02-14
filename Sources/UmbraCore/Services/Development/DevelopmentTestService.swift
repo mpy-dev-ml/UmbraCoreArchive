@@ -147,8 +147,7 @@ public final class DevelopmentTestService: BaseSandboxedService {
 
         // Check if we should simulate failure
         if configuration.simulateFailures,
-           Double.random(in: 0 ... 1) < configuration.failureRate
-        {
+           Double.random(in: 0 ... 1) < configuration.failureRate {
             let error = DevelopmentError.simulatedFailure(name)
 
             if configuration.recordInteractions {
@@ -300,8 +299,10 @@ public enum DevelopmentError: LocalizedError {
         switch self {
         case let .simulatedFailure(operation):
             "Simulated failure in operation: \(operation)"
+
         case let .invalidTestOperation(reason):
             "Invalid test operation: \(reason)"
+
         case let .mockDataNotFound(type):
             "Mock data not found for type: \(type)"
         }
@@ -311,8 +312,10 @@ public enum DevelopmentError: LocalizedError {
         switch self {
         case .simulatedFailure:
             "This is a simulated failure for testing purposes"
+
         case .invalidTestOperation:
             "Check test configuration and parameters"
+
         case .mockDataNotFound:
             "Ensure mock data is properly configured"
         }

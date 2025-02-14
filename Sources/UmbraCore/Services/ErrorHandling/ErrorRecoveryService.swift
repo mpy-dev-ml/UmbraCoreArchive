@@ -63,7 +63,7 @@ public final class ErrorRecoveryService: BaseSandboxedService {
 
         // MARK: Public
 
-        public static func < (lhs: Priority, rhs: Priority) -> Bool {
+        public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
     }

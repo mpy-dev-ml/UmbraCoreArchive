@@ -179,16 +179,22 @@ public final class SystemMonitor: BaseSandboxedService {
             switch type {
             case .cpu:
                 return try await getCPUMetrics()
+
             case .memory:
                 return try await getMemoryMetrics()
+
             case .disk:
                 return try await getDiskMetrics()
+
             case .network:
                 return try await getNetworkMetrics()
+
             case .battery:
                 return try await getBatteryMetrics()
+
             case .thermal:
                 return try await getThermalMetrics()
+
             case let .custom(resource):
                 throw SystemError.unsupportedResource(resource)
             }
