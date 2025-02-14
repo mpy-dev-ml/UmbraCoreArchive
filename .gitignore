@@ -47,3 +47,4 @@ DerivedData/
 *.xccheckout
 *.xcscmblueprint
 *.xcuserstate
+build_report.json

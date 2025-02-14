@@ -1,9 +1,0 @@
-# =========================
-# SwiftFormat Configuration
-# =========================
-
---swiftversion 5.9.2 
---wrapparameters before-first 
---wrapcollections before-first 
---commas inline
---trimwhitespace always
