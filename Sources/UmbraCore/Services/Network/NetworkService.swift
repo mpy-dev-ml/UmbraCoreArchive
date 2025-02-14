@@ -3,7 +3,7 @@
 // MARK: - NetworkService
 
 /// Service for managing network operations
-public final class NetworkService: BaseSandboxedService {
+public final class NetworkService: BaseSandboxedService, NetworkServiceProtocol {
     // MARK: Lifecycle
 
     /// Initialize with dependencies
@@ -13,7 +13,7 @@ public final class NetworkService: BaseSandboxedService {
     ///   - logger: Logger for tracking operations
     public init(
         configuration: URLSessionConfiguration = .default,
-        performanceMonitor: PerformanceMonitor,
+        performanceMonitor: PerformanceMonitorProtocol,
         logger: LoggerProtocol
     ) {
         session = URLSession(configuration: configuration)
@@ -24,7 +24,7 @@ public final class NetworkService: BaseSandboxedService {
     // MARK: - Properties
 
     public let session: URLSession
-    public let performanceMonitor: PerformanceMonitor
+    public let performanceMonitor: PerformanceMonitorProtocol
     private var activeTasks: [UUID: Task<Response, Error>] = [:]
     public let taskQueue = DispatchQueue(label: "dev.mpy.umbracore.network.tasks")
 
@@ -159,7 +159,8 @@ public final class NetworkService: BaseSandboxedService {
     ) async throws -> Response {
         let statusCode = response.statusCode
         guard (200 ... 299).contains(statusCode) else {
-            throw NetworkError.httpError(statusCode: statusCode)
+            let error: NetworkError = .httpError(statusCode: statusCode)
+            throw error
         }
 
         return Response(
@@ -264,16 +265,22 @@ public enum NetworkError: LocalizedError {
         switch self {
         case .invalidResponse:
             "The server returned an invalid response"
+
         case let .httpError(code):
             "The server returned an error (HTTP \(code))"
+
         case let .downloadError(reason):
             "Failed to download file: \(reason)"
+
         case let .uploadError(reason):
             "Failed to upload file: \(reason)"
+
         case .metricsUnavailable:
             "Unable to collect performance metrics"
+
         case let .requestError(reason):
             "Request failed: \(reason)"
+
         case .timeout:
             "The request timed out"
         }
@@ -283,16 +290,22 @@ public enum NetworkError: LocalizedError {
         switch self {
         case .invalidResponse:
             "Please check your network connection and try again"
+
         case .httpError:
             "Please verify the request and try again. If the problem persists, contact support"
+
         case .downloadError:
             "Please check available disk space and file permissions, then try again"
+
         case .uploadError:
             "Please verify the file exists and you have permission to upload"
+
         case .metricsUnavailable:
             "Please check your network connection and try again"
+
         case .requestError:
             "Please verify the request parameters and try again"
+
         case .timeout:
             "Please check your network connection or try again later"
         }

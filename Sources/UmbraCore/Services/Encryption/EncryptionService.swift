@@ -108,11 +108,12 @@ public class EncryptionService: NSObject {
             )
 
             // Encrypt data
-            let encryptedData = try AES.GCM.seal(
-                data,
-                using: symmetricKey,
-                nonce: AES.GCM.Nonce(data: initializationVector)
-            ).combined ?? Data()
+            let encryptedData =
+                try AES.GCM.seal(
+                    data,
+                    using: symmetricKey,
+                    nonce: AES.GCM.Nonce(data: initializationVector)
+                ).combined ?? Data()
 
             self.logEncryption(dataSize: data.count)
 
@@ -221,7 +222,7 @@ public class EncryptionService: NSObject {
                         saltBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
                         salt.count,
                         CCPBKDFAlgorithm(kCCPRFHmacAlgSHA256),
-                        10000,
+                        10_000,
                         derivedKeyBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
                         keySize / 8
                     )
@@ -242,8 +243,7 @@ public class EncryptionService: NSObject {
         useSecureEnclave: Bool
     ) throws -> SymmetricKey {
         if useSecureEnclave,
-           let key = try? createSecureEnclaveKey(fromData: data)
-        {
+           let key = try? createSecureEnclaveKey(fromData: data) {
             return key
         }
 
@@ -262,18 +262,20 @@ public class EncryptionService: NSObject {
         )
 
         var error: Unmanaged<CFError>?
-        guard let key = SecKeyCreateRandomKey(
-            [
-                kSecAttrKeyType: kSecAttrKeyTypeECSECPrimeRandom,
-                kSecAttrKeySizeInBits: 256,
-                kSecAttrTokenID: kSecAttrTokenIDSecureEnclave,
-                kSecPrivateKeyAttrs: [
-                    kSecAttrIsPermanent: true,
-                    kSecAttrAccessControl: access as Any
-                ]
-            ] as CFDictionary,
-            &error
-        ) else {
+        guard
+            let key = SecKeyCreateRandomKey(
+                [
+                    kSecAttrKeyType: kSecAttrKeyTypeECSECPrimeRandom,
+                    kSecAttrKeySizeInBits: 256,
+                    kSecAttrTokenID: kSecAttrTokenIDSecureEnclave,
+                    kSecPrivateKeyAttrs: [
+                        kSecAttrIsPermanent: true,
+                        kSecAttrAccessControl: access as Any
+                    ]
+                ] as CFDictionary,
+                &error
+            )
+        else {
             throw EncryptionError.secureEnclaveKeyCreationFailed
         }
 

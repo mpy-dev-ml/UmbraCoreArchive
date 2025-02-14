@@ -28,14 +28,12 @@
 ///     print("Security operation failed: \(error)")
 /// }
 /// ```
-@objc
-public protocol SecurityServiceProtocol: NSObjectProtocol, Sendable {
+public protocol SecurityServiceProtocol: Sendable {
     /// Request permission to access a URL
     ///
     /// - Parameter url: URL for which permission is requested
     /// - Returns: Whether permission was granted
     /// - Throws: SecurityError if permission request fails
-    @objc
     func requestPermission(for url: URL) async throws -> Bool
 
     /// Create a security-scoped bookmark for a URL
@@ -43,7 +41,6 @@ public protocol SecurityServiceProtocol: NSObjectProtocol, Sendable {
     /// - Parameter url: URL for which to create a bookmark
     /// - Returns: Bookmark data
     /// - Throws: SecurityError if bookmark creation fails
-    @objc
     func createBookmark(for url: URL) throws -> Data
 
     /// Validate a security-scoped bookmark
@@ -53,19 +50,16 @@ public protocol SecurityServiceProtocol: NSObjectProtocol, Sendable {
     ///   - url: URL for which the bookmark was created
     /// - Returns: Whether the bookmark is valid
     /// - Throws: SecurityError if validation fails
-    @objc
     func validateBookmark(_ bookmark: Data, for url: URL) throws -> Bool
 
     /// Start accessing a URL
     ///
     /// - Parameter url: URL to access
     /// - Throws: SecurityError if access fails
-    @objc
     func startAccessing(_ url: URL) throws
 
     /// Stop accessing a URL
     ///
     /// - Parameter url: URL to stop accessing
-    @objc
     func stopAccessing(_ url: URL)
 }

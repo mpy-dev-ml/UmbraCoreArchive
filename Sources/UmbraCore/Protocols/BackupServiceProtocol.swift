@@ -80,10 +80,27 @@ public protocol BackupServiceProtocol: Sendable {
     func performMaintenance(options: BackupMaintenanceOptions?) async throws -> Bool
 }
 
+// MARK: - BackupServiceDelegate
+
+/// Delegate for backup service events
+public protocol BackupServiceDelegate: AnyObject, Sendable {
+    /// Called when backup progress is updated
+    /// - Parameter progress: Current progress
+    func backupProgressDidUpdate(_ progress: Double)
+    
+    /// Called when backup state changes
+    /// - Parameter state: New state
+    func backupStateDidChange(_ state: BackupState)
+    
+    /// Called when backup encounters an error
+    /// - Parameter error: The error that occurred
+    func backupDidEncounterError(_ error: Error)
+}
+
 // MARK: - BackupHistoryEntry
 
 /// Represents a backup history entry
-public struct BackupHistoryEntry: Codable, Hashable {
+public struct BackupHistoryEntry: Codable, Hashable, Sendable {
     /// Unique identifier for the entry
     public let id: String
     /// Start time of the backup

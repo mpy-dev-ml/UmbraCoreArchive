@@ -89,7 +89,13 @@ public final class CacheMetrics: BaseSandboxedService, @unchecked Sendable {
     /// - Returns: Cache metrics
     /// - Throws: Error if operation fails
     public func getMetrics() async throws -> Metrics {
-        try validateUsable(for: "getMetrics")
+        let isUsable = try validateUsable(for: "getMetrics")
+        guard isUsable else {
+            throw ServiceOperationError(
+                message: "Service is not usable for metrics operation",
+                operation: "getMetrics"
+            )
+        }
 
         return try await performanceMonitor.trackDuration("cache.metrics") {
             let contents = try getCacheContents()
@@ -191,21 +197,25 @@ public final class CacheMetrics: BaseSandboxedService, @unchecked Sendable {
         let entryCount = contents.count
         let totalRequests = hitCount + missCount
 
-        let hitRate = totalRequests > 0
-            ? Double(hitCount) / Double(totalRequests)
-            : 0.0
+        let hitRate =
+            totalRequests > 0
+                ? Double(hitCount) / Double(totalRequests)
+                : 0.0
 
-        let missRate = totalRequests > 0
-            ? Double(missCount) / Double(totalRequests)
-            : 0.0
+        let missRate =
+            totalRequests > 0
+                ? Double(missCount) / Double(totalRequests)
+                : 0.0
 
-        let averageEntrySize = entryCount > 0
-            ? Double(totalSize) / Double(entryCount)
-            : 0.0
+        let averageEntrySize =
+            entryCount > 0
+                ? Double(totalSize) / Double(entryCount)
+                : 0.0
 
-        let averageEntryAge = entryCount > 0
-            ? totalAge / Double(entryCount)
-            : 0.0
+        let averageEntryAge =
+            entryCount > 0
+                ? totalAge / Double(entryCount)
+                : 0.0
 
         return Metrics(
             totalSize: totalSize,

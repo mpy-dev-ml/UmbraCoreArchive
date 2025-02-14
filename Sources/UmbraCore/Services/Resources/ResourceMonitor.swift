@@ -13,7 +13,7 @@ public final class ResourceMonitor: BaseSandboxedService {
     ///   - logger: Logger for tracking operations
     public init(
         thresholds: ResourceThresholds = ResourceThresholds(),
-        maxSnapshots: Int = 1000,
+        maxSnapshots: Int = 1_000,
         logger: LoggerProtocol
     ) {
         self.thresholds = thresholds

@@ -114,12 +114,16 @@ public enum FileError: LocalizedError {
         switch self {
         case let .fileNotFound(path):
             "File not found at path: \(path)"
+
         case let .accessDenied(path):
             "Access denied to path: \(path)"
+
         case let .alreadyExists(path):
             "File already exists at path: \(path)"
+
         case let .invalidPath(path):
             "Invalid path: \(path)"
+
         case let .operationFailed(path, reason):
             "Operation failed for path: \(path), reason: \(reason)"
         }

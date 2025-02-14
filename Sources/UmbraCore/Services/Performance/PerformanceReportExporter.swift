@@ -1,7 +1,7 @@
 @preconcurrency import Foundation
 
 /// Service for exporting performance reports
-public final class PerformanceReportExporter: BaseSandboxedService {
+public final class PerformanceReportExporter: BaseSandboxedService, @unchecked Sendable {
     // MARK: Lifecycle
 
     // MARK: - Initialization
@@ -18,6 +18,15 @@ public final class PerformanceReportExporter: BaseSandboxedService {
     // MARK: Public
 
     // MARK: - Types
+
+    /// Type of performance metric
+    public enum MetricType: String, CaseIterable {
+        case memory = "Memory Usage"
+        case cpu = "CPU Usage"
+        case time = "Operation Time"
+        case diskIO = "Disk I/O"
+        case network = "Network Usage"
+    }
 
     /// Format for exported reports
     public enum ReportFormat {
@@ -36,9 +45,8 @@ public final class PerformanceReportExporter: BaseSandboxedService {
         /// Initialize with default values
         public init(
             format: ReportFormat = .json,
-            metricTypes: Set<PerformanceMonitor.MetricType> = Set(
-                PerformanceMonitor.MetricType
-                    .allCases
+            metricTypes: Set<MetricType> = Set(
+                MetricType.allCases
             ),
             startDate: Date? = nil,
             endDate: Date? = nil,
@@ -56,7 +64,7 @@ public final class PerformanceReportExporter: BaseSandboxedService {
         /// Format of the report
         public let format: ReportFormat
         /// Types of metrics to include
-        public let metricTypes: Set<PerformanceMonitor.MetricType>
+        public let metricTypes: Set<MetricType>
         /// Start date for metrics
         public let startDate: Date?
         /// End date for metrics
@@ -76,7 +84,13 @@ public final class PerformanceReportExporter: BaseSandboxedService {
         configuration: ExportConfiguration,
         to url: URL
     ) throws {
-        try validateUsable(for: "exportReport")
+        let isUsable = try validateUsable(for: "exportReport")
+        guard isUsable else {
+            throw ServiceOperationError(
+                message: "Service is not usable for export operation",
+                operation: "exportReport"
+            )
+        }
 
         logger.debug(
             """
@@ -113,11 +127,13 @@ public final class PerformanceReportExporter: BaseSandboxedService {
                     metrics: metrics,
                     metadata: configuration.metadata
                 )
+
             case .csv:
                 try generateCSVReport(
                     metrics: metrics,
                     metadata: configuration.metadata
                 )
+
             case .text:
                 try generateTextReport(
                     metrics: metrics,

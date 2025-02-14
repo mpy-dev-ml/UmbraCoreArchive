@@ -1,27 +1,10 @@
 @preconcurrency import Foundation
 
 /// Monitor for system operations and resources
+@unchecked Sendable
 public final class SystemMonitor: BaseSandboxedService {
-    // MARK: Lifecycle
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        super.init(logger: logger)
-    }
-
-    // MARK: Public
-
     // MARK: - Types
-
+    
     /// System resource type
     public enum ResourceType {
         /// CPU usage
@@ -85,7 +68,66 @@ public final class SystemMonitor: BaseSandboxedService {
         case failed(Error)
     }
 
-    // MARK: - Public Methods
+    /// System resource thresholds
+    public struct ResourceThresholds {
+        public let cpuUsageThreshold: Double
+        public let memoryUsageThreshold: Double
+        public let diskSpaceThreshold: Double
+        
+        public init(
+            cpuUsageThreshold: Double = 0.8,
+            memoryUsageThreshold: Double = 0.8,
+            diskSpaceThreshold: Double = 0.9
+        ) {
+            self.cpuUsageThreshold = cpuUsageThreshold
+            self.memoryUsageThreshold = memoryUsageThreshold
+            self.diskSpaceThreshold = diskSpaceThreshold
+        }
+    }
+    
+    // MARK: - Properties
+    
+    /// Performance monitor for tracking operations
+    private let performanceMonitor: PerformanceMonitor
+    
+    /// Current state
+    private var state: MonitorState = .stopped
+
+    /// Resource handlers
+    private var resourceHandlers: [UUID: (ResourceMetrics) -> Void] = [:]
+
+    /// Queue for synchronizing operations
+    private let queue: DispatchQueue = .init(
+        label: "dev.mpy.umbracore.system.monitor",
+        qos: .utility,
+        attributes: .concurrent
+    )
+
+    /// Timer for resource monitoring
+    private var monitorTimer: DispatchSourceTimer?
+
+    private let thresholds: ResourceThresholds
+    private var isMonitoring: Bool = false
+    
+    // MARK: - Initialization
+    
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol,
+        thresholds: ResourceThresholds = ResourceThresholds()
+    ) {
+        self.performanceMonitor = performanceMonitor
+        self.thresholds = thresholds
+        super.init(logger: logger)
+    }
+
+    // MARK: Lifecycle
+
+    // MARK: Public
 
     /// Start monitoring
     /// - Parameter interval: Monitoring interval in seconds
@@ -179,16 +221,22 @@ public final class SystemMonitor: BaseSandboxedService {
             switch type {
             case .cpu:
                 return try await getCPUMetrics()
+
             case .memory:
                 return try await getMemoryMetrics()
+
             case .disk:
                 return try await getDiskMetrics()
+
             case .network:
                 return try await getNetworkMetrics()
+
             case .battery:
                 return try await getBatteryMetrics()
+
             case .thermal:
                 return try await getThermalMetrics()
+
             case let .custom(resource):
                 throw SystemError.unsupportedResource(resource)
             }
@@ -196,25 +244,6 @@ public final class SystemMonitor: BaseSandboxedService {
     }
 
     // MARK: Private
-
-    /// Current state
-    private var state: MonitorState = .stopped
-
-    /// Resource handlers
-    private var resourceHandlers: [UUID: (ResourceMetrics) -> Void] = [:]
-
-    /// Queue for synchronizing operations
-    private let queue: DispatchQueue = .init(
-        label: "dev.mpy.umbracore.system.monitor",
-        qos: .utility,
-        attributes: .concurrent
-    )
-
-    /// Timer for resource monitoring
-    private var monitorTimer: DispatchSourceTimer?
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
 
     // MARK: - Private Methods
 

@@ -136,8 +136,7 @@ public final class MaintenanceService: BaseSandboxedService {
         let hour = calendar.component(.hour, from: now)
         let minute = calendar.component(.minute, from: now)
 
-        return hour == configuration.schedule.hour &&
-            minute == configuration.schedule.minute
+        return hour == configuration.schedule.hour && minute == configuration.schedule.minute
     }
 
     // MARK: Private
@@ -182,12 +181,16 @@ public final class MaintenanceService: BaseSandboxedService {
             switch task {
             case .cleanupTemporaryFiles:
                 return try await cleanupTemporaryFiles()
+
             case .validateBookmarks:
                 return try await validateBookmarks()
+
             case .checkFileSystemIntegrity:
                 return try await checkFileSystemIntegrity()
+
             case .optimizeDatabase:
                 return try await optimizeDatabase()
+
             case .validateConfiguration:
                 return try await validateConfiguration()
             }
@@ -254,8 +257,10 @@ public enum MaintenanceError: LocalizedError {
         switch self {
         case .maintenanceDisabled:
             "Maintenance is disabled"
+
         case let .taskAlreadyRunning(task):
             "Task is already running: \(task.rawValue)"
+
         case let .taskFailed(task, reason):
             "Task failed - \(task.rawValue): \(reason)"
         }

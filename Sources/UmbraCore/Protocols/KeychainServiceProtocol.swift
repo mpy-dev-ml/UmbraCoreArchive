@@ -24,10 +24,11 @@ public protocol KeychainServiceProtocol: NSObjectProtocol {
     /// - Parameters:
     ///   - key: Key to retrieve data for
     ///   - accessGroup: Optional access group
-    /// - Returns: Data if found, nil if not found
-    /// - Throws: KeychainError if operation fails
+    /// - Returns: Data if found
+    /// - Throws: KeychainError if operation fails or item not found
     /// - Note: Must handle both main app and XPC service access patterns
-    func retrieve(for key: String, accessGroup: String?) throws -> Data?
+    @objc
+    func retrieve(for key: String, accessGroup: String?) throws -> Data
 
     /// Delete data from the keychain with sandbox-compliant access
     /// - Parameters:
@@ -40,13 +41,12 @@ public protocol KeychainServiceProtocol: NSObjectProtocol {
     /// Configure keychain sharing with XPC service
     /// - Parameter accessGroup: The access group to use for sharing
     /// - Throws: KeychainError if configuration fails
-    /// - Note: Must be called before any XPC service operations
     @objc
     func configureXPCSharing(accessGroup: String) throws
 
     /// Validate XPC access to keychain
     /// - Parameter accessGroup: Access group to validate
-    /// - Returns: True if access is valid
     /// - Throws: KeychainError if validation fails
-    func validateXPCAccess(accessGroup: String) throws -> Bool
+    @objc
+    func validateXPCAccess(accessGroup: String) throws
 }

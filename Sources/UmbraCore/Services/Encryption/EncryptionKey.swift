@@ -122,10 +122,13 @@ public struct EncryptionKey {
         case .memory:
             // Already in memory
             break
+
         case .keychain:
             try saveToKeychain()
+
         case .secureEnclave:
             try saveToSecureEnclave()
+
         case let .custom(storageType):
             throw EncryptionError.operationFailed("Unsupported storage: \(storageType)")
         }
@@ -138,10 +141,13 @@ public struct EncryptionKey {
         case .memory:
             // Nothing to delete
             break
+
         case .keychain:
             try deleteFromKeychain()
+
         case .secureEnclave:
             try deleteFromSecureEnclave()
+
         case let .custom(storageType):
             throw EncryptionError.operationFailed("Unsupported storage: \(storageType)")
         }
@@ -214,8 +220,10 @@ public struct EncryptionKey {
         switch type {
         case .symmetric:
             return try getSymmetricKey().withUnsafeBytes { Data($0) }
+
         case .asymmetric:
             return try getPrivateKeyData()
+
         case let .custom(keyType):
             throw EncryptionError.operationFailed("Unsupported key type: \(keyType)")
         }

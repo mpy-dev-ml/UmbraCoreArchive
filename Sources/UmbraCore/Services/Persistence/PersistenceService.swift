@@ -57,6 +57,7 @@ public final class PersistenceService: BaseSandboxedService {
                     appropriateFor: nil,
                     create: true
                 )
+
             case .documents:
                 try FileManager.default.url(
                     for: .documentDirectory,
@@ -64,6 +65,7 @@ public final class PersistenceService: BaseSandboxedService {
                     appropriateFor: nil,
                     create: true
                 )
+
             case .cache:
                 try FileManager.default.url(
                     for: .cachesDirectory,
@@ -71,8 +73,10 @@ public final class PersistenceService: BaseSandboxedService {
                     appropriateFor: nil,
                     create: true
                 )
+
             case .temporary:
                 FileManager.default.temporaryDirectory
+
             case let .custom(url):
                 url
             }
@@ -353,9 +357,10 @@ public final class PersistenceService: BaseSandboxedService {
             throw PersistenceError.directoryNotFound
         }
 
-        return baseURL
-            .appendingPathComponent(key)
-            .appendingPathExtension(configuration.fileExtension)
+        return
+            baseURL
+                .appendingPathComponent(key)
+                .appendingPathExtension(configuration.fileExtension)
     }
 
     /// Compress data

@@ -92,9 +92,9 @@ public final class PermissionValidator {
 
         /// Human-readable description of the issue
         public var description: String {
-            let contextString = context
-                .isEmpty ? "" :
-                " (\(context.map { "\($0.key): \($0.value)" }.joined(separator: ", ")))"
+            let contextString =
+                context
+                    .isEmpty ? "" : " (\(context.map { "\($0.key): \($0.value)" }.joined(separator: ", ")))"
             return "\(type.description): \(description)\(contextString)"
         }
     }
@@ -121,14 +121,19 @@ public final class PermissionValidator {
             switch self {
             case .permissionMissing:
                 "Permission Missing"
+
             case .permissionExpired:
                 "Permission Expired"
+
             case .invalidAccessLevel:
                 "Invalid Access Level"
+
             case .invalidConfiguration:
                 "Invalid Configuration"
+
             case .resourceUnavailable:
                 "Resource Unavailable"
+
             case let .custom(type):
                 "Custom Issue: \(type)"
             }
@@ -184,7 +189,7 @@ public final class PermissionValidator {
         }
 
         // Validate resource availability
-        if ! await resourceChecker.isResourceAvailable(type) {
+        if await !(resourceChecker.isResourceAvailable(type)) {
             let issue = ValidationIssue(
                 type: .resourceUnavailable,
                 description: "Required resource is not available",
@@ -298,22 +303,31 @@ public final class ResourceAvailabilityChecker: ResourceAvailabilityChecking {
         switch type {
         case .fileSystem:
             checkFileSystemAvailability()
+
         case .keychain:
             checkKeychainAvailability()
+
         case .network:
             checkNetworkAvailability()
+
         case .camera:
             checkCameraAvailability()
+
         case .microphone:
             checkMicrophoneAvailability()
+
         case .location:
             checkLocationAvailability()
+
         case .notifications:
             checkNotificationsAvailability()
+
         case .calendar:
             checkCalendarAvailability()
+
         case .contacts:
             checkContactsAvailability()
+
         case .photos:
             checkPhotosAvailability()
         }
@@ -325,8 +339,8 @@ public final class ResourceAvailabilityChecker: ResourceAvailabilityChecking {
     /// - Returns: Whether filesystem is available
     private func checkFileSystemAvailability() -> Bool {
         // Check both iCloud and local filesystem availability
-        FileManager.default.isUbiquitousItemAvailable &&
-            FileManager.default.isReadableFile(atPath: NSHomeDirectory())
+        FileManager.default.isUbiquitousItemAvailable
+            && FileManager.default.isReadableFile(atPath: NSHomeDirectory())
     }
 
     /// Check keychain availability

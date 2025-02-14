@@ -1,17 +1,159 @@
-@preconcurrency import Foundation
-import os.log
+import Foundation
+import Logging
 
 // MARK: - XPCService
 
 /// XPC service class for managing XPC connections
-class XPCService {
-    // MARK: Lifecycle
+@Observable
+@MainActor
+public final class XPCService {
+    // MARK: - Types
 
-    init(
+    /// Error reasons specific to XPC operations
+    @frozen
+    @Error
+    public enum ServiceError: LocalizedError, CustomDebugStringConvertible {
+        @ErrorCase("Service instance was deallocated")
+        case serviceInstanceDeallocated
+
+        @ErrorCase("Cannot connect while in state: {state}")
+        case invalidConnectionState(state: XPCConnectionState)
+
+        @ErrorCase("No active connection available")
+        case noActiveConnection
+
+        @ErrorCase("Failed to cast proxy to type: {type}")
+        case invalidProxyType(type: Any.Type)
+
+        @ErrorCase("Maximum retry attempts exceeded")
+        case maxRetryAttemptsExceeded
+
+        @ErrorCase("Operation timed out after {seconds} seconds")
+        case operationTimeout(seconds: TimeInterval)
+
+        @ErrorCase("Connection validation failed: {reason}")
+        case validationFailed(reason: String)
+
+        @ErrorCase("Connection was interrupted")
+        case connectionInterrupted
+
+        @ErrorCase("Connection was invalidated")
+        case connectionInvalidated
+
+        public var errorDescription: String? {
+            switch self {
+            case .serviceInstanceDeallocated:
+                "The XPC service instance was deallocated"
+
+            case let .invalidConnectionState(state):
+                "Cannot perform operation while in state: \(state)"
+
+            case .noActiveConnection:
+                "No active XPC connection available"
+
+            case let .invalidProxyType(type):
+                "Failed to cast proxy to type: \(type)"
+
+            case .maxRetryAttemptsExceeded:
+                "Maximum connection retry attempts exceeded"
+
+            case let .operationTimeout(seconds):
+                "Operation timed out after \(seconds) seconds"
+
+            case let .validationFailed(reason):
+                "Connection validation failed: \(reason)"
+
+            case .connectionInterrupted:
+                "XPC connection was interrupted"
+
+            case .connectionInvalidated:
+                "XPC connection was invalidated"
+            }
+        }
+
+        public var debugDescription: String {
+            "XPCServiceError: \(errorDescription ?? "Unknown error")"
+        }
+
+        /// Whether the error is recoverable
+        public var isRecoverable: Bool {
+            switch self {
+            case .serviceInstanceDeallocated, .maxRetryAttemptsExceeded:
+                false
+            case .invalidConnectionState, .noActiveConnection,
+                 .invalidProxyType, .operationTimeout,
+                 .validationFailed, .connectionInterrupted,
+                 .connectionInvalidated:
+                true
+            }
+        }
+
+        /// Log level for the error
+        public var logLevel: Logger.Level {
+            switch self {
+            case .serviceInstanceDeallocated, .maxRetryAttemptsExceeded:
+                .critical
+
+            case .invalidConnectionState, .noActiveConnection,
+                 .invalidProxyType, .operationTimeout,
+                 .validationFailed:
+                .error
+
+            case .connectionInterrupted, .connectionInvalidated:
+                .warning
+            }
+        }
+    }
+
+    // MARK: - Properties
+
+    /// Current connection state
+    @Published
+    private(set) var connectionState: XPCConnectionState = .disconnected {
+        didSet {
+            if oldValue != connectionState {
+                logStateChange(oldValue, connectionState)
+            }
+        }
+    }
+
+    /// Number of retry attempts made
+    @Published
+    private(set) var retryCount: Int = 0
+
+    /// Whether the service is connected
+    public var isConnected: Bool {
+        connectionState == .connected
+    }
+
+    /// Whether the service is attempting to connect
+    public var isConnecting: Bool {
+        connectionState == .connecting
+    }
+
+    /// Whether the service can attempt reconnection
+    public var canReconnect: Bool {
+        configuration.autoReconnect && retryCount < configuration.maxRetryAttempts
+    }
+
+    // MARK: - Private Properties
+
+    private let configuration: XPCConfiguration
+    private let queue: DispatchQueue
+    private let logger: any LoggerProtocol
+    private let healthMonitor: XPCHealthMonitor
+
+    private var connection: NSXPCConnection?
+    private var connectionTask: Task<Void, Error>?
+
+    // MARK: - Initialization
+
+    public init(
         configuration: XPCConfiguration,
         queue: DispatchQueue = .main,
-        logger: Logger = Logger(subsystem: "com.umbra.core", category: "XPCService")
+        logger: any LoggerProtocol = Logger(label: "dev.mpy.umbra.xpc-service")
     ) {
+        precondition(configuration.isValid, "Invalid XPC configuration")
         self.configuration = configuration
         self.queue = queue
         self.logger = logger
@@ -22,53 +164,53 @@ class XPCService {
         disconnect()
     }
 
-    // MARK: Internal
+    // MARK: - Public Methods
 
     /// Connect to the XPC service
-    func connect() async throws {
+    /// - Throws: ServiceError if connection fails
+    public func connect() async throws {
         try await performConnect()
     }
 
     /// Disconnect from the XPC service
-    func disconnect() {
+    public func disconnect() {
         performDisconnect()
     }
 
     /// Get remote proxy object
-    func remoteProxy<T>() throws -> T {
-        try createRemoteProxy()
+    /// - Returns: Remote proxy of type T
+    /// - Throws: ServiceError if proxy creation fails
+    public func remoteProxy<T>() async throws -> T {
+        try await createRemoteProxy()
     }
 
-    // MARK: Private
-
-    private let configuration: XPCConfiguration
-    private let queue: DispatchQueue
-    private let logger: Logger
-    private let healthMonitor: XPCHealthMonitor
-
-    private var connection: NSXPCConnection?
-    private var retryCount: Int = 0
-
-    private var connectionState: XPCConnectionState = .disconnected {
-        willSet {
-            handleConnectionStateChange(from: connectionState, to: newValue)
-        }
+    /// Reset connection state and retry count
+    public func reset() {
+        connectionTask?.cancel()
+        connectionTask = nil
+        connection = nil
+        connectionState = .disconnected
+        retryCount = 0
+        healthMonitor.stopMonitoring()
     }
 }
 
 // MARK: - Connection Management
 
-private extension XPCService {
+extension XPCService {
     /// Perform connection setup and validation
-    func performConnect() async throws {
-        guard let self else {
-            throw XPCError.serviceUnavailable(
-                reason: .serviceInstanceDeallocated
-            )
+    private func performConnect() async throws {
+        guard !Task.isCancelled else {
+            throw ServiceError.serviceInstanceDeallocated
         }
 
         try validateConnectionState()
-        try await setupConnection()
+
+        connectionTask = Task {
+            try await setupConnection()
+        }
+
+        try await connectionTask?.value
         retryCount = 0
     }
 
@@ -77,7 +219,7 @@ private extension XPCService {
         connectionState = .connecting
 
         let connection = try createConnection()
-        try await waitForConnection(connection)
+        try await validateConnection(connection)
 
         self.connection = connection
         connectionState = .connected
@@ -87,28 +229,22 @@ private extension XPCService {
     }
 
     /// Validate current connection state
-    func validateConnectionState() throws {
+    private func validateConnectionState() throws {
         guard connectionState == .disconnected else {
-            throw XPCError.invalidState(
-                reason: .invalidConnectionState(connectionState)
-            )
+            throw ServiceError.invalidConnectionState(state: connectionState)
         }
     }
 
     /// Create and configure a new XPC connection
-    func createConnection() throws -> NSXPCConnection {
-        let connection = NSXPCConnection(
-            serviceName: configuration.serviceName
-        )
-
+    private func createConnection() throws -> NSXPCConnection {
+        let connection = NSXPCConnection(serviceName: configuration.serviceName)
         configureConnection(connection)
         connection.resume()
-
         return connection
     }
 
     /// Configure connection settings and handlers
-    func configureConnection(_ connection: NSXPCConnection) {
+    private func configureConnection(_ connection: NSXPCConnection) {
         configureAuditSession(connection)
         configureInterface(connection)
         configureHandlers(connection)
@@ -131,32 +267,33 @@ private extension XPCService {
     /// Configure connection handlers
     private func configureHandlers(_ connection: NSXPCConnection) {
         connection.interruptionHandler = { [weak self] in
-            self?.handleInterruption()
+            Task { @MainActor [weak self] in
+                self?.handleInterruption()
+            }
         }
 
         connection.invalidationHandler = { [weak self] in
-            self?.handleInvalidation()
+            Task { @MainActor [weak self] in
+                self?.handleInvalidation()
+            }
         }
     }
 
-    /// Wait for connection to establish
-    func waitForConnection(
-        _: NSXPCConnection
-    ) async throws {
+    /// Validate connection is working
+    private func validateConnection(_ connection: NSXPCConnection) async throws {
         try await withTimeout(configuration.connectionTimeout) {
-            // Implement connection verification
-            // This could ping the service or check a status
-            true
+            guard let proxy = connection.remoteObjectProxy as? XPCServiceProtocol else {
+                throw ServiceError.validationFailed(reason: "Failed to create proxy")
+            }
+
+            try await proxy.ping()
+            return true
         }
     }
 
     /// Perform disconnection cleanup
-    func performDisconnect() {
-        guard let self,
-              connectionState == .connected
-        else {
-            return
-        }
+    private func performDisconnect() {
+        guard connectionState == .connected else { return }
 
         connectionState = .disconnecting
         cleanupConnection()
@@ -166,115 +303,100 @@ private extension XPCService {
     /// Cleanup connection resources
     private func cleanupConnection() {
         healthMonitor.stopMonitoring()
-
         connection?.invalidate()
         connection = nil
-
+        connectionTask?.cancel()
+        connectionTask = nil
         logDisconnection()
     }
 
     /// Create remote proxy object
-    func createRemoteProxy<T>() throws -> T {
-        guard let self else {
-            throw XPCError.serviceUnavailable(
-                reason: .serviceInstanceDeallocated
-            )
+    private func createRemoteProxy<T>() async throws -> T {
+        guard !Task.isCancelled else {
+            throw ServiceError.serviceInstanceDeallocated
         }
 
         try validateProxyCreation()
 
         let errorHandler = { [weak self] (error: Error) in
-            self?.handleConnectionError(error)
+            Task { @MainActor [weak self] in
+                self?.handleConnectionError(error)
+            }
         }
 
         guard let proxy = connection?.remoteObjectProxyWithErrorHandler(
             errorHandler
         ) as? T else {
-            throw XPCError.invalidProxy(
-                reason: .invalidProxyType(T.self)
-            )
+            throw ServiceError.invalidProxyType(type: T.self)
         }
 
         return proxy
     }
 
     /// Validate connection state for proxy creation
-    func validateProxyCreation() throws {
+    private func validateProxyCreation() throws {
         guard let connection,
               connectionState == .connected
         else {
-            throw XPCError.notConnected(
-                reason: .noActiveConnection
-            )
+            throw ServiceError.noActiveConnection
         }
     }
 }
 
 // MARK: - Error Handling
 
-private extension XPCService {
+extension XPCService {
     /// Handle connection interruption
-    func handleInterruption() {
-        queue.async { [weak self] in
-            guard let self else {
-                return
+    private func handleInterruption() {
+        logInterruption()
+        if configuration.autoReconnect {
+            Task {
+                try await reconnect()
             }
-            logInterruption()
-            if configuration.autoReconnect {
-                Task { try await self.reconnect() }
-            }
+        } else {
+            cleanupConnection()
+            throw ServiceError.connectionInterrupted
         }
     }
 
     /// Handle connection invalidation
-    func handleInvalidation() {
-        queue.async { [weak self] in
-            guard let self else {
-                return
-            }
-            logInvalidation()
-            connection = nil
-            connectionState = .disconnected
-        }
+    private func handleInvalidation() {
+        logInvalidation()
+        cleanupConnection()
+        throw ServiceError.connectionInvalidated
     }
 
     /// Handle connection errors
-    func handleConnectionError(_ error: Error) {
-        queue.async { [weak self] in
-            guard let self else {
-                return
+    private func handleConnectionError(_ error: Error) {
+        logConnectionError(error)
+        if configuration.autoReconnect {
+            Task {
+                try await reconnect()
             }
-            logConnectionError(error)
-            if configuration.autoReconnect {
-                Task { try await self.reconnect() }
-            }
+        } else {
+            cleanupConnection()
         }
     }
 
     /// Attempt to reconnect to the service
-    func reconnect() async throws {
-        guard retryCount < configuration.maxRetryAttempts else {
-            throw XPCError.reconnectionFailed(
-                reason: .maxRetryAttemptsExceeded
-            )
+    private func reconnect() async throws {
+        guard canReconnect else {
+            throw ServiceError.maxRetryAttemptsExceeded
         }
 
         retryCount += 1
         logReconnectionAttempt()
 
-        try await Task.sleep(
-            nanoseconds: UInt64(configuration.retryDelay * 1_000_000_000)
-        )
-
+        try await Task.sleep(for: .seconds(configuration.retryDelay))
         try await connect()
     }
 }
 
 // MARK: - Logging
 
-private extension XPCService {
+extension XPCService {
     /// Log successful connection
-    func logConnectionEstablished() {
+    private func logConnectionEstablished() {
         logger.info(
             "Connected to XPC service",
             metadata: createConnectionMetadata()
@@ -282,7 +404,7 @@ private extension XPCService {
     }
 
     /// Log disconnection
-    func logDisconnection() {
+    private func logDisconnection() {
         logger.info(
             "Disconnected from XPC service",
             metadata: createConnectionMetadata()
@@ -290,7 +412,7 @@ private extension XPCService {
     }
 
     /// Log connection interruption
-    func logInterruption() {
+    private func logInterruption() {
         logger.warning(
             "XPC connection interrupted",
             metadata: createInterruptionMetadata()
@@ -298,7 +420,7 @@ private extension XPCService {
     }
 
     /// Log connection invalidation
-    func logInvalidation() {
+    private func logInvalidation() {
         logger.error(
             "XPC connection invalidated",
             metadata: createConnectionMetadata()
@@ -306,7 +428,7 @@ private extension XPCService {
     }
 
     /// Log connection error
-    func logConnectionError(_ error: Error) {
+    private func logConnectionError(_ error: Error) {
         logger.error(
             "XPC connection error",
             metadata: createErrorMetadata(error)
@@ -314,7 +436,7 @@ private extension XPCService {
     }
 
     /// Log reconnection attempt
-    func logReconnectionAttempt() {
+    private func logReconnectionAttempt() {
         logger.info(
             "Attempting to reconnect to XPC service",
             metadata: createReconnectionMetadata()
@@ -322,53 +444,45 @@ private extension XPCService {
     }
 
     /// Create base connection metadata
-    func createConnectionMetadata() -> [String: String] {
+    private func createConnectionMetadata() -> Logger.Metadata {
         [
-            "service": configuration.serviceName,
-            "state": connectionState.description
+            "service": .string(configuration.serviceName),
+            "state": .string(connectionState.description),
+            "retry_count": .string(String(retryCount)),
+            "auto_reconnect": .string(String(configuration.autoReconnect))
         ]
     }
 
     /// Create interruption metadata
-    func createInterruptionMetadata() -> [String: String] {
-        [
-            "service": configuration.serviceName,
-            "retry_count": String(retryCount)
-        ]
+    private func createInterruptionMetadata() -> Logger.Metadata {
+        createConnectionMetadata().merging([
+            "can_reconnect": .string(String(canReconnect))
+        ]) { $1 }
     }
 
     /// Create error metadata
-    func createErrorMetadata(_ error: Error) -> [String: String] {
-        [
-            "service": configuration.serviceName,
-            "error": String(describing: error)
-        ]
+    private func createErrorMetadata(_ error: Error) -> Logger.Metadata {
+        createConnectionMetadata().merging([
+            "error": .string(String(describing: error)),
+            "error_type": .string(String(describing: type(of: error)))
+        ]) { $1 }
     }
 
     /// Create reconnection metadata
-    func createReconnectionMetadata() -> [String: String] {
-        [
-            "service": configuration.serviceName,
-            "attempt": String(retryCount),
-            "max_attempts": String(configuration.maxRetryAttempts)
-        ]
+    private func createReconnectionMetadata() -> Logger.Metadata {
+        createConnectionMetadata().merging([
+            "attempt": .string(String(retryCount)),
+            "max_attempts": .string(String(configuration.maxRetryAttempts)),
+            "retry_delay": .string(String(configuration.retryDelay))
+        ]) { $1 }
     }
 }
 
 // MARK: - State Management
 
-private extension XPCService {
-    /// Handle connection state changes
-    func handleConnectionStateChange(
-        from oldState: XPCConnectionState,
-        to newState: XPCConnectionState
-    ) {
-        logStateChange(oldState, newState)
-        notifyStateChange(oldState, newState)
-    }
-
+extension XPCService {
     /// Log state change
-    func logStateChange(
+    private func logStateChange(
         _ oldState: XPCConnectionState,
         _ newState: XPCConnectionState
     ) {
@@ -376,10 +490,11 @@ private extension XPCService {
             "XPC connection state changed",
             metadata: createStateChangeMetadata(oldState, newState)
         )
+        notifyStateChange(oldState, newState)
     }
 
     /// Notify observers of state change
-    func notifyStateChange(
+    private func notifyStateChange(
         _ oldState: XPCConnectionState,
         _ newState: XPCConnectionState
     ) {
@@ -391,35 +506,37 @@ private extension XPCService {
     }
 
     /// Create state change metadata
-    func createStateChangeMetadata(
+    private func createStateChangeMetadata(
         _ oldState: XPCConnectionState,
         _ newState: XPCConnectionState
-    ) -> [String: String] {
-        [
-            "old_state": oldState.description,
-            "new_state": newState.description,
-            "service": configuration.serviceName
-        ]
+    ) -> Logger.Metadata {
+        createConnectionMetadata().merging([
+            "old_state": .string(oldState.description),
+            "new_state": .string(newState.description)
+        ]) { $1 }
     }
 
     /// Create state change notification user info
-    func createStateChangeUserInfo(
+    private func createStateChangeUserInfo(
         _ oldState: XPCConnectionState,
         _ newState: XPCConnectionState
     ) -> [String: Any] {
         [
             "old_state": oldState,
             "new_state": newState,
-            "service": configuration.serviceName
+            "service": configuration.serviceName,
+            "retry_count": retryCount,
+            "can_reconnect": canReconnect,
+            "timestamp": Date()
         ]
     }
 }
 
 // MARK: - Timeout Utility
 
-private extension XPCService {
+extension XPCService {
     /// Execute task with timeout
-    func withTimeout<T>(
+    private func withTimeout<T>(
         _ seconds: TimeInterval,
         operation: () async throws -> T
     ) async throws -> T {
@@ -431,53 +548,15 @@ private extension XPCService {
             group.cancelAll()
 
             return try result ?? {
-                throw XPCError.timeout(
-                    reason: .operationTimeout(seconds)
-                )
+                throw ServiceError.operationTimeout(seconds: seconds)
             }()
         }
     }
 
     /// Create timeout task
-    func timeoutTask<T>(_ seconds: TimeInterval) async throws -> T {
-        try await Task.sleep(
-            nanoseconds: UInt64(seconds * 1_000_000_000)
-        )
-        throw XPCError.timeout(
-            reason: .operationTimeout(seconds)
-        )
-    }
-}
-
-// MARK: - XPCError.Reason
-
-extension XPCError {
-    enum Reason {
-        case serviceInstanceDeallocated
-        case invalidConnectionState(XPCConnectionState)
-        case noActiveConnection
-        case invalidProxyType(Any.Type)
-        case maxRetryAttemptsExceeded
-        case operationTimeout(TimeInterval)
-
-        // MARK: Internal
-
-        var description: String {
-            switch self {
-            case .serviceInstanceDeallocated:
-                "Service instance was deallocated"
-            case let .invalidConnectionState(state):
-                "Cannot connect while in state: \(state.description)"
-            case .noActiveConnection:
-                "No active connection available"
-            case let .invalidProxyType(type):
-                "Failed to cast proxy to type: \(type)"
-            case .maxRetryAttemptsExceeded:
-                "Maximum retry attempts exceeded"
-            case let .operationTimeout(seconds):
-                "Operation timed out after \(seconds) seconds"
-            }
-        }
+    private func timeoutTask<T>(_ seconds: TimeInterval) async throws -> T {
+        try await Task.sleep(for: .seconds(seconds))
+        throw ServiceError.operationTimeout(seconds: seconds)
     }
 }
 

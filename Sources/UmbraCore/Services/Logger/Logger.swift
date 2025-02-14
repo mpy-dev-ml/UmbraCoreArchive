@@ -4,21 +4,18 @@ import os.log
 // MARK: - Logger
 
 /// Main logger implementation
-@objc
-public class Logger: NSObject, LoggerProtocol {
+public class Logger: Sendable, LoggerProtocol {
     // MARK: Lifecycle
 
     // MARK: - Initialization
 
     /// Initialize with configuration
-    @objc
     public init(
         minimumLevel: Level = .info,
         destination: LogDestination = .osLog
     ) {
         self.minimumLevel = minimumLevel
         self.destination = destination
-        super.init()
     }
 
     // MARK: Public
@@ -26,12 +23,16 @@ public class Logger: NSObject, LoggerProtocol {
     // MARK: - Types
 
     /// Log level
-    public enum Level: Int {
+    public enum Level: Int, Sendable, Comparable {
         case debug = 0
         case info = 1
         case warning = 2
         case error = 3
         case critical = 4
+
+        public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
 
         // MARK: Internal
 
@@ -50,68 +51,25 @@ public class Logger: NSObject, LoggerProtocol {
     // MARK: - LoggerProtocol
 
     /// Log debug message
-    @objc
-    public func debug(
-        _ message: String,
-        config: LogConfig = LogConfig()
+    public func log(
+        level: Level,
+        message: String,
+        metadata: [String: String]?,
+        file: String,
+        function: String,
+        line: UInt
     ) {
-        log(
-            message,
-            level: .debug,
-            config: config
-        )
-    }
+        guard level.rawValue >= minimumLevel.rawValue else {
+            return
+        }
 
-    /// Log info message
-    @objc
-    public func info(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        log(
-            message,
-            level: .info,
-            config: config
-        )
-    }
-
-    /// Log warning message
-    @objc
-    public func warning(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        log(
-            message,
-            level: .warning,
-            config: config
-        )
-    }
-
-    /// Log error message
-    @objc
-    public func error(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        log(
-            message,
-            level: .error,
-            config: config
-        )
-    }
-
-    /// Log critical message
-    @objc
-    public func critical(
-        _ message: String,
-        config: LogConfig = LogConfig()
-    ) {
-        log(
-            message,
-            level: .critical,
-            config: config
-        )
+        queue.async {
+            self.writeLog(
+                message: message,
+                level: level,
+                config: LogConfig(metadata: metadata)
+            )
+        }
     }
 
     // MARK: Private
@@ -131,25 +89,6 @@ public class Logger: NSObject, LoggerProtocol {
     // MARK: - Private Methods
 
     /// Log message with level
-    private func log(
-        _ message: String,
-        level: Level,
-        config: LogConfig
-    ) {
-        guard level.rawValue >= minimumLevel.rawValue else {
-            return
-        }
-
-        queue.async {
-            self.writeLog(
-                message: message,
-                level: level,
-                config: config
-            )
-        }
-    }
-
-    /// Write log to destination
     private func writeLog(
         message: String,
         level: Level,
@@ -164,8 +103,10 @@ public class Logger: NSObject, LoggerProtocol {
         switch destination {
         case .osLog:
             writeToOSLog(formattedMessage, level: level)
+
         case let .file(url):
             writeToFile(formattedMessage, at: url)
+
         case let .custom(handler):
             handler(formattedMessage, level)
         }
@@ -188,15 +129,16 @@ public class Logger: NSObject, LoggerProtocol {
 
     /// Format metadata dictionary
     private func formatMetadata(
-        _ metadata: [String: String]
+        _ metadata: [String: String]?
     ) -> String {
-        guard !metadata.isEmpty else {
+        guard let metadata = metadata, !metadata.isEmpty else {
             return ""
         }
 
-        let metadataString = metadata
-            .map { "\($0.key)=\($0.value)" }
-            .joined(separator: " ")
+        let metadataString =
+            metadata
+                .map { "\($0.key)=\($0.value)" }
+                .joined(separator: " ")
 
         return " [\(metadataString)]"
     }
@@ -210,12 +152,16 @@ public class Logger: NSObject, LoggerProtocol {
             switch level {
             case .debug:
                 .debug
+
             case .info:
                 .info
+
             case .warning:
                 .default
+
             case .error:
                 .error
+
             case .critical:
                 .fault
             }
@@ -263,6 +209,16 @@ public enum LogDestination {
     case file(URL)
     /// Custom handler
     case custom((String, Logger.Level) -> Void)
+}
+
+// MARK: - LogConfig
+
+public struct LogConfig {
+    public let metadata: [String: String]?
+
+    public init(metadata: [String: String]? = nil) {
+        self.metadata = metadata
+    }
 }
 
 // MARK: - DateFormatter Extension

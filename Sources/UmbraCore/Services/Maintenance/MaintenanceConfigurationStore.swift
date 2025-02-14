@@ -31,7 +31,7 @@ public final class MaintenanceConfigurationStore: BaseSandboxedService {
         public init(
             isEnabled: Bool = true,
             schedule: Schedule = Schedule(),
-            maxDuration: TimeInterval = 3600,
+            maxDuration: TimeInterval = 3_600,
             tasks: Set<MaintenanceTask> = Set(MaintenanceTask.allCases)
         ) {
             self.isEnabled = isEnabled

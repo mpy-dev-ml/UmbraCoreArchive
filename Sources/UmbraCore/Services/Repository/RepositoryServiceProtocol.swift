@@ -47,12 +47,16 @@ public enum RepositoryError: LocalizedError {
         switch self {
         case let .creationFailed(reason):
             "Failed to create repository: \(reason)"
+
         case let .deletionFailed(reason):
             "Failed to delete repository: \(reason)"
+
         case let .updateFailed(reason):
             "Failed to update repository: \(reason)"
+
         case let .listingFailed(reason):
             "Failed to list repositories: \(reason)"
+
         case .invalidConfiguration:
             "Invalid repository configuration"
         }

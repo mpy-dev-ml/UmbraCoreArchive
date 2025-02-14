@@ -49,18 +49,25 @@ public final class KeychainService: BaseSandboxedService {
             switch self {
             case .whenUnlocked:
                 kSecAttrAccessibleWhenUnlocked
+
             case .afterFirstUnlock:
                 kSecAttrAccessibleAfterFirstUnlock
+
             case .always:
                 kSecAttrAccessibleAlways
+
             case .whenPasscodeSet:
                 kSecAttrAccessibleWhenPasscodeSet
+
             case .whenUnlockedThisDeviceOnly:
                 kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+
             case .afterFirstUnlockThisDeviceOnly:
                 kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+
             case .alwaysThisDeviceOnly:
                 kSecAttrAccessibleAlwaysThisDeviceOnly
+
             case .whenPasscodeSetThisDeviceOnly:
                 kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
             }
@@ -87,12 +94,16 @@ public final class KeychainService: BaseSandboxedService {
             switch self {
             case .genericPassword:
                 kSecClassGenericPassword
+
             case .internetPassword:
                 kSecClassInternetPassword
+
             case .certificate:
                 kSecClassCertificate
+
             case .key:
                 kSecClassKey
+
             case .identity:
                 kSecClassIdentity
             }
@@ -364,8 +375,10 @@ public final class KeychainService: BaseSandboxedService {
             switch status {
             case errSecSuccess:
                 return true
+
             case errSecItemNotFound:
                 return false
+
             default:
                 throw KeychainError.operationFailed(
                     "Failed to check item existence: \(status)"

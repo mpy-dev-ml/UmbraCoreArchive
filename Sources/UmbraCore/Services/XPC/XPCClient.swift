@@ -1,10 +1,71 @@
-@preconcurrency import Foundation
+import Foundation
+import Logging
 
 // MARK: - XPCClient
 
 /// Client for communicating with XPC service
-public final class XPCClient {
-    // MARK: Lifecycle
+public actor XPCClient {
+    // MARK: - Types
+
+    /// Configuration for XPC client
+    @frozen
+    public struct Configuration: Sendable {
+        /// Default configuration
+        public static let `default`: Configuration = .init(
+            serviceName: "dev.mpy.umbra.xpc-service",
+            interfaceProtocol: XPCServiceProtocol.self,
+            connectionTimeout: 30,
+            validateAuditSession: true,
+            maxRetries: 3
+        )
+
+        /// Service name
+        public let serviceName: String
+        /// Interface protocol
+        public let interfaceProtocol: Protocol
+        /// Connection timeout
+        public let connectionTimeout: TimeInterval
+        /// Whether to validate audit sessions
+        public let validateAuditSession: Bool
+        /// Maximum number of retries
+        public let maxRetries: Int
+
+        /// Initialize with values
+        /// - Parameters:
+        ///   - serviceName: Name of service
+        ///   - interfaceProtocol: Interface protocol
+        ///   - connectionTimeout: Connection timeout
+        ///   - validateAuditSession: Validate sessions
+        ///   - maxRetries: Maximum retries
+        public init(
+            serviceName: String,
+            interfaceProtocol: Protocol,
+            connectionTimeout: TimeInterval = 30,
+            validateAuditSession: Bool = true,
+            maxRetries: Int = 3
+        ) {
+            self.serviceName = serviceName
+            self.interfaceProtocol = interfaceProtocol
+            self.connectionTimeout = connectionTimeout
+            self.validateAuditSession = validateAuditSession
+            self.maxRetries = maxRetries
+        }
+    }
+
+    // MARK: - Properties
+
+    /// Client configuration
+    private let configuration: Configuration
+    /// Logger for operations
+    private let logger: LoggerProtocol
+    /// Performance monitor
+    private let performanceMonitor: PerformanceMonitor
+    /// Connection to service
+    private var connection: NSXPCConnection?
+    /// Connection state
+    @Published private(set) var connectionState: XPCConnectionState = .disconnected
+    /// Retry count
+    private var retryCount: Int = 0
 
     // MARK: - Initialization
 
@@ -24,67 +85,19 @@ public final class XPCClient {
     }
 
     deinit {
-        disconnect()
-    }
-
-    // MARK: Public
-
-    // MARK: - Types
-
-    /// Configuration for XPC client
-    public struct Configuration {
-        // MARK: Lifecycle
-
-        /// Initialize with values
-        /// - Parameters:
-        ///   - serviceName: Name of service
-        ///   - interfaceProtocol: Interface protocol
-        ///   - connectionTimeout: Connection timeout
-        ///   - validateAuditSession: Validate sessions
-        public init(
-            serviceName: String,
-            interfaceProtocol: Protocol,
-            connectionTimeout: TimeInterval = 30,
-            validateAuditSession: Bool = true
-        ) {
-            self.serviceName = serviceName
-            self.interfaceProtocol = interfaceProtocol
-            self.connectionTimeout = connectionTimeout
-            self.validateAuditSession = validateAuditSession
-        }
-
-        // MARK: Public
-
-        /// Default configuration
-        public static let `default`: Configuration = .init(
-            serviceName: "dev.mpy.umbra.xpc-service",
-            interfaceProtocol: XPCServiceProtocol.self,
-            connectionTimeout: 30,
-            validateAuditSession: true
-        )
-
-        /// Service name
-        public let serviceName: String
-
-        /// Interface protocol
-        public let interfaceProtocol: Protocol
-
-        /// Connection timeout
-        public let connectionTimeout: TimeInterval
-
-        /// Whether to validate audit sessions
-        public let validateAuditSession: Bool
+        Task { await disconnect() }
     }
 
     // MARK: - Public Methods
 
     /// Connect to service
+    /// - Throws: XPCError if connection fails
     public func connect() async throws {
-        try await queue.sync(flags: .barrier) {
-            guard connection == nil else {
-                return
-            }
+        guard connection == nil else { return }
 
+        connectionState = .connecting
+
+        do {
             // Create connection
             let connection = NSXPCConnection(
                 machServiceName: configuration.serviceName
@@ -96,48 +109,57 @@ public final class XPCClient {
             )
 
             if configuration.validateAuditSession {
-                connection.auditSessionIdentifier = au_session_self()
+                try await configureAuditSession(for: connection)
             }
 
             // Set up handlers
             connection.invalidationHandler = { [weak self] in
-                self?.handleConnectionInvalidation()
+                Task { await self?.handleConnectionInvalidation() }
             }
 
             connection.interruptionHandler = { [weak self] in
-                self?.handleConnectionInterruption()
+                Task { await self?.handleConnectionInterruption() }
             }
 
             // Resume connection
             connection.resume()
 
             self.connection = connection
+            connectionState = .connected
+            retryCount = 0
 
             logger.info(
                 "Connected to XPC service",
-                config: LogConfig(
-                    metadata: ["service": configuration.serviceName]
-                )
+                metadata: [
+                    "service": .string(configuration.serviceName),
+                    "state": .string(connectionState.description)
+                ]
             )
 
             // Validate connection
             try await validateConnection()
+        } catch {
+            connectionState = .error
+            throw XPCError.serviceUnavailable(reason: error.localizedDescription)
         }
     }
 
     /// Disconnect from service
     public func disconnect() {
-        queue.sync(flags: .barrier) {
-            connection?.invalidate()
-            connection = nil
+        connectionState = .disconnecting
 
-            logger.info(
-                "Disconnected from XPC service",
-                config: LogConfig(
-                    metadata: ["service": configuration.serviceName]
-                )
-            )
-        }
+        connection?.invalidate()
+        connection = nil
+
+        connectionState = .disconnected
+
+        logger.info(
+            "Disconnected from XPC service",
+            metadata: [
+                "service": .string(configuration.serviceName),
+                "state": .string(connectionState.description)
+            ]
+        )
     }
 
     /// Execute command
@@ -147,6 +169,7 @@ public final class XPCClient {
     ///   - environment: Environment variables
     ///   - workingDirectory: Working directory
     /// - Returns: Command result data
+    /// - Throws: XPCError if command execution fails
     public func executeCommand(
         _ command: String,
         arguments: [String] = [],
@@ -157,15 +180,11 @@ public final class XPCClient {
             "xpc_command_execution",
             metadata: [
                 "command": command,
-                "working_directory": workingDirectory
+                "working_directory": workingDirectory,
+                "state": connectionState.description
             ]
         ) {
-            guard let proxy = try await serviceProxy else {
-                throw XPCError.connectionInvalid(
-                    reason: "No service proxy available"
-                )
-            }
-
+            let proxy = try await getServiceProxy()
             return try await proxy.executeCommand(
                 command,
                 arguments: arguments,
@@ -180,20 +199,19 @@ public final class XPCClient {
     ///   - path: File path
     ///   - bookmark: Security bookmark
     /// - Returns: File data
+    /// - Throws: XPCError if file read fails
     public func readFile(
         at path: String,
         bookmark: Data? = nil
     ) async throws -> Data {
         try await performanceMonitor.trackDuration(
             "xpc_file_read",
-            metadata: ["path": path]
+            metadata: [
+                "path": path,
+                "state": connectionState.description
+            ]
         ) {
-            guard let proxy = try await serviceProxy else {
-                throw XPCError.connectionInvalid(
-                    reason: "No service proxy available"
-                )
-            }
-
+            let proxy = try await getServiceProxy()
             return try await proxy.readFile(
                 at: path,
                 bookmark: bookmark
@@ -206,6 +224,7 @@ public final class XPCClient {
     ///   - data: Data to write
     ///   - path: File path
     ///   - bookmark: Security bookmark
+    /// - Throws: XPCError if file write fails
     public func writeFile(
         _ data: Data,
         to path: String,
@@ -213,14 +232,12 @@ public final class XPCClient {
     ) async throws {
         try await performanceMonitor.trackDuration(
             "xpc_file_write",
-            metadata: ["path": path]
+            metadata: [
+                "path": path,
+                "state": connectionState.description
+            ]
         ) {
-            guard let proxy = try await serviceProxy else {
-                throw XPCError.connectionInvalid(
-                    reason: "No service proxy available"
-                )
-            }
-
+            let proxy = try await getServiceProxy()
             try await proxy.writeFile(
                 data,
                 to: path,
@@ -229,111 +246,147 @@ public final class XPCClient {
         }
     }
 
-    // MARK: Private
+    // MARK: - Private Methods
 
-    /// Client configuration
-    private let configuration: Configuration
+    /// Configure audit session for connection
+    /// - Parameter connection: XPC connection
+    /// - Throws: XPCError if configuration fails
+    private func configureAuditSession(
+        for connection: NSXPCConnection
+    ) async throws {
+        // Get current audit session ID from process
+        let sessionId = getpid()
 
-    /// Logger for operations
-    private let logger: LoggerProtocol
+        // Create an audit session identifier
+        var auditToken = audit_token_t()
+        withUnsafeMutableBytes(of: &auditToken) { tokenBytes in
+            tokenBytes[5] = UInt32(sessionId)
+        }
 
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
+        connection.auditSessionIdentifier = auditToken
 
-    /// Connection to service
-    private var connection: NSXPCConnection?
+        logger.debug(
+            "Configured audit session",
+            metadata: ["session_id": .string(String(sessionId))]
+        )
+    }
 
-    /// Queue for synchronising access
-    private let queue: DispatchQueue = .init(
-        label: "dev.mpy.umbra.xpc-client",
-        attributes: .concurrent
-    )
+    /// Handle connection invalidation
+    private func handleConnectionInvalidation() {
+        connection = nil
+        connectionState = .invalidated
 
-    /// Service proxy
-    private var serviceProxy: XPCServiceProtocol? {
-        get async throws {
-            try await withCheckedThrowingContinuation { continuation in
-                queue.async { [weak self] in
-                    guard let self else {
-                        continuation.resume(
-                            throwing: XPCError.connectionInvalid(
-                                reason: "Client deallocated"
-                            )
-                        )
-                        return
-                    }
+        logger.error(
+            "XPC connection invalidated",
+            metadata: ["service": .string(configuration.serviceName)]
+        )
+    }
 
-                    do {
-                        let proxy = try getServiceProxy()
-                        continuation.resume(returning: proxy)
-                    } catch {
-                        continuation.resume(throwing: error)
-                    }
-                }
+    /// Handle connection interruption
+    private func handleConnectionInterruption() {
+        connectionState = .interrupted
+
+        logger.warning(
+            "XPC connection interrupted",
+            metadata: ["service": .string(configuration.serviceName)]
+        )
+
+        Task {
+            await attemptReconnection()
+        }
+    }
+
+    /// Attempt to reconnect to service
+    private func attemptReconnection() async {
+        guard retryCount < configuration.maxRetries else {
+            connectionState = .invalidated
+            logger.error("Max reconnection attempts reached")
+            return
+        }
+
+        retryCount += 1
+
+        logger.info(
+            "Attempting reconnection",
+            metadata: ["attempt": .string(String(retryCount))]
+        )
+
+        do {
+            try await connect()
+        } catch {
+            logger.error(
+                "Reconnection failed",
+                metadata: ["error": .string(error.localizedDescription)]
+            )
+
+            if retryCount < configuration.maxRetries {
+                try? await Task.sleep(nanoseconds: UInt64(1_000_000_000))
+                await attemptReconnection()
             }
+        }
+    }
+
+    /// Get service proxy
+    /// - Returns: Service proxy
+    /// - Throws: XPCError if proxy unavailable
+    private func getServiceProxy() async throws -> XPCServiceProtocol {
+        guard let connection else {
+            throw XPCError.notConnected(reason: "No active connection")
+        }
+
+        guard let proxy = connection.remoteObjectProxy as? XPCServiceProtocol else {
+            throw XPCError.invalidProxy(reason: "Invalid proxy object")
+        }
+
+        return proxy
+    }
+
+    /// Validate connection
+    /// - Throws: XPCError if validation fails
+    private func validateConnection() async throws {
+        guard let connection else {
+            throw XPCError.notConnected(reason: "No active connection")
+        }
+
+        guard connection.isValid else {
+            throw XPCError.invalidState(reason: "Connection is invalid")
         }
     }
 }
 
-// MARK: - Private Methods
+// MARK: - XPCConnectionState
 
-private extension XPCClient {
-    /// Get service proxy
-    /// - Returns: Service proxy
-    func getServiceProxy() throws -> XPCServiceProtocol? {
-        guard let connection else {
-            throw XPCError.connectionInvalid(
-                reason: "No connection available"
-            )
-        }
+public enum XPCConnectionState: String, CaseIterable {
+    case disconnected
+    case connecting
+    case connected
+    case disconnecting
+    case interrupted
+    case invalidated
+    case error
 
-        return connection.remoteObjectProxy as? XPCServiceProtocol
-    }
+    public var description: String {
+        switch self {
+        case .disconnected:
+            "Disconnected"
 
-    /// Validate connection
-    func validateConnection() async throws {
-        guard let proxy = try await serviceProxy else {
-            throw XPCError.connectionInvalid(
-                reason: "No service proxy available"
-            )
-        }
+        case .connecting:
+            "Connecting"
 
-        try await proxy.validate()
-    }
+        case .connected:
+            "Connected"
 
-    /// Handle connection invalidation
-    func handleConnectionInvalidation() {
-        queue.async(flags: .barrier) { [weak self] in
-            guard let self else {
-                return
-            }
+        case .disconnecting:
+            "Disconnecting"
 
-            connection = nil
+        case .interrupted:
+            "Interrupted"
 
-            logger.warning(
-                "XPC connection invalidated",
-                config: LogConfig(
-                    metadata: ["service": configuration.serviceName]
-                )
-            )
-        }
-    }
+        case .invalidated:
+            "Invalidated"
 
-    /// Handle connection interruption
-    func handleConnectionInterruption() {
-        queue.async(flags: .barrier) { [weak self] in
-            guard let self else {
-                return
-            }
-
-            connection = nil
-
-            logger.warning(
-                "XPC connection interrupted",
-                config: LogConfig(
-                    metadata: ["service": configuration.serviceName]
-                )
-            )
+        case .error:
+            "Error"
         }
     }
 }

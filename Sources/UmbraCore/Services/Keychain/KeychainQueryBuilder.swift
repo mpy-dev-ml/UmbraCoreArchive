@@ -17,7 +17,7 @@ public struct QueryBuilder {
     /// - Returns: Updated builder
     public func setClass(
         _ itemClass: KeychainService.ItemClass
-    ) -> QueryBuilder {
+    ) -> Self {
         var builder = self
         builder.query[kSecClass as String] = itemClass.securityValue
         return builder
@@ -26,7 +26,7 @@ public struct QueryBuilder {
     /// Set account
     /// - Parameter account: Account identifier
     /// - Returns: Updated builder
-    public func setAccount(_ account: String) -> QueryBuilder {
+    public func setAccount(_ account: String) -> Self {
         var builder = self
         builder.query[kSecAttrAccount as String] = account
         return builder
@@ -35,7 +35,7 @@ public struct QueryBuilder {
     /// Set service
     /// - Parameter service: Service identifier
     /// - Returns: Updated builder
-    public func setService(_ service: String) -> QueryBuilder {
+    public func setService(_ service: String) -> Self {
         var builder = self
         builder.query[kSecAttrService as String] = service
         return builder
@@ -46,7 +46,7 @@ public struct QueryBuilder {
     /// - Returns: Updated builder
     public func setAccessible(
         _ accessLevel: KeychainService.AccessLevel
-    ) -> QueryBuilder {
+    ) -> Self {
         var builder = self
         builder.query[kSecAttrAccessible as String] = accessLevel.securityValue
         return builder
@@ -55,7 +55,7 @@ public struct QueryBuilder {
     /// Set value
     /// - Parameter value: Value data
     /// - Returns: Updated builder
-    public func setValue(_ value: Data) -> QueryBuilder {
+    public func setValue(_ value: Data) -> Self {
         var builder = self
         builder.query[kSecValueData as String] = value
         return builder
@@ -64,7 +64,7 @@ public struct QueryBuilder {
     /// Set return type
     /// - Parameter type: Return type
     /// - Returns: Updated builder
-    public func setReturnType(_ type: CFString) -> QueryBuilder {
+    public func setReturnType(_ type: CFString) -> Self {
         var builder = self
         builder.query[kSecReturnType as String] = type
         return builder
@@ -73,7 +73,7 @@ public struct QueryBuilder {
     /// Set return data
     /// - Parameter returnData: Whether to return data
     /// - Returns: Updated builder
-    public func setReturnData(_ returnData: Bool) -> QueryBuilder {
+    public func setReturnData(_ returnData: Bool) -> Self {
         var builder = self
         builder.query[kSecReturnData as String] = returnData
         return builder
@@ -84,7 +84,7 @@ public struct QueryBuilder {
     /// - Returns: Updated builder
     public func setReturnAttributes(
         _ returnAttributes: Bool
-    ) -> QueryBuilder {
+    ) -> Self {
         var builder = self
         builder.query[kSecReturnAttributes as String] = returnAttributes
         return builder
@@ -95,7 +95,7 @@ public struct QueryBuilder {
     /// - Returns: Updated builder
     public func setReturnReference(
         _ returnRef: Bool
-    ) -> QueryBuilder {
+    ) -> Self {
         var builder = self
         builder.query[kSecReturnRef as String] = returnRef
         return builder
@@ -104,7 +104,7 @@ public struct QueryBuilder {
     /// Set match limit
     /// - Parameter limit: Match limit
     /// - Returns: Updated builder
-    public func setMatchLimit(_ limit: CFString) -> QueryBuilder {
+    public func setMatchLimit(_ limit: CFString) -> Self {
         var builder = self
         builder.query[kSecMatchLimit as String] = limit
         return builder
@@ -113,7 +113,7 @@ public struct QueryBuilder {
     /// Set search policy
     /// - Parameter policy: Search policy
     /// - Returns: Updated builder
-    public func setSearchPolicy(_ policy: SecPolicy) -> QueryBuilder {
+    public func setSearchPolicy(_ policy: SecPolicy) -> Self {
         var builder = self
         builder.query[kSecMatchPolicy as String] = policy
         return builder

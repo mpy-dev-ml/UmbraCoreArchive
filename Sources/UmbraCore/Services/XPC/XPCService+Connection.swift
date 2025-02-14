@@ -109,9 +109,11 @@ extension XPCService {
             self?.handleConnectionError(error)
         }
 
-        guard let proxy = connection?.remoteObjectProxyWithErrorHandler(
-            errorHandler
-        ) as? T else {
+        guard
+            let proxy = connection?.remoteObjectProxyWithErrorHandler(
+                errorHandler
+            ) as? T
+        else {
             throw XPCError.invalidProxy(
                 reason: .invalidProxyType(T.self)
             )
@@ -172,11 +174,12 @@ extension XPCService {
             let result = try await group.next()
             group.cancelAll()
 
-            return try result ?? {
-                throw XPCError.timeout(
-                    reason: .operationTimeout(seconds)
-                )
-            }()
+            return try result
+                ?? {
+                    throw XPCError.timeout(
+                        reason: .operationTimeout(seconds)
+                    )
+                }()
         }
     }
 

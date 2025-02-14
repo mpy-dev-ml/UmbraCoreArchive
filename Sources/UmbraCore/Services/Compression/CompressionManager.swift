@@ -15,10 +15,11 @@ public final class CompressionManager: Sendable {
 
     private init() {
         // Check LZMA availability by attempting to create an encoder
-        isLZMAAvailable = (compression_stream_init(
-            nil,
-            COMPRESSION_STREAM_ENCODE,
-            COMPRESSION_LZMA
-        ) == COMPRESSION_STATUS_OK)
+        isLZMAAvailable =
+            (compression_stream_init(
+                nil,
+                COMPRESSION_STREAM_ENCODE,
+                COMPRESSION_LZMA
+            ) == COMPRESSION_STATUS_OK)
     }
 }

@@ -142,6 +142,7 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         switch result {
         case let .success(isValid):
             continuation.resume(returning: isValid)
+
         case let .failure(error):
             continuation.resume(throwing: error)
         }
@@ -185,6 +186,7 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
         switch result {
         case .success:
             continuation.resume()
+
         case let .failure(error):
             continuation.resume(throwing: error)
         }
@@ -243,7 +245,7 @@ public final class RepositoryDiscoveryService: RepositoryDiscoveryProtocol {
     /// - Returns: Array of valid repositories
     private func processDiscoveredURLs(_ urls: [URL]) async throws -> [DiscoveredRepository] {
         let validRepositories = await validateAndCreateRepositories(from: urls)
-        return validRepositories.compactMap { $0 }
+        return validRepositories.compactMap(\.self)
     }
 
     /// Validate and create repositories from URLs

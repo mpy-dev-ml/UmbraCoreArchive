@@ -121,10 +121,11 @@ public final class PermissionManager: BaseSandboxedService {
                 }
             }
 
-            logger.info("""
-            Permission request for \(type.description) (\(accessLevel.description)): \
-            \(granted ? "Granted" : "Denied")
-            """)
+            logger.info(
+                """
+                Permission request for \(type.description) (\(accessLevel.description)): \
+                \(granted ? "Granted" : "Denied")
+                """)
 
             return granted
         }
@@ -144,10 +145,11 @@ public final class PermissionManager: BaseSandboxedService {
         ) {
             let status = queue.sync { permissions[type] }
 
-            logger.debug("""
-            Permission check for \(type.description): \
-            \(status?.description ?? "Not Granted")
-            """)
+            logger.debug(
+                """
+                Permission check for \(type.description): \
+                \(status?.description ?? "Not Granted")
+                """)
 
             return status
         }

@@ -51,14 +51,19 @@ public final class ResourceService: BaseSandboxedService {
             switch self {
             case .image:
                 "image"
+
             case .audio:
                 "audio"
+
             case .video:
                 "video"
+
             case .document:
                 "document"
+
             case .data:
                 "data"
+
             case let .custom(ext):
                 ext
             }

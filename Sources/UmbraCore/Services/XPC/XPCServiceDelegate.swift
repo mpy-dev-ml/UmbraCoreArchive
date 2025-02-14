@@ -69,7 +69,7 @@ public final class XPCServiceDelegate: NSObject {
             operationTimeout: 300,
             validateAuditSession: true,
             resourceLimits: [
-                "memory": 512 * 1024 * 1024, // 512MB
+                "memory": 512 * 1_024 * 1_024, // 512MB
                 "cpu": 80.0 // 80% CPU
             ]
         )
@@ -207,8 +207,8 @@ extension XPCServiceDelegate: XPCServiceProtocol {
         _ command: String,
         arguments: [String],
         environment: [String: String],
-        workingDirectory: String
-    ) async throws -> Data {
+        workingDirectory: String?
+    ) async throws -> XPCServiceResponse {
         // Create operation
         let operation = XPCServiceOperation(
             identifier: UUID().uuidString,
@@ -225,10 +225,10 @@ extension XPCServiceDelegate: XPCServiceProtocol {
                 command: command
             )
 
-            return result
+            return .success(data: result)
         } catch {
             // Remove tracking
-            throw error
+            return .failure(error: error)
         }
     }
 
@@ -250,19 +250,17 @@ extension XPCServiceDelegate: XPCServiceProtocol {
     public func readFile(
         at path: String,
         bookmark: Data?
-    ) async throws -> Data {
-        // Validate permissions
-        try await validatePermissions(
-            for: "read",
-            at: path
-        )
+    ) async throws -> XPCServiceResponse {
+        do {
+            // Read file data
+            let data = try await readFileSecurely(
+                at: path,
+                bookmark: bookmark
+            )
 
-        // Access file securely
-        return try await accessFileSecurely(
-            at: path,
-            bookmark: bookmark
-        ) { url in
-            try Data(contentsOf: url)
+            return .success(data: data)
+        } catch {
+            return .failure(error: error)
         }
     }
 
@@ -270,19 +268,18 @@ extension XPCServiceDelegate: XPCServiceProtocol {
         _ data: Data,
         to path: String,
         bookmark: Data?
-    ) async throws {
-        // Validate permissions
-        try await validatePermissions(
-            for: "write",
-            at: path
-        )
+    ) async throws -> XPCServiceResponse {
+        do {
+            // Write file data
+            try await writeFileSecurely(
+                data,
+                to: path,
+                bookmark: bookmark
+            )
 
-        // Access file securely
-        try await accessFileSecurely(
-            at: path,
-            bookmark: bookmark
-        ) { url in
-            try data.write(to: url)
+            return .success(data: nil)
+        } catch {
+            return .failure(error: error)
         }
     }
 

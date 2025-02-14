@@ -1,4 +1,5 @@
 @preconcurrency import Foundation
+import Logging
 import os.log
 
 // MARK: - BaseService
@@ -18,6 +19,22 @@ open class BaseService: NSObject, LoggingServiceProtocol, @unchecked Sendable {
 
     /// Logger for tracking operations
     public let logger: LoggerProtocol
+
+    /// Log a message at the specified level
+    /// - Parameters:
+    ///   - message: The message to log
+    ///   - level: The logging level
+    ///   - metadata: Optional metadata to include
+    public func log(_ message: String, level: Logger.Level, metadata: [String: LogMetadataValue]?) {
+        logger.log(
+            level: level,
+            message: message,
+            metadata: metadata,
+            file: #file,
+            function: #function,
+            line: #line
+        )
+    }
 
     /// Execute an operation with retry logic
     /// - Parameters:
@@ -40,14 +57,13 @@ open class BaseService: NSObject, LoggingServiceProtocol, @unchecked Sendable {
                 return try await action()
             } catch {
                 lastError = error
-                logger.warning(
+                log(
                     """
                     Attempt \(attempt)/\(attempts) failed for operation '\(operation)': \
                     \(error.localizedDescription)
                     """,
-                    file: #file,
-                    function: #function,
-                    line: #line
+                    level: .warning,
+                    metadata: nil
                 )
 
                 if attempt < attempts {
@@ -58,11 +74,12 @@ open class BaseService: NSObject, LoggingServiceProtocol, @unchecked Sendable {
             }
         }
 
-        throw lastError ?? ServiceError.operationFailed(
-            service: String(describing: type(of: self)),
-            operation: operation,
-            reason: "Operation failed after \(attempts) attempts"
-        )
+        throw lastError
+            ?? ServiceError.operationFailed(
+                service: String(describing: type(of: self)),
+                operation: operation,
+                reason: "Operation failed after \(attempts) attempts"
+            )
     }
 
     /// Execute an operation with a timeout
@@ -85,15 +102,14 @@ open class BaseService: NSObject, LoggingServiceProtocol, @unchecked Sendable {
             return try await task.value
         } catch {
             task.cancel()
-            logger.error(
+            log(
                 """
                 Operation timed out after \(timeout) seconds
                 Operation: \(operation)
                 Error: \(error)
                 """,
-                file: #file,
-                function: #function,
-                line: #line
+                level: .error,
+                metadata: nil
             )
             throw ServiceError.timeout(
                 service: String(describing: type(of: self)),

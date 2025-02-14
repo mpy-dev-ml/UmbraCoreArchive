@@ -278,15 +278,17 @@ public final class ProcessService: BaseSandboxedService {
         errorData: Data,
         duration: TimeInterval
     ) throws -> Result {
-        let output = String(
-            data: outputData,
-            encoding: .utf8
-        ) ?? ""
+        let output =
+            String(
+                data: outputData,
+                encoding: .utf8
+            ) ?? ""
 
-        let error = String(
-            data: errorData,
-            encoding: .utf8
-        ) ?? ""
+        let error =
+            String(
+                data: errorData,
+                encoding: .utf8
+            ) ?? ""
 
         return Result(
             exitCode: Int(process.terminationStatus),

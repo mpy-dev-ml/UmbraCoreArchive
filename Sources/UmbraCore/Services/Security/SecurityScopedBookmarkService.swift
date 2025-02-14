@@ -8,7 +8,6 @@ public class SecurityScopedBookmarkService: NSObject {
     // MARK: - Initialization
 
     /// Initialize with dependencies
-    @objc
     public init(
         performanceMonitor: PerformanceMonitor,
         logger: LoggerProtocol

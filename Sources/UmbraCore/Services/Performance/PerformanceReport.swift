@@ -182,19 +182,20 @@ public final class PerformanceReport: BaseSandboxedService {
         }
 
         if configuration.includeAnomalies {
-            let anomalies = metrics
-                .getOperationAnomalies(
-                    type: type,
-                    window: configuration.window
-                )
-                .map { metric in
-                    [
-                        "operation": metric.operation,
-                        "value": metric.value,
-                        "timestamp": metric.timestamp,
-                        "context": metric.context
-                    ]
-                }
+            let anomalies =
+                metrics
+                    .getOperationAnomalies(
+                        type: type,
+                        window: configuration.window
+                    )
+                    .map { metric in
+                        [
+                            "operation": metric.operation,
+                            "value": metric.value,
+                            "timestamp": metric.timestamp,
+                            "context": metric.context
+                        ]
+                    }
             metricData["anomalies"] = anomalies
         }
 
@@ -211,8 +212,10 @@ public final class PerformanceReport: BaseSandboxedService {
         switch format {
         case .json:
             try formatJSONReport(reportData)
+
         case .csv:
             try formatCSVReport(reportData)
+
         case .text:
             try formatTextReport(reportData)
         }
@@ -287,8 +290,7 @@ public final class PerformanceReport: BaseSandboxedService {
                 lines.append("Type: \(type)")
 
                 if let metricData = data as? [String: Any],
-                   let analysis = metricData["analysis"] as? [String: Any]
-                {
+                   let analysis = metricData["analysis"] as? [String: Any] {
                     appendTextAnalysis(analysis: analysis, to: &lines)
                     appendTextTrends(metricData: metricData, to: &lines)
                     appendTextAnomalies(metricData: metricData, to: &lines)

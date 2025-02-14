@@ -54,10 +54,10 @@ public final class ConfigurationService: BaseSandboxedService {
                 self.value = number
             } else if let array = value as? [Any] {
                 type = .array
-                self.value = try array.map { try ConfigValue(value: $0) }
+                self.value = try array.map { try Self(value: $0) }
             } else if let dict = value as? [String: Any] {
                 type = .dictionary
-                self.value = try dict.mapValues { try ConfigValue(value: $0) }
+                self.value = try dict.mapValues { try Self(value: $0) }
             } else {
                 throw ConfigurationError.unsupportedValueType(String(describing: Swift.type(of: value)))
             }
@@ -72,14 +72,18 @@ public final class ConfigurationService: BaseSandboxedService {
             switch type {
             case .boolean:
                 try container.encode(value as! Bool, forKey: .value)
+
             case .string:
                 try container.encode(value as! String, forKey: .value)
+
             case .number:
                 try container.encode(value as! Double, forKey: .value)
+
             case .array:
-                try container.encode(value as! [ConfigValue], forKey: .value)
+                try container.encode(value as! [Self], forKey: .value)
+
             case .dictionary:
-                try container.encode(value as! [String: ConfigValue], forKey: .value)
+                try container.encode(value as! [String: Self], forKey: .value)
             }
         }
 
@@ -90,14 +94,18 @@ public final class ConfigurationService: BaseSandboxedService {
             switch type {
             case .boolean:
                 value = try container.decode(Bool.self, forKey: .value)
+
             case .string:
                 value = try container.decode(String.self, forKey: .value)
+
             case .number:
                 value = try container.decode(Double.self, forKey: .value)
+
             case .array:
-                value = try container.decode([ConfigValue].self, forKey: .value)
+                value = try container.decode([Self].self, forKey: .value)
+
             case .dictionary:
-                value = try container.decode([String: ConfigValue].self, forKey: .value)
+                value = try container.decode([String: Self].self, forKey: .value)
             }
         }
 
@@ -289,10 +297,13 @@ public enum ConfigurationError: LocalizedError {
         switch self {
         case let .valueNotFound(key):
             "Configuration value not found for key: \(key)"
+
         case let .invalidValueType(expected, actual):
             "Invalid value type: expected \(expected), actual \(actual)"
+
         case let .unsupportedValueType(type):
             "Unsupported value type: \(type)"
+
         case let .persistenceError(reason):
             "Configuration persistence error: \(reason)"
         }
@@ -302,10 +313,13 @@ public enum ConfigurationError: LocalizedError {
         switch self {
         case .valueNotFound:
             "Check configuration key"
+
         case .invalidValueType:
             "Check value type"
+
         case .unsupportedValueType:
             "Use supported value type"
+
         case .persistenceError:
             "Check file permissions and disk space"
         }

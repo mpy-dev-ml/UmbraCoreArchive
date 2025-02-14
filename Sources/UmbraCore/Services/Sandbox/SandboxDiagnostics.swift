@@ -102,15 +102,25 @@ public struct SandboxDiagnostics {
     }
 
     /// Status of a diagnostic check
-    public enum Status {
+    public enum Status: String {
         /// Operation completed successfully
-        case successful
+        case success
         /// Warning condition detected
         case warning
         /// Error condition detected
         case error
         /// Status could not be determined
         case unknown
+    }
+
+    /// Status of a diagnostic operation
+    public enum OperationStatus {
+        /// Operation completed successfully
+        case success
+        /// Operation completed with a warning
+        case warning
+        /// Operation failed with an error
+        case error
     }
 
     // MARK: - Public Methods
@@ -145,12 +155,14 @@ public struct SandboxDiagnostics {
             // Generate summary
             let summary = generateSummary(sections)
 
-            logger.info(
-                """
+            logger.log(
+                level: .info,
+                message: """
                 Generated sandbox diagnostic report:
                 Sections: \(sections.count)
                 Status: \(summary)
                 """,
+                metadata: nil,
                 file: #file,
                 function: #function,
                 line: #line
@@ -185,7 +197,7 @@ public struct SandboxDiagnostics {
                 Item(
                     key: "Container Directory",
                     value: containerURL.path,
-                    status: OperationStatus.successful
+                    status: .success
                 )
             )
         } else {
@@ -193,7 +205,7 @@ public struct SandboxDiagnostics {
                 Item(
                     key: "Container Directory",
                     value: "Not available",
-                    status: OperationStatus.error
+                    status: .error
                 )
             )
         }
@@ -203,14 +215,14 @@ public struct SandboxDiagnostics {
             Item(
                 key: "Temporary Directory",
                 value: NSTemporaryDirectory(),
-                status: OperationStatus.successful
+                status: .success
             )
         )
 
         return Section(
             title: "File System Access",
             items: items,
-            status: items.contains { $0.status == .error } ? .error : .successful
+            status: items.contains { $0.status == .error } ? .error : .success
         )
     }
 
@@ -221,7 +233,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Network Access",
             items: [],
-            status: OperationStatus.unknown
+            status: .unknown
         )
     }
 
@@ -232,7 +244,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "IPC Communication",
             items: [],
-            status: OperationStatus.unknown
+            status: .unknown
         )
     }
 
@@ -243,7 +255,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Process Execution",
             items: [],
-            status: OperationStatus.unknown
+            status: .unknown
         )
     }
 
@@ -254,7 +266,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Resource Access",
             items: [],
-            status: OperationStatus.unknown
+            status: .unknown
         )
     }
 
@@ -265,7 +277,7 @@ public struct SandboxDiagnostics {
         Section(
             title: "Security Settings",
             items: [],
-            status: OperationStatus.unknown
+            status: .unknown
         )
     }
 
@@ -273,7 +285,7 @@ public struct SandboxDiagnostics {
     private func generateSummary(_ sections: [Section]) -> String {
         let errorCount = sections.filter { $0.status == .error }.count
         let warningCount = sections.filter { $0.status == .warning }.count
-        let successfulCount = sections.filter { $0.status == .successful }.count
+        let successfulCount = sections.filter { $0.status == .success }.count
 
         return """
         Sandbox Diagnostics Summary:

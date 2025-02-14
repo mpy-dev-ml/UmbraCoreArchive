@@ -1,7 +1,7 @@
 @preconcurrency import Foundation
 
 /// Monitor for sandbox operations and diagnostics
-public final class SandboxMonitor: BaseSandboxedService {
+public final class SandboxMonitor: BaseSandboxedService, @unchecked Sendable {
     // MARK: Lifecycle
 
     // MARK: - Initialization
@@ -100,7 +100,13 @@ public final class SandboxMonitor: BaseSandboxedService {
     /// Start monitoring
     /// - Throws: Error if start fails
     public func startMonitoring() async throws {
-        try validateUsable(for: "startMonitoring")
+        let isUsable = try validateUsable(for: "startMonitoring")
+        guard isUsable else {
+            throw ServiceOperationError(
+                message: "Service is not usable for monitoring",
+                operation: "startMonitoring"
+            )
+        }
 
         try await performanceMonitor.trackDuration(
             "sandbox.monitor.start"

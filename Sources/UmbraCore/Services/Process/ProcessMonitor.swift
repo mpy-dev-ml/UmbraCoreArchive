@@ -224,10 +224,12 @@ public class ProcessMonitor: NSObject {
             }
 
             // Convert name to string
-            guard let processName = String(
-                cString: name,
-                encoding: .utf8
-            ) else {
+            guard
+                let processName = String(
+                    cString: name,
+                    encoding: .utf8
+                )
+            else {
                 let error = ProcessError.nameEncodingFailed(pid)
                 logProcessError(error, pid: pid)
                 throw error
@@ -237,7 +239,7 @@ public class ProcessMonitor: NSObject {
             let cpuTime = Double(
                 taskInfo.pti_total_user + taskInfo.pti_total_system
             )
-            let cpuUsage = cpuTime / ProcessMonitor.cpuTimeBase
+            let cpuUsage = cpuTime / Self.cpuTimeBase
 
             return ProcessInfo(
                 pid: pid,

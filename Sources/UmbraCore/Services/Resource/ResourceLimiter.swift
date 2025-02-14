@@ -195,6 +195,7 @@ public final class ResourceLimiter: BaseSandboxedService {
                     function: #function,
                     line: #line
                 )
+
             case .throttle:
                 logger.warning(
                     "\(message) - Throttling",
@@ -233,8 +234,10 @@ public enum ResourceError: LocalizedError {
         switch self {
         case let .limitsExceeded(resources):
             "Resource limits exceeded: \(resources.joined(separator: ", "))"
+
         case let .monitoringFailed(reason):
             "Resource monitoring failed: \(reason)"
+
         case let .invalidOperation(reason):
             "Invalid resource operation: \(reason)"
         }
@@ -244,8 +247,10 @@ public enum ResourceError: LocalizedError {
         switch self {
         case .limitsExceeded:
             "Try reducing resource usage or increasing limits"
+
         case .monitoringFailed:
             "Check system resources and try again"
+
         case .invalidOperation:
             "Check operation parameters and try again"
         }

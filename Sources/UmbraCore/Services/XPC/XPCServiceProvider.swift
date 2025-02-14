@@ -76,7 +76,7 @@ public final class XPCServiceProvider {
             maxConcurrentConnections: 4,
             validateAuditSession: true,
             resourceLimits: [
-                "memory": 512 * 1024 * 1024, // 512MB
+                "memory": 512 * 1_024 * 1_024, // 512MB
                 "cpu": 80.0 // 80% CPU
             ]
         )

@@ -101,10 +101,13 @@ public enum FileSearchError: LocalizedError {
         switch self {
         case let .invalidPattern(pattern):
             "Invalid search pattern: \(pattern)"
+
         case let .searchFailed(reason):
             "File search failed: \(reason)"
+
         case .snapshotInaccessible:
             "Cannot access snapshot"
+
         case .repositoryLocked:
             "Repository is currently locked"
         }

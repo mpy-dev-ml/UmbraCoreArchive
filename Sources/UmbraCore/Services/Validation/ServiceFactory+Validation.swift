@@ -59,8 +59,10 @@ public enum ServiceFactoryError: LocalizedError {
         switch self {
         case let .invalidConfiguration(reason):
             "Invalid service factory configuration: \(reason)"
+
         case let .invalidServiceType(type):
             "Invalid service type: \(type)"
+
         case let .serviceCreationFailed(service):
             "Failed to create service: \(service)"
         }

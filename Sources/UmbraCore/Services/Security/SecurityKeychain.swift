@@ -39,8 +39,10 @@ public final class SecurityKeychain: BaseSandboxedService {
             switch self {
             case .afterFirstUnlock:
                 kSecAttrAccessibleAfterFirstUnlock
+
             case .whenUnlocked:
                 kSecAttrAccessibleWhenUnlocked
+
             case .always:
                 kSecAttrAccessibleAlways
             }

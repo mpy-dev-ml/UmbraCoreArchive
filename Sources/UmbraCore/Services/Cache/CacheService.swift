@@ -82,7 +82,7 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
 
         /// Initialize with values
         public init(
-            maxSize: Int = 100 * 1024 * 1024, // 100MB
+            maxSize: Int = 100 * 1_024 * 1_024, // 100MB
             defaultLifetime: TimeInterval? = nil,
             autoCleanup: Bool = true,
             cleanupInterval: TimeInterval = 300 // 5 minutes
@@ -128,8 +128,9 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
         try await performanceMonitor.trackDuration("cache.set") {
             // Create entry
             let data = try JSONEncoder().encode(value)
-            let expirationDate = lifetime.map { Date().addingTimeInterval($0) }
-                ?? configuration.defaultLifetime.map { Date().addingTimeInterval($0) }
+            let expirationDate =
+                lifetime.map { Date().addingTimeInterval($0) }
+                    ?? configuration.defaultLifetime.map { Date().addingTimeInterval($0) }
 
             let entry = CacheEntry(
                 value: value,
@@ -374,8 +375,7 @@ public final class CacheService: BaseSandboxedService, @unchecked Sendable {
                 // Check if entry is expired
                 if let entry: CacheEntry<Data> = try? await load(from: url),
                    let expirationDate = entry.expirationDate,
-                   expirationDate < Date()
-                {
+                   expirationDate < Date() {
                     // Remove file
                     try FileManager.default.removeItem(at: url)
                     removedSize += entry.size

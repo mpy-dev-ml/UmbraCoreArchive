@@ -116,6 +116,16 @@ public struct SystemDiagnostics {
         case unknown
     }
 
+    /// Operation status
+    public enum OperationStatus: String {
+        /// System is operational
+        case operational
+        /// System is degraded
+        case degraded
+        /// System is non-operational
+        case nonOperational
+    }
+
     // MARK: - Public Methods
 
     /// Generate diagnostic report
@@ -230,8 +240,8 @@ public struct SystemDiagnostics {
             return Section(
                 title: title,
                 items: items,
-                status: items.contains { $0.status == .error } ? .error :
-                    items.contains { $0.status == .warning } ? .warning : .operational
+                status: items.contains { $0.status == .error }
+                    ? .error : items.contains { $0.status == .warning } ? .warning : .operational
             )
         } catch {
             return Section(
@@ -240,10 +250,10 @@ public struct SystemDiagnostics {
                     Item(
                         key: "Error",
                         value: error.localizedDescription,
-                        status: OperationStatus.error
+                        status: OperationStatus.nonOperational
                     )
                 ],
-                status: OperationStatus.error
+                status: OperationStatus.nonOperational
             )
         }
     }
@@ -253,8 +263,10 @@ public struct SystemDiagnostics {
         switch percentage {
         case 0 ..< 70:
             .operational
+
         case 70 ..< 90:
             .warning
+
         default:
             .error
         }
@@ -266,8 +278,8 @@ public struct SystemDiagnostics {
         var value = Double(bytes)
         var unitIndex = 0
 
-        while value > 1024, unitIndex < units.count - 1 {
-            value /= 1024
+        while value > 1_024, unitIndex < units.count - 1 {
+            value /= 1_024
             unitIndex += 1
         }
 

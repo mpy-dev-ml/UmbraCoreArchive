@@ -1,30 +1,24 @@
-@preconcurrency import Foundation
+import Foundation
+import Logging
 
 /// Validator for backup operations
-public struct BackupValidator {
-    // MARK: Lifecycle
+@Observable
+public final class BackupValidator: Sendable {
+    // MARK: - Properties
 
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - performanceMonitor: Performance monitor
-    ///   - logger: Logger for tracking operations
-    public init(
-        performanceMonitor: PerformanceMonitor,
-        logger: LoggerProtocol
-    ) {
-        self.performanceMonitor = performanceMonitor
-        self.logger = logger
-    }
-
-    // MARK: Public
+    private let performanceMonitor: PerformanceMonitor
+    private let logger: LoggerProtocol
 
     // MARK: - Types
 
     /// Validation result
-    public struct ValidationResult {
-        // MARK: Lifecycle
+    @Observable
+    public final class ValidationResult: Sendable {
+        /// Whether validation passed
+        public let passed: Bool
+
+        /// Validation issues if any
+        public let issues: [ValidationIssue]
 
         /// Initialize with values
         public init(
@@ -34,19 +28,46 @@ public struct BackupValidator {
             self.passed = passed
             self.issues = issues
         }
-
-        // MARK: Public
-
-        /// Whether validation passed
-        public let passed: Bool
-
-        /// Validation issues if any
-        public let issues: [ValidationIssue]
     }
 
     /// Validation issue
-    public struct ValidationIssue {
-        // MARK: Lifecycle
+    @Error public struct ValidationIssue: Sendable {
+        /// Issue type
+        public let type: IssueType
+
+        /// Issue description
+        @ErrorDescription
+        public let description: String
+
+        /// Recovery suggestion based on issue type
+        @ErrorRecoverySuggestion
+        public var recoverySuggestion: String {
+            switch type {
+            case .configuration:
+                "Review and update the backup configuration settings"
+
+            case .source:
+                "Check if the source paths exist and are accessible"
+
+            case .storage:
+                "Verify storage locations are available and have sufficient space"
+
+            case .compression:
+                "Ensure the selected compression method is supported"
+
+            case .encryption:
+                "Verify encryption requirements and key availability"
+
+            case .verification:
+                "Check verification settings and requirements"
+
+            case .retention:
+                "Review retention policy settings"
+
+            case .custom:
+                "Review the specific issue details"
+            }
+        }
 
         /// Initialize with values
         public init(
@@ -56,18 +77,10 @@ public struct BackupValidator {
             self.type = type
             self.description = description
         }
-
-        // MARK: Public
-
-        /// Issue type
-        public let type: IssueType
-
-        /// Issue description
-        public let description: String
     }
 
     /// Issue type
-    public enum IssueType {
+    public enum IssueType: Sendable {
         /// Configuration issue
         case configuration
         /// Source issue
@@ -84,6 +97,33 @@ public struct BackupValidator {
         case retention
         /// Custom issue
         case custom(String)
+
+        public var description: String {
+            switch self {
+            case .configuration: "Configuration Issue"
+            case .source: "Source Issue"
+            case .storage: "Storage Issue"
+            case .compression: "Compression Issue"
+            case .encryption: "Encryption Issue"
+            case .verification: "Verification Issue"
+            case .retention: "Retention Issue"
+            case let .custom(type): type
+            }
+        }
+    }
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - performanceMonitor: Performance monitor
+    ///   - logger: Logger for tracking operations
+    public init(
+        performanceMonitor: PerformanceMonitor,
+        logger: LoggerProtocol
+    ) {
+        self.performanceMonitor = performanceMonitor
+        self.logger = logger
     }
 
     // MARK: - Public Methods
@@ -91,57 +131,43 @@ public struct BackupValidator {
     /// Validate backup configuration
     /// - Parameter configuration: Backup configuration
     /// - Returns: Validation result
-    /// - Throws: Error if validation fails
+    /// - Throws: ValidationIssue if validation fails
     public func validateConfiguration(
-        _ configuration: BackupServiceProtocol.BackupConfiguration
+        _ configuration: BackupConfiguration
     ) async throws -> ValidationResult {
         try await performanceMonitor.trackDuration(
             "backup.validate.configuration"
         ) {
             var issues: [ValidationIssue] = []
 
-            try validateBasicConfiguration(
-                configuration,
-                issues: &issues
+            // Validate basic configuration first
+            try validateBasicConfiguration(configuration, issues: &issues)
+
+            // Use async let for concurrent validation
+            async let sourceValidation = validateSources(configuration, issues: &issues)
+            async let storageValidation = validateStorage(configuration, issues: &issues)
+            async let compressionValidation = validateCompression(configuration, issues: &issues)
+            async let encryptionValidation = validateEncryption(configuration, issues: &issues)
+            async let retentionValidation = validateRetention(configuration, issues: &issues)
+
+            // Wait for all validations to complete
+            try await (
+                sourceValidation,
+                storageValidation,
+                compressionValidation,
+                encryptionValidation,
+                retentionValidation
             )
 
-            try await validateSources(
-                configuration,
-                issues: &issues
-            )
-
-            try await validateStorage(
-                configuration,
-                issues: &issues
-            )
-
-            try validateCompression(
-                configuration,
-                issues: &issues
-            )
-
-            try validateEncryption(
-                configuration,
-                issues: &issues
-            )
-
-            try validateRetention(
-                configuration,
-                issues: &issues
-            )
-
-            logger.info(
-                """
-                Backup configuration validation:
+            logger.log(
+                level: .info,
+                message: """
+                Backup configuration validation completed:
                 Name: \(configuration.name)
+                Sources: \(configuration.sourcePaths.count)
+                Storage: \(configuration.storageLocations.count)
                 Issues: \(issues.count)
-                """,
-                config: LogConfig(
-                    metadata: [
-                        "name": configuration.name,
-                        "issues": String(issues.count)
-                    ]
-                )
+                """
             )
 
             return ValidationResult(
@@ -151,19 +177,11 @@ public struct BackupValidator {
         }
     }
 
-    // MARK: Private
-
-    /// Logger for tracking operations
-    private let logger: LoggerProtocol
-
-    /// Performance monitor
-    private let performanceMonitor: PerformanceMonitor
-
     // MARK: - Private Methods
 
     /// Validate basic configuration
     private func validateBasicConfiguration(
-        _ configuration: BackupServiceProtocol.BackupConfiguration,
+        _ configuration: BackupConfiguration,
         issues: inout [ValidationIssue]
     ) throws {
         if configuration.name.isEmpty {
@@ -196,7 +214,7 @@ public struct BackupValidator {
 
     /// Validate sources
     private func validateSources(
-        _ configuration: BackupServiceProtocol.BackupConfiguration,
+        _ configuration: BackupConfiguration,
         issues: inout [ValidationIssue]
     ) async throws {
         for source in configuration.sourcePaths {
@@ -230,7 +248,7 @@ public struct BackupValidator {
 
     /// Validate storage
     private func validateStorage(
-        _ configuration: BackupServiceProtocol.BackupConfiguration,
+        _ configuration: BackupConfiguration,
         issues: inout [ValidationIssue]
     ) async throws {
         for storage in configuration.storageLocations {
@@ -265,8 +283,7 @@ public struct BackupValidator {
                     forPath: storage.url.path
                 )
                 if let freeSize = attributes[.systemFreeSize] as? Int64,
-                   freeSize < quota
-                {
+                   freeSize < quota {
                     issues.append(
                         ValidationIssue(
                             type: .storage,
@@ -283,15 +300,13 @@ public struct BackupValidator {
 
     /// Validate compression
     private func validateCompression(
-        _ configuration: BackupServiceProtocol.BackupConfiguration,
+        _ configuration: BackupConfiguration,
         issues: inout [ValidationIssue]
-    ) throws {
+    ) async throws {
         switch configuration.compressionType {
-        case .none:
+        case .none, .zip, .gzip:
             break
-        case .zip,
-             .gzip:
-            break
+
         case .lzma:
             guard CompressionManager.shared.isLZMAAvailable else {
                 issues.append(
@@ -307,12 +322,13 @@ public struct BackupValidator {
 
     /// Validate encryption
     private func validateEncryption(
-        _ configuration: BackupServiceProtocol.BackupConfiguration,
+        _ configuration: BackupConfiguration,
         issues: inout [ValidationIssue]
-    ) throws {
+    ) async throws {
         switch configuration.encryptionType {
         case .none:
             break
+
         case .aes256:
             guard EncryptionManager.shared.isAESAvailable else {
                 issues.append(
@@ -323,6 +339,7 @@ public struct BackupValidator {
                 )
                 return
             }
+
         case .chacha20:
             guard EncryptionManager.shared.isChaCha20Available else {
                 issues.append(
@@ -338,9 +355,9 @@ public struct BackupValidator {
 
     /// Validate retention
     private func validateRetention(
-        _ configuration: BackupServiceProtocol.BackupConfiguration,
+        _ configuration: BackupConfiguration,
         issues: inout [ValidationIssue]
-    ) throws {
+    ) async throws {
         let policy = configuration.retentionPolicy
 
         if policy.maxBackups <= 0 {

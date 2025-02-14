@@ -71,6 +71,51 @@ public enum ServiceState: String {
     }
 }
 
+// MARK: - ServiceLifecycleError
+
+/// Error type for service lifecycle issues
+public enum ServiceLifecycleError: Error, @unchecked Sendable {
+    /// Service initialization failed
+    case initializationFailed(String)
+    /// Service startup failed
+    case startupFailed(String)
+    /// Service shutdown failed
+    case shutdownFailed(String)
+    /// Required dependency is missing
+    case dependencyMissing(String)
+    /// Service is in an invalid state
+    case invalidState(String)
+    /// Operation failed
+    case operationFailed(String)
+    /// Reset failed
+    case resetFailed(String)
+
+    public var localizedDescription: String {
+        switch self {
+        case let .initializationFailed(message):
+            "Service initialization failed: \(message)"
+
+        case let .startupFailed(message):
+            "Service startup failed: \(message)"
+
+        case let .shutdownFailed(message):
+            "Service shutdown failed: \(message)"
+
+        case let .dependencyMissing(message):
+            "Required service dependency is missing: \(message)"
+
+        case let .invalidState(message):
+            "Service is in an invalid state: \(message)"
+
+        case let .operationFailed(message):
+            "Service operation failed: \(message)"
+
+        case let .resetFailed(message):
+            "Service reset failed: \(message)"
+        }
+    }
+}
+
 /// Default implementation of ServiceLifecycle
 public extension ServiceLifecycle {
     /// Validate that the service is in a usable state
@@ -101,39 +146,6 @@ public extension ServiceLifecycle {
             throw ServiceLifecycleError.invalidState(
                 "Cannot stop service in state '\(state.rawValue)'"
             )
-        }
-    }
-}
-
-// MARK: - ServiceLifecycleError
-
-/// Errors that can occur in service lifecycle
-public enum ServiceLifecycleError: LocalizedError {
-    /// Service is in an invalid state for the requested operation
-    case invalidState(String)
-    /// Service initialization failed
-    case initializationFailed(String)
-    /// Service start failed
-    case startFailed(String)
-    /// Service stop failed
-    case stopFailed(String)
-    /// Service reset failed
-    case resetFailed(String)
-
-    // MARK: Public
-
-    public var errorDescription: String? {
-        switch self {
-        case let .invalidState(reason):
-            "Invalid service state: \(reason)"
-        case let .initializationFailed(reason):
-            "Service initialization failed: \(reason)"
-        case let .startFailed(reason):
-            "Service start failed: \(reason)"
-        case let .stopFailed(reason):
-            "Service stop failed: \(reason)"
-        case let .resetFailed(reason):
-            "Service reset failed: \(reason)"
         }
     }
 }

@@ -139,9 +139,10 @@ public final class PersistenceMetrics: BaseSandboxedService {
                 }
             }
 
-            let averageFileSize = fileCount > 0
-                ? Double(totalSize) / Double(fileCount)
-                : 0.0
+            let averageFileSize =
+                fileCount > 0
+                    ? Double(totalSize) / Double(fileCount)
+                    : 0.0
 
             // Create metrics
             let metrics = StorageMetrics(

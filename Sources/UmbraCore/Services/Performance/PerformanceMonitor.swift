@@ -1,28 +1,27 @@
-@unchecked Sendable
 @preconcurrency import Foundation
 
 /// Service for monitoring performance metrics
-@objc
-public class PerformanceMonitor: NSObject {
+@Observable
+public actor PerformanceMonitor: PerformanceMonitorProtocol {
     // MARK: - Types
 
     /// Performance metric data structure
-    public struct Metric {
+    public struct Metric: Sendable {
         /// Metric identifier
         public let id: String
-        /// Start time of the operation
+        /// Start time of the metric
         public let startTime: Date
         /// Duration in seconds
         public let duration: TimeInterval
-        /// Additional contextual data
+        /// Additional metadata
         public let metadata: [String: String]
 
-        /// Initialize with metric values
+        /// Initialize a new metric
         public init(
             id: String,
             startTime: Date,
             duration: TimeInterval,
-            metadata: [String: String] = [:]
+            metadata: [String: String]
         ) {
             self.id = id
             self.startTime = startTime
@@ -32,7 +31,7 @@ public class PerformanceMonitor: NSObject {
     }
 
     /// Performance statistics summary
-    public struct Statistics {
+    public struct Statistics: Sendable {
         /// Total duration across all samples
         public let totalDuration: TimeInterval
         /// Average duration per sample
@@ -62,19 +61,15 @@ public class PerformanceMonitor: NSObject {
 
     // MARK: - Properties
 
-    private let logger: Logger
-    private let queue = DispatchQueue(
-        label: "dev.mpy.rBUM.PerformanceMonitor",
-        attributes: .concurrent
-    )
+    private let logger: LoggerProtocol
     private var metrics: [String: [Metric]] = [:]
 
     // MARK: - Initialization
 
-    /// Initialize performance monitor
-    public init(logger: Logger) {
+    /// Initialize with logger
+    /// - Parameter logger: Logger for performance metrics
+    public init(logger: LoggerProtocol) {
         self.logger = logger
-        super.init()
     }
 
     // MARK: - Public Methods
@@ -84,7 +79,7 @@ public class PerformanceMonitor: NSObject {
         _ id: String,
         metadata: [String: String] = [:],
         operation: () async throws -> T
-    ) async rethrows -> T {
+    ) async throws -> T {
         let startTime = Date()
 
         do {
@@ -115,25 +110,18 @@ public class PerformanceMonitor: NSObject {
 
     /// Get performance statistics for an operation
     public func getStatistics(for id: String) -> Statistics? {
-        queue.sync { [weak self] in
-            guard let self,
-                  let metrics = metrics[id],
-                  !metrics.isEmpty
-            else { return nil }
+        guard let metrics = metrics[id],
+              !metrics.isEmpty
+        else { return nil }
 
-            return calculateAndLogStatistics(id: id, metrics: metrics)
-        }
+        return calculateAndLogStatistics(id: id, metrics: metrics)
     }
 
     /// Reset statistics for an operation
     public func resetStatistics(for id: String) {
-        queue.async(flags: .barrier) { [weak self] in
-            guard let self else { return }
-
-            let count = metrics[id]?.count ?? 0
-            metrics.removeValue(forKey: id)
-            logReset(id: id, count: count)
-        }
+        let count = metrics[id]?.count ?? 0
+        metrics.removeValue(forKey: id)
+        logReset(id: id, count: count)
     }
 
     // MARK: - Private Methods
@@ -154,6 +142,7 @@ public class PerformanceMonitor: NSObject {
             duration: duration,
             metadata: finalMetadata
         )
+
         await storeMetric(metric)
     }
 
@@ -175,6 +164,7 @@ public class PerformanceMonitor: NSObject {
             duration: duration,
             metadata: finalMetadata
         )
+
         await storeMetric(metric)
     }
 
@@ -198,31 +188,19 @@ public class PerformanceMonitor: NSObject {
         return stats
     }
 
-    private func storeMetric(_ metric: Metric) async {
-        await withCheckedContinuation { continuation in
-            queue.async(flags: .barrier) { [weak self] in
-                guard let self else {
-                    continuation.resume()
-                    return
-                }
-
-                var metrics = metrics[metric.id] ?? []
-                metrics.append(metric)
-                self.metrics[metric.id] = metrics
-
-                logMetric(metric)
-                continuation.resume()
-            }
-        }
+    private func storeMetric(_ metric: Metric) {
+        var metrics = metrics[metric.id] ?? []
+        metrics.append(metric)
+        self.metrics[metric.id] = metrics
+        logMetric(metric)
     }
 
     // MARK: - Logging Methods
 
     private func logMetric(_ metric: Metric) {
-        let config = LogConfig(metadata: metric.metadata)
-        logger.debug(
+        logger.info(
             "Recorded metric: \(metric.id)",
-            config: config
+            metadata: metric.metadata
         )
     }
 
@@ -235,8 +213,7 @@ public class PerformanceMonitor: NSObject {
             "max": formatDuration(stats.maxDuration),
             "samples": String(stats.sampleCount)
         ]
-        let config = LogConfig(metadata: metadata)
-        logger.debug("Retrieved statistics", config: config)
+        logger.info("Retrieved statistics", metadata: metadata)
     }
 
     private func logReset(id: String, count: Int) {
@@ -244,18 +221,14 @@ public class PerformanceMonitor: NSObject {
             "id": id,
             "cleared_metrics": String(count)
         ]
-        let config = LogConfig(metadata: metadata)
-        logger.debug("Reset statistics", config: config)
+        logger.info("Reset statistics", metadata: metadata)
     }
 
     private func formatDuration(_ duration: TimeInterval) -> String {
-        String(format: "%.3f", duration)
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 3
+        formatter.minimumFractionDigits = 3
+        return formatter.string(from: NSNumber(value: duration)) ?? String(duration)
     }
-}
-
-// MARK: - LogConfig
-
-/// Configuration for metric logging
-private struct LogConfig {
-    let metadata: [String: String]
 }

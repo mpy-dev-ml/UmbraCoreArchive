@@ -41,8 +41,8 @@ public final class ResourceCache: BaseSandboxedService {
 
         /// Initialize with values
         public init(
-            maxSize: Int64 = 100 * 1024 * 1024, // 100MB
-            maxItems: Int = 1000,
+            maxSize: Int64 = 100 * 1_024 * 1_024, // 100MB
+            maxItems: Int = 1_000,
             cleanupInterval: TimeInterval = 300, // 5 minutes
             useMemoryCache: Bool = true,
             useDiskCache: Bool = true
@@ -121,9 +121,7 @@ public final class ResourceCache: BaseSandboxedService {
             )
 
             // Check cache limits
-            if currentSize > configuration.maxSize ||
-                memoryCache.count > configuration.maxItems
-            {
+            if currentSize > configuration.maxSize || memoryCache.count > configuration.maxItems {
                 try await cleanup()
             }
         }
@@ -141,8 +139,7 @@ public final class ResourceCache: BaseSandboxedService {
         return try await performanceMonitor.trackDuration("resource.cache.load") {
             // Try memory cache
             if configuration.useMemoryCache,
-               var entry = memoryCache[identifier]
-            {
+               var entry = memoryCache[identifier] {
                 // Update access info
                 entry.lastAccess = Date()
                 entry.accessCount += 1
@@ -317,10 +314,10 @@ public final class ResourceCache: BaseSandboxedService {
 
             // Sort entries by last access and count
             let sortedEntries = memoryCache.sorted { first, second in
-                let firstScore = first.value.lastAccess.timeIntervalSinceNow +
-                    Double(first.value.accessCount)
-                let secondScore = second.value.lastAccess.timeIntervalSinceNow +
-                    Double(second.value.accessCount)
+                let firstScore =
+                    first.value.lastAccess.timeIntervalSinceNow + Double(first.value.accessCount)
+                let secondScore =
+                    second.value.lastAccess.timeIntervalSinceNow + Double(second.value.accessCount)
                 return firstScore < secondScore
             }
 
@@ -329,10 +326,9 @@ public final class ResourceCache: BaseSandboxedService {
             var removedSize: Int64 = 0
 
             queue.async(flags: .barrier) {
-                while self.currentSize - removedSize > self.configuration.maxSize ||
-                    self.memoryCache.count - removedCount > self.configuration.maxItems,
-                    removedCount < sortedEntries.count
-                {
+                while self.currentSize - removedSize > self.configuration.maxSize
+                    || self.memoryCache.count - removedCount > self.configuration.maxItems,
+                    removedCount < sortedEntries.count {
                     let entry = sortedEntries[removedCount]
                     self.memoryCache.removeValue(forKey: entry.key)
                     removedSize += Int64(entry.value.data.count)

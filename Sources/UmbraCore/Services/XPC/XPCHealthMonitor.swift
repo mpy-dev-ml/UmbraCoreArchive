@@ -1,46 +1,162 @@
-@preconcurrency import Foundation
+import Foundation
+import Logging
 
 // MARK: - XPCHealthMonitor
 
 /// Monitor for tracking XPC connection health and performance
-final class XPCHealthMonitor {
-    // MARK: Lifecycle
-
-    // MARK: - Initialization
-
-    /// Initialize with dependencies
-    /// - Parameters:
-    ///   - logger: Logger for operations
-    ///   - checkInterval: Interval between checks
-    init(
-        logger: LoggerProtocol,
-        checkInterval: TimeInterval
-    ) {
-        self.logger = logger
-        configuration = Configuration(checkInterval: checkInterval)
-    }
-
-    deinit {
-        stopMonitoring()
-    }
-
-    // MARK: Internal
-
+@Observable
+@MainActor
+public final class XPCHealthMonitor {
     // MARK: - Types
 
     /// Health check result
-    enum HealthCheckResult {
+    @frozen
+    @Error
+    public enum HealthCheckError: LocalizedError, CustomDebugStringConvertible {
+        /// No connection available
+        case noConnection
+        /// Service ping failed
+        case pingFailed(Error)
+        /// High latency detected
+        case highLatency(responseTime: TimeInterval)
+        /// Connection invalidated
+        case connectionInvalidated
+
+        public var errorDescription: String? {
+            switch self {
+            case .noConnection:
+                "No XPC connection available"
+
+            case let .pingFailed(error):
+                "XPC service ping failed: \(error.localizedDescription)"
+
+            case let .highLatency(time):
+                "High XPC latency detected: \(time) seconds"
+
+            case .connectionInvalidated:
+                "XPC connection was invalidated"
+            }
+        }
+
+        public var debugDescription: String {
+            "XPCHealthCheckError: \(errorDescription ?? "Unknown error")"
+        }
+    }
+
+    /// Health check result
+    @frozen
+    public enum HealthCheckResult: Sendable, CustomStringConvertible {
         /// Connection is healthy
-        case healthy
+        case healthy(responseTime: TimeInterval)
         /// Connection is degraded
-        case degraded(reason: String)
+        case degraded(error: HealthCheckError)
         /// Connection is unhealthy
-        case unhealthy(reason: String)
+        case unhealthy(error: HealthCheckError)
+
+        /// Whether the connection is considered functional
+        public var isFunctional: Bool {
+            switch self {
+            case .healthy, .degraded:
+                true
+
+            case .unhealthy:
+                false
+            }
+        }
+
+        /// Response time if available
+        public var responseTime: TimeInterval? {
+            switch self {
+            case let .healthy(time):
+                time
+
+            case .degraded, .unhealthy:
+                nil
+            }
+        }
+
+        public var description: String {
+            switch self {
+            case let .healthy(time):
+                "healthy (response time: \(time)s)"
+
+            case let .degraded(error):
+                "degraded: \(error.localizedDescription)"
+
+            case let .unhealthy(error):
+                "unhealthy: \(error.localizedDescription)"
+            }
+        }
+
+        var metadata: Logger.Metadata {
+            switch self {
+            case let .healthy(time):
+                [
+                    "status": "healthy",
+                    "response_time": .string(String(time))
+                ]
+
+            case let .degraded(error):
+                [
+                    "status": "degraded",
+                    "error": .string(error.localizedDescription)
+                ]
+
+            case let .unhealthy(error):
+                [
+                    "status": "unhealthy",
+                    "error": .string(error.localizedDescription)
+                ]
+            }
+        }
     }
 
     /// Health check configuration
-    struct Configuration {
-        // MARK: Lifecycle
+    @frozen
+    public struct Configuration: Sendable, Equatable {
+        // MARK: - Properties
+
+        /// Default configuration
+        public static let `default` = Self()
+
+        /// Minimal configuration for testing
+        public static let minimal = Self(
+            checkInterval: 1.0,
+            maxResponseTime: 0.5,
+            failureThreshold: 1,
+            autoRecovery: false
+        )
+
+        /// Aggressive configuration for critical services
+        public static let aggressive = Self(
+            checkInterval: 1.0,
+            maxResponseTime: 0.1,
+            failureThreshold: 2,
+            autoRecovery: true
+        )
+
+        /// Interval between health checks in seconds
+        public let checkInterval: TimeInterval
+
+        /// Maximum allowed response time in seconds
+        public let maxResponseTime: TimeInterval
+
+        /// Number of consecutive failures before marking unhealthy
+        public let failureThreshold: Int
+
+        /// Whether to automatically attempt recovery
+        public let autoRecovery: Bool
+
+        // MARK: - Computed Properties
+
+        /// Whether the configuration is valid
+        public var isValid: Bool {
+            checkInterval > 0 &&
+                maxResponseTime > 0 &&
+                failureThreshold > 0
+        }
+
+        // MARK: - Initialization
 
         /// Initialize with custom values
         /// - Parameters:
@@ -48,7 +164,7 @@ final class XPCHealthMonitor {
         ///   - maxResponseTime: Maximum response time
         ///   - failureThreshold: Failure threshold
         ///   - autoRecovery: Auto recovery enabled
-        init(
+        public init(
             checkInterval: TimeInterval = 5.0,
             maxResponseTime: TimeInterval = 1.0,
             failureThreshold: Int = 3,
@@ -59,40 +175,96 @@ final class XPCHealthMonitor {
             self.failureThreshold = failureThreshold
             self.autoRecovery = autoRecovery
         }
+    }
 
-        // MARK: Internal
+    // MARK: - Properties
 
-        /// Default configuration
-        static let `default`: Configuration = .init(
-            checkInterval: 5.0,
-            maxResponseTime: 1.0,
-            failureThreshold: 3,
-            autoRecovery: true
-        )
+    /// Current health status
+    @Published
+    private(set) var healthStatus: HealthCheckResult = .healthy(responseTime: 0)
 
-        /// Interval between health checks in seconds
-        let checkInterval: TimeInterval
-        /// Maximum allowed response time in seconds
-        let maxResponseTime: TimeInterval
-        /// Number of consecutive failures before marking unhealthy
-        let failureThreshold: Int
-        /// Whether to automatically attempt recovery
-        let autoRecovery: Bool
+    /// Current connection state
+    @Published
+    private(set) var connectionState: XPCConnectionState = .disconnected
+
+    /// Count of consecutive failures
+    @Published
+    private(set) var consecutiveFailures: Int = 0
+
+    /// Last health check timestamp
+    @Published
+    private(set) var lastCheckTimestamp: Date?
+
+    // MARK: - Computed Properties
+
+    /// Whether the connection is considered functional
+    public var isConnectionFunctional: Bool {
+        healthStatus.isFunctional && connectionState == .connected
+    }
+
+    /// Latest response time if available
+    public var latestResponseTime: TimeInterval? {
+        healthStatus.responseTime
+    }
+
+    // MARK: - Private Properties
+
+    /// Logger for operations
+    private let logger: any LoggerProtocol
+
+    /// Monitor configuration
+    private let configuration: Configuration
+
+    /// Connection being monitored
+    private weak var connection: NSXPCConnection?
+
+    /// Queue for synchronising operations
+    private let queue = DispatchQueue(
+        label: "dev.mpy.umbra.xpc-health-monitor",
+        qos: .utility
+    )
+
+    /// Timer for health checks
+    private var healthCheckTimer: DispatchSourceTimer?
+
+    /// Task for current health check
+    private var currentHealthCheck: Task<Void, Never>?
+
+    // MARK: - Initialization
+
+    /// Initialize with dependencies
+    /// - Parameters:
+    ///   - logger: Logger for operations
+    ///   - configuration: Monitor configuration
+    public init(
+        logger: any LoggerProtocol,
+        configuration: Configuration = .default
+    ) {
+        precondition(configuration.isValid, "Invalid health monitor configuration")
+        self.logger = logger
+        self.configuration = configuration
+    }
+
+    deinit {
+        stopMonitoring()
     }
 
     // MARK: - Public Methods
 
     /// Start monitoring connection health
     /// - Parameter connection: Connection to monitor
-    func startMonitoring(_ connection: NSXPCConnection) {
+    public func startMonitoring(_ connection: NSXPCConnection) {
         queue.async { [weak self] in
-            guard let self else {
-                return
-            }
+            guard let self else { return }
+
+            // Cancel any existing monitoring
+            stopMonitoring()
 
             // Store connection
             self.connection = connection
-            connectionState = .connected
+            Task { @MainActor in
+                self.connectionState = .connected
+            }
 
             // Create and start timer
             let timer = DispatchSource.makeTimerSource(queue: queue)
@@ -102,11 +274,14 @@ final class XPCHealthMonitor {
             )
 
             timer.setEventHandler { [weak self] in
-                guard let self else {
-                    return
-                }
-                Task {
-                    await self.performHealthCheck()
+                guard let self else { return }
+
+                // Cancel any existing check
+                currentHealthCheck?.cancel()
+
+                // Start new check
+                currentHealthCheck = Task {
+                    await performHealthCheck()
                 }
             }
 
@@ -116,19 +291,23 @@ final class XPCHealthMonitor {
             logger.info(
                 "Started XPC health monitoring",
                 metadata: [
-                    "check_interval": String(configuration.checkInterval),
-                    "max_response_time": String(configuration.maxResponseTime)
+                    "check_interval": .string(String(configuration.checkInterval)),
+                    "max_response_time": .string(String(configuration.maxResponseTime)),
+                    "failure_threshold": .string(String(configuration.failureThreshold)),
+                    "auto_recovery": .string(String(configuration.autoRecovery))
                 ]
             )
         }
     }
 
     /// Stop monitoring connection health
-    func stopMonitoring() {
+    public func stopMonitoring() {
         queue.async { [weak self] in
-            guard let self else {
-                return
-            }
+            guard let self else { return }
+
+            // Cancel health check
+            currentHealthCheck?.cancel()
+            currentHealthCheck = nil
 
             // Cancel timer
             healthCheckTimer?.cancel()
@@ -136,47 +315,13 @@ final class XPCHealthMonitor {
 
             // Clear state
             connection = nil
-            connectionState = .disconnected
-            consecutiveFailures = 0
+            Task { @MainActor in
+                self.connectionState = .disconnected
+                self.consecutiveFailures = 0
+                self.lastCheckTimestamp = nil
+            }
 
             logger.info("Stopped XPC health monitoring")
-        }
-    }
-
-    // MARK: Private
-
-    /// Logger for operations
-    private let logger: LoggerProtocol
-
-    /// Monitor configuration
-    private let configuration: Configuration
-
-    /// Connection being monitored
-    private weak var connection: NSXPCConnection?
-
-    /// Queue for synchronising operations
-    private let queue: DispatchQueue = .init(
-        label: "dev.mpy.umbra.xpc-health-monitor",
-        qos: .utility
-    )
-
-    /// Timer for health checks
-    private var healthCheckTimer: DispatchSourceTimer?
-
-    /// Count of consecutive failures
-    private var consecutiveFailures = 0
-
-    /// Last health check result
-    private var lastHealthCheckResult: HealthCheckResult = .healthy {
-        didSet {
-            handleHealthCheckResult(lastHealthCheckResult)
-        }
-    }
-
-    /// Current connection state
-    private var connectionState: XPCConnectionState = .disconnected {
-        didSet {
-            handleConnectionStateChange(from: oldValue, to: connectionState)
         }
     }
 
@@ -185,7 +330,7 @@ final class XPCHealthMonitor {
     /// Perform health check on connection
     private func performHealthCheck() async {
         guard let connection else {
-            lastHealthCheckResult = .unhealthy(reason: "No connection available")
+            await updateHealthStatus(.unhealthy(error: .noConnection))
             return
         }
 
@@ -199,55 +344,51 @@ final class XPCHealthMonitor {
             }
 
             let endTime = DispatchTime.now()
-            let responseTime = Double(endTime.uptimeNanoseconds - startTime.uptimeNanoseconds) /
-                1_000_000_000
+            let responseTime = Double(endTime.uptimeNanoseconds - startTime.uptimeNanoseconds) / 1_000_000_000
+
+            // Update timestamp
+            await updateLastCheckTimestamp()
 
             // Check response time
             if responseTime > configuration.maxResponseTime {
-                lastHealthCheckResult = .degraded(
-                    reason: "High latency: \(responseTime) seconds"
-                )
-                consecutiveFailures += 1
+                let error = HealthCheckError.highLatency(responseTime: responseTime)
+                await updateHealthStatus(.degraded(error: error))
+                await incrementFailures()
             } else {
-                lastHealthCheckResult = .healthy
-                consecutiveFailures = 0
+                await updateHealthStatus(.healthy(responseTime: responseTime))
+                await resetFailures()
             }
         } catch {
-            consecutiveFailures += 1
-            lastHealthCheckResult = .unhealthy(
-                reason: "Health check failed: \(error.localizedDescription)"
-            )
+            await incrementFailures()
+            await updateHealthStatus(.unhealthy(error: .pingFailed(error)))
         }
     }
 
-    /// Handle health check result
-    /// - Parameter result: Health check result
-    private func handleHealthCheckResult(_ result: HealthCheckResult) {
-        // Log result
-        switch result {
+    /// Update health status and notify observers
+    @MainActor
+    private func updateHealthStatus(_ newStatus: HealthCheckResult) {
+        healthStatus = newStatus
+
+        // Log result with metadata
+        switch newStatus {
         case .healthy:
             logger.debug(
                 "XPC connection health check passed",
-                metadata: ["status": "healthy"]
+                metadata: newStatus.metadata
             )
 
-        case let .degraded(reason):
+        case .degraded:
             logger.warning(
-                "XPC connection health check degraded: \(reason)",
-                metadata: [
-                    "status": "degraded",
-                    "reason": reason
-                ]
+                "XPC connection health check degraded",
+                metadata: newStatus.metadata
             )
 
-        case let .unhealthy(reason):
+        case .unhealthy:
             logger.error(
-                "XPC connection health check failed: \(reason)",
-                metadata: [
-                    "status": "unhealthy",
-                    "reason": reason,
-                    "consecutive_failures": String(consecutiveFailures)
-                ]
+                "XPC connection health check failed",
+                metadata: newStatus.metadata.merging([
+                    "consecutive_failures": .string(String(consecutiveFailures))
+                ]) { $1 }
             )
         }
 
@@ -261,22 +402,22 @@ final class XPCHealthMonitor {
             name: .xpcHealthStatusChanged,
             object: self,
             userInfo: [
-                "result": result,
-                "consecutive_failures": consecutiveFailures
+                "result": newStatus,
+                "consecutive_failures": consecutiveFailures,
+                "timestamp": lastCheckTimestamp as Any
             ]
         )
     }
 
     /// Handle unhealthy connection
+    @MainActor
     private func handleUnhealthyConnection() {
-        guard configuration.autoRecovery else {
-            return
-        }
+        guard configuration.autoRecovery else { return }
 
         logger.warning(
             "Attempting to recover unhealthy XPC connection",
             metadata: [
-                "consecutive_failures": String(consecutiveFailures)
+                "consecutive_failures": .string(String(consecutiveFailures))
             ]
         )
 
@@ -288,31 +429,37 @@ final class XPCHealthMonitor {
         // Notify for recovery
         NotificationCenter.default.post(
             name: .xpcConnectionNeedsRecovery,
-            object: self
+            object: self,
+            userInfo: [
+                "last_status": healthStatus,
+                "consecutive_failures": consecutiveFailures,
+                "timestamp": lastCheckTimestamp as Any
+            ]
         )
     }
 
-    /// Handle connection state change
-    /// - Parameters:
-    ///   - oldState: Previous state
-    ///   - newState: New state
-    private func handleConnectionStateChange(
-        from oldState: XPCConnectionState,
-        to newState: XPCConnectionState
-    ) {
-        logger.debug(
-            "XPC connection state changed in health monitor",
-            metadata: [
-                "old_state": oldState.description,
-                "new_state": newState.description
-            ]
-        )
+    /// Update last check timestamp
+    @MainActor
+    private func updateLastCheckTimestamp() {
+        lastCheckTimestamp = Date()
+    }
+
+    /// Increment consecutive failures
+    @MainActor
+    private func incrementFailures() {
+        consecutiveFailures += 1
+    }
+
+    /// Reset consecutive failures
+    @MainActor
+    private func resetFailures() {
+        consecutiveFailures = 0
     }
 }
 
 // MARK: - Notifications
 
-extension Notification.Name {
+public extension Notification.Name {
     /// Posted when XPC connection health status changes
     static let xpcHealthStatusChanged = Notification.Name(
         "dev.mpy.umbra.xpc.healthStatusChanged"
