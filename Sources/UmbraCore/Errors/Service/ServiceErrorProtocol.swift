@@ -3,22 +3,21 @@ import Foundation
 // MARK: - ServiceErrorProtocol
 
 /// Protocol defining common functionality for service-related errors
-@objc
-public protocol ServiceErrorProtocol: Error {
-    /// Service name associated with the error
-    var serviceName: String { get }
+public protocol ServiceErrorProtocol: LocalizedError, CustomDebugStringConvertible {
+    /// The category of the error
+    var category: String { get }
     
-    /// Localized description of the error
-    var localizedDescription: String { get }
+    /// The severity level of the error
+    var severity: String { get }
     
-    /// Reason for the error
-    @objc optional var failureReason: String? { get }
+    /// Additional context or metadata about the error
+    var context: [String: String] { get }
     
-    /// Suggestion for recovering from the error
-    @objc optional var recoverySuggestion: String? { get }
+    /// Whether the error is recoverable
+    var isRecoverable: Bool { get }
     
-    /// Error metadata dictionary
-    var errorUserInfo: [String: Any] { get }
+    /// Suggested recovery steps if applicable
+    var recoverySuggestion: String? { get }
 }
 
 // MARK: - Error Conformance
@@ -26,7 +25,7 @@ public protocol ServiceErrorProtocol: Error {
 public extension ServiceErrorProtocol {
     /// Convert to NSError
     var asNSError: NSError {
-        let userInfo = errorUserInfo
+        let userInfo = [NSLocalizedDescriptionKey: localizedDescription]
         
         return NSError(
             domain: "dev.mpy.umbracore.service",
@@ -39,19 +38,11 @@ public extension ServiceErrorProtocol {
 // MARK: - Default Implementations
 
 public extension ServiceErrorProtocol {
-    var errorUserInfo: [String: Any] {
-        var info: [String: Any] = [
-            "serviceName": serviceName
-        ]
-        
-        if let reason = failureReason {
-            info[NSLocalizedFailureReasonErrorKey] = reason
-        }
-        
-        if let suggestion = recoverySuggestion {
-            info[NSLocalizedRecoverySuggestionErrorKey] = suggestion
-        }
-        
-        return info
+    var errorDescription: String? {
+        return localizedDescription
+    }
+    
+    var debugDescription: String {
+        return "\(localizedDescription) (category: \(category), severity: \(severity), context: \(context), recoverable: \(isRecoverable))"
     }
 }

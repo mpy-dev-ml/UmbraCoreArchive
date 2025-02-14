@@ -100,7 +100,8 @@ public protocol ConfigurationObserver: AnyObject {
 // MARK: - ConfigurationService
 
 /// Service for managing configuration settings
-@objc public final class ConfigurationService: NSObject, Sendable {
+@MainActor
+public final class ConfigurationService: @unchecked Sendable {
     // MARK: - Properties
     
     private let fileURL: URL
@@ -128,7 +129,6 @@ public protocol ConfigurationObserver: AnyObject {
         self.values = [:]
         self.observers = []
         self.queue = DispatchQueue(label: "dev.mpy.umbracore.config")
-        super.init()
     }
 
     // MARK: Public

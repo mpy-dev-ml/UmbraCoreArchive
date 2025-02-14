@@ -27,11 +27,7 @@ let package = Package(
             ],
             exclude: ["Services/Development/README.md"], // ✅ Corrected placement
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-                .enableUpcomingFeature("ExistentialAny"),
-                .enableUpcomingFeature("ForwardTrailingClosures"),
-                .enableUpcomingFeature("ImportObjcForwardDeclarations"),
-                .enableUpcomingFeature("DisableOutwardActorInference")
+                .enableExperimentalFeature("ExistentialAny")
             ]
         ),
         .testTarget(
