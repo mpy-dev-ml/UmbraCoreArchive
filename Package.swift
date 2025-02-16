@@ -1,15 +1,23 @@
-// swift-tools-version: 6.0.3
+// swift-tools-version: 5.9.2
 import PackageDescription
 
 let package = Package(
     name: "UmbraCore",
     platforms: [
-        .macOS(.v14) // ✅ Support only macOS 14+
+        .macOS(.v14) // Support only macOS 14+
     ],
     products: [
         .library(
             name: "UmbraCore",
-            targets: ["UmbraCore"]
+            targets: [
+                "ResticCLIHelper",
+                "Repositories",
+                "Snapshots",
+                "Config",
+                "Logging",
+                "ErrorHandling",
+                "Autocomplete"
+            ]
         )
     ],
     dependencies: [
@@ -18,21 +26,115 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "601.0.0-prerelease-2025-02-04")
     ],
     targets: [
+        // MARK: - ResticCLIHelper
         .target(
-            name: "UmbraCore",
+            name: "ResticCLIHelper",
             dependencies: [
-                .product(name: "Logging", package: "swift-log"),
-                .product(name: "Testing", package: "swift-testing"),
-                .product(name: "SwiftSyntax", package: "swift-syntax")
+                "ErrorHandling",
+                "Logging",
+                .product(name: "Logging", package: "swift-log")
             ],
-            exclude: ["Services/Development/README.md"], // ✅ Corrected placement
-            swiftSettings: [
-                .enableExperimentalFeature("ExistentialAny")
-            ]
+            path: "Sources/ResticCLIHelper"
         ),
         .testTarget(
-            name: "UmbraCoreTests",
-            dependencies: ["UmbraCore"]
+            name: "ResticCLIHelperTests",
+            dependencies: ["ResticCLIHelper"],
+            path: "Tests/ResticCLIHelperTests"
+        ),
+
+        // MARK: - Repositories
+        .target(
+            name: "Repositories",
+            dependencies: [
+                "ResticCLIHelper",
+                "Config",
+                "ErrorHandling",
+                .product(name: "Logging", package: "swift-log")
+            ],
+            path: "Sources/Repositories"
+        ),
+        .testTarget(
+            name: "RepositoriesTests",
+            dependencies: ["Repositories"],
+            path: "Tests/RepositoriesTests"
+        ),
+
+        // MARK: - Snapshots
+        .target(
+            name: "Snapshots",
+            dependencies: [
+                "ResticCLIHelper",
+                "Repositories",
+                "ErrorHandling",
+                .product(name: "Logging", package: "swift-log")
+            ],
+            path: "Sources/Snapshots"
+        ),
+        .testTarget(
+            name: "SnapshotsTests",
+            dependencies: ["Snapshots"],
+            path: "Tests/SnapshotsTests"
+        ),
+
+        // MARK: - Config
+        .target(
+            name: "Config",
+            dependencies: [
+                "ErrorHandling",
+                .product(name: "Logging", package: "swift-log")
+            ],
+            path: "Sources/Config"
+        ),
+        .testTarget(
+            name: "ConfigTests",
+            dependencies: ["Config"],
+            path: "Tests/ConfigTests"
+        ),
+
+        // MARK: - Logging
+        .target(
+            name: "Logging",
+            dependencies: [
+                .product(name: "Logging", package: "swift-log")
+            ],
+            path: "Sources/Logging"
+        ),
+        .testTarget(
+            name: "LoggingTests",
+            dependencies: ["Logging"],
+            path: "Tests/LoggingTests"
+        ),
+
+        // MARK: - ErrorHandling
+        .target(
+            name: "ErrorHandling",
+            dependencies: [
+                "Logging",
+                .product(name: "Logging", package: "swift-log")
+            ],
+            path: "Sources/ErrorHandling"
+        ),
+        .testTarget(
+            name: "ErrorHandlingTests",
+            dependencies: ["ErrorHandling"],
+            path: "Tests/ErrorHandlingTests"
+        ),
+
+        // MARK: - Autocomplete
+        .target(
+            name: "Autocomplete",
+            dependencies: [
+                "Repositories",
+                "Snapshots",
+                "ErrorHandling",
+                .product(name: "Logging", package: "swift-log")
+            ],
+            path: "Sources/Autocomplete"
+        ),
+        .testTarget(
+            name: "AutocompleteTests",
+            dependencies: ["Autocomplete"],
+            path: "Tests/AutocompleteTests"
         )
     ]
 )
